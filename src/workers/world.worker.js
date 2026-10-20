@@ -22,10 +22,14 @@ self.addEventListener('message', async ({ data }) => {
       filename = file.name;
       document = await openWorld(await file.arrayBuffer(), progress);
       self.postMessage({ id, type: 'result', summary: document.summary, editState: document.editState });
-    } else if (['paint', 'erase', 'fillSelection', 'eraseSelection', 'undo', 'redo'].includes(action)) {
+    } else if (['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo'].includes(action)) {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const editState = document[action](stroke);
       self.postMessage({ id, type: 'result', editState });
+    } else if (action === 'copy') {
+      if (!document) throw new WorldFileError('请先打开一个世界。');
+      const result = document.copy(stroke);
+      self.postMessage({ id, type: 'result', ...result }, [result.image.buffer]);
     } else if (action === 'pick') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       self.postMessage({ id, type: 'result', tile: document.pick(point) });

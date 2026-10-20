@@ -1,6 +1,7 @@
 import { TileFlag } from '../../vendor/terraria-world-file/src/index.ts';
 import { EditHistory } from '../editing/EditHistory.js';
-import { EditError } from '../editing/brush.js';
+import { EditError, selectionCells } from '../editing/brush.js';
+import { pasteFits, validateClipboard } from '../editing/clipboard.js';
 
 // Read and restore every stored field, including dormant flags hidden by getTile.
 export const TILE_FIELDS = ['blockId', 'frameX', 'frameY', 'blockColor', 'wallId', 'wallColor', 'liquidAmount', 'liquidType', 'flags'];
@@ -20,7 +21,13 @@ export function createBlockEditing(world, ensureWritable) {
     }
     return false;
   }
-  return new EditHistory({
+  const entityPositions = [
+    ...world.chests.chests, ...world.signs.signs, ...world.tileEntities.entities,
+    ...world.weightedPressurePlates.weightedPressurePlates,
+  ].map(item => item.position);
+  const entityNear = (x, y) => entityPositions.some(point => Math.abs(point.x - x) <= 1 && Math.abs(point.y - y) <= 1);
+  const read = index => TILE_FIELDS.map(field => tiles[field][index]);
+  const editing = new EditHistory({
     count: tiles.count,
     version: world.fileFormatHeader.version,
     ensureWritable,
@@ -29,7 +36,7 @@ export function createBlockEditing(world, ensureWritable) {
         throw new EditError('此世界不支持将该材料作为普通方块放置，未修改世界。');
       }
     },
-    read: index => TILE_FIELDS.map(field => tiles[field][index]),
+    read,
     write(index, values) { TILE_FIELDS.forEach((field, i) => { tiles[field][index] = values[i]; }); },
     paint(index, before, blockId, layer) {
       if (layer === 'wall') {
@@ -58,4 +65,38 @@ export function createBlockEditing(world, ensureWritable) {
       return after;
     },
   });
+  editing.copy = selection => {
+    const cells = selectionCells(selection, tiles);
+    const snapshots = cells.map(index => {
+      const x = Math.floor(index / tiles.height), y = index % tiles.height;
+      if (important(index) || entityNear(x, y)) throw new EditError('选区包含家具或实体，当前仅支持复制普通图格。');
+      if (tiles.hasBlock(index) && tiles.blockId[index] >= world.fileFormatHeader.importants.length) {
+        throw new EditError('选区包含无法识别的方块，未复制。');
+      }
+      return read(index);
+    });
+    const clipboard = { schema: 1, formatVersion: world.fileFormatHeader.version,
+      width: selection.width, height: selection.height, tiles: snapshots };
+    validateClipboard(clipboard, world.fileFormatHeader.version);
+    return clipboard;
+  };
+  editing.paste = payload => {
+    const { clipboard, position } = payload || {};
+    validateClipboard(clipboard, world.fileFormatHeader.version);
+    if (!pasteFits(clipboard, position, tiles)) throw new EditError('粘贴区域必须完整位于地图内，未修改世界。');
+    const changes = [];
+    for (let offset = 0; offset < clipboard.tiles.length; offset++) {
+      const after = [...clipboard.tiles[offset]];
+      if ((after[8] & TileFlag.IS_BLOCK_ACTIVE) && (after[0] >= world.fileFormatHeader.importants.length || world.fileFormatHeader.importants[after[0]])) {
+        throw new EditError('复制内容包含特殊或无法识别的方块，未修改世界。');
+      }
+      const x = position.x + Math.floor(offset / clipboard.height), y = position.y + offset % clipboard.height;
+      const index = x * tiles.height + y;
+      if (nearImportant(index) || entityNear(x, y)) throw new EditError('粘贴区域接触家具、实体或其支撑，整次未修改世界。');
+      const before = read(index);
+      if (!before.every((value, i) => value === after[i])) changes.push({ index, before, after });
+    }
+    return editing.commit(changes);
+  };
+  return editing;
 }

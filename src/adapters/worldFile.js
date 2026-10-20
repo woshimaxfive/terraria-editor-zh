@@ -113,6 +113,11 @@ export async function openWorld(buffer, progress = () => {}) {
       erase: stroke => editing.paint({ ...stroke, blockId: null, wallId: null }),
       fillSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary) }),
       eraseSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary), blockId: null, wallId: null }),
+      copy(payload) {
+        const clipboard = editing.copy(payload?.selection);
+        return { clipboard, image: this.render({ ...payload.selection, step: 1 }) };
+      },
+      paste: payload => editing.paste(payload),
       pick(point) {
         const { x, y, layer = 'block' } = point || {};
         if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y) || x < 0 || y < 0 || x >= summary.width || y >= summary.height) {

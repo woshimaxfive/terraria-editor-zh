@@ -71,13 +71,18 @@ export class WorldSession {
 
   edit(action, stroke) {
     if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
-    if (!['paint', 'erase', 'fillSelection', 'eraseSelection', 'undo', 'redo'].includes(action)) return Promise.reject(new Error('无法识别这项编辑操作。'));
+    if (!['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo'].includes(action)) return Promise.reject(new Error('无法识别这项编辑操作。'));
     return this.request(action, { stroke });
   }
 
   pick(point) {
     if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
     return this.request('pick', { point });
+  }
+
+  copy(selection) {
+    if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
+    return this.request('copy', { stroke: { selection } });
   }
 
   request(action, payload, onProgress) {

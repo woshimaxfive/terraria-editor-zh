@@ -193,3 +193,29 @@ test('area edits are queued before export and send rectangle coordinates without
   await exporting;
   session.close();
 });
+
+test('copy is queued read-only; paste is serialized before export and failed paste keeps the session loaded', async () => {
+  const { session, workers } = setup();
+  await assert.rejects(session.copy({}), /先打开/);
+  const opening = session.open({ name: 'world.wld' });
+  workers[0].reply({ type: 'result', summary: {} }); await opening;
+  const selection = { x: 10, y: 10, width: 2, height: 2 };
+  const copying = session.copy(selection);
+  assert.equal(workers[0].message.action, 'copy');
+  assert.deepEqual(workers[0].message.stroke, { selection });
+  const clipboard = { schema: 1, width: 2, height: 2, tiles: [] };
+  workers[0].reply({ type: 'result', clipboard });
+  assert.deepEqual((await copying).clipboard, clipboard);
+  const payload = { clipboard, position: { x: 30, y: 10 } };
+  const pasting = session.edit('paste', payload), exporting = session.export();
+  assert.equal(workers[0].message.action, 'paste');
+  assert.deepEqual(workers[0].message.stroke, payload);
+  const rejected = assert.rejects(pasting, /家具/);
+  workers[0].reply({ type: 'error', recoverable: true, message: '区域接触家具，未修改世界。' });
+  await rejected;
+  assert.equal(session.loaded, true);
+  assert.equal(workers[0].message.action, 'export');
+  workers[0].reply({ type: 'result', buffer: new ArrayBuffer(1) }); await exporting;
+  const pending = session.copy(selection), cancelled = assert.rejects(pending, error => error.name === 'AbortError');
+  session.close(); await cancelled;
+});

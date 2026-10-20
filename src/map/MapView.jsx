@@ -3,10 +3,11 @@ import { constrainCamera, fitCamera, screenToWorld, visibleRegion, zoomCamera } 
 import { BRUSH_SIZES, BrushStroke } from '../editing/brush.js';
 import { selectionFromPoints } from '../editing/selection.js';
 import MaterialPicker from './MaterialPicker.jsx';
+import { pasteFits } from '../editing/clipboard.js';
 
 const MAX_CANVAS_PIXELS = 4 * 1024 * 1024;
 
-export default function MapView({ session, world, disabled, onError, editState, onEdit, onDraftChange }) {
+export default function MapView({ session, world, disabled, onError, editState, onEdit, onDraftChange, clipboard }) {
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
   const pointers = useRef(new Map());
@@ -26,6 +27,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [selection, setSelection] = useState(null);
   const [selectionPreview, setSelectionPreview] = useState(null);
   const [hint, setHint] = useState('');
+  const [pastePosition, setPastePosition] = useState(null);
+  const [placing, setPlacing] = useState(false);
+  const pasteRef = useRef(null);
+  const pasteDragRef = useRef(null);
+  const clipboardImageRef = useRef(null);
+  pasteRef.current = tool === 'paste' ? pastePosition : null;
   const strokeRef = useRef(null);
   const pickRef = useRef(null);
   const selectionRef = useRef(null);
@@ -49,6 +56,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
       const next = { width: Math.round(entry.contentRect.width), height: Math.round(entry.contentRect.height) };
       if (next.width < 1 || next.height < 1) return;
       pickRef.current = null;
+      pasteDragRef.current = null;
+      setPlacing(false);
+      if (pasteRef.current) { pasteRef.current = null; setPastePosition(null); setTool('pan'); }
       selectionDraftRef.current = null;
       setSelectionPreview(null);
       if (strokeRef.current) {
@@ -116,7 +126,20 @@ export default function MapView({ session, world, disabled, onError, editState, 
         context.fillRect(toX(Math.floor(index / world.height)), toY(index % world.height), camera.zoom, camera.zoom);
       }
     }
-    if (hoverRef.current && brush.current.tool !== 'pan' && camera.zoom >= 2) {
+    const position = pasteRef.current;
+    if (position && Number.isFinite(position.x) && Number.isFinite(position.y) && clipboardImageRef.current) {
+      const preview = clipboardImageRef.current;
+      context.save();
+      context.globalAlpha = .65;
+      context.drawImage(preview, toX(position.x), toY(position.y), preview.width * camera.zoom, preview.height * camera.zoom);
+      context.restore();
+      context.strokeStyle = pasteFits({ width: preview.width, height: preview.height }, position, world) ? '#ffe199' : '#ff9279';
+      context.lineWidth = 2;
+      context.setLineDash([6, 4]);
+      context.strokeRect(toX(position.x), toY(position.y), preview.width * camera.zoom, preview.height * camera.zoom);
+      context.setLineDash([]);
+    }
+    if (hoverRef.current && !['pan', 'paste'].includes(brush.current.tool) && camera.zoom >= 2) {
       const size = ['pick', 'select'].includes(brush.current.tool) ? 1 : brush.current.brushSize;
       const radius = (size - 1) / 2;
       context.strokeStyle = '#ffffff';
@@ -131,6 +154,17 @@ export default function MapView({ session, world, disabled, onError, editState, 
   }, [draw]);
 
   useEffect(() => { draw(); }, [tool, brushSize, draw]);
+  useEffect(() => { draw(); }, [pastePosition, draw]);
+
+  useEffect(() => {
+    if (!clipboard) return;
+    const image = clipboard.image, canvas = document.createElement('canvas');
+    canvas.width = image.imageWidth; canvas.height = image.imageHeight;
+    canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(image.buffer), image.imageWidth, image.imageHeight), 0, 0);
+    clipboardImageRef.current = canvas;
+    draw();
+    return () => { canvas.width = 0; clipboardImageRef.current = null; };
+  }, [clipboard, draw]);
 
   useLayoutEffect(() => {
     if (!camera || !size.width || disabled) return;
@@ -196,6 +230,29 @@ export default function MapView({ session, world, disabled, onError, editState, 
     setDrafting(false);
     onDraftChange(false);
     redraw();
+  };
+  const cancelPaste = () => {
+    pasteRef.current = null;
+    pasteDragRef.current = null;
+    setPastePosition(null);
+    setPlacing(false);
+    setTool('pan');
+    setHint('');
+    redraw();
+  };
+  const startPaste = () => {
+    if (!clipboard || clipboard.data.formatVersion !== world.formatVersion) return;
+    setLayers({ block: true, wall: true, liquid: true });
+    const position = { x: Math.floor(current.current.camera.x), y: Math.floor(current.current.camera.y) };
+    pasteRef.current = position;
+    setPastePosition(position);
+    setTool('paste');
+    setHint('');
+  };
+  const confirmPaste = async () => {
+    if (disabled || placing || tool !== 'paste' || !pasteFits(clipboard?.data, pastePosition, world) || !Object.values(layers).every(Boolean)) return;
+    const result = await onEdit('paste', { clipboard: clipboard.data, position: pastePosition });
+    if (result && mountedRef.current) cancelPaste();
   };
   const clearSelection = () => {
     selectionRef.current = null;
@@ -271,6 +328,14 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const previous = pointers.current.get(event.pointerId);
     const { camera: view, size: dimensions } = current.current;
     if (!view) return;
+    if (pasteDragRef.current?.pointerId === event.pointerId && !disabled) {
+      pointers.current.set(event.pointerId, point);
+      const position = screenToWorld(point, view, dimensions);
+      pasteRef.current = { x: Math.floor(position.x), y: Math.floor(position.y) };
+      setPastePosition(pasteRef.current);
+      showCoordinates(point);
+      return;
+    }
     if (selectionDraftRef.current?.pointerId === event.pointerId && !disabled) {
       pointers.current.set(event.pointerId, point);
       extendSelection(point);
@@ -309,6 +374,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
   }
 
   function release(event) {
+    if (pasteDragRef.current?.pointerId === event.pointerId) {
+      if (event.type === 'pointerup' && !disabled) move(event);
+      else { pasteRef.current = pasteDragRef.current.before; setPastePosition(pasteRef.current); }
+      pasteDragRef.current = null;
+      setPlacing(false);
+    }
     if (event.type === 'pointerup' && (strokeRef.current || pickRef.current || selectionDraftRef.current)) setHint('');
     if (selectionDraftRef.current?.pointerId === event.pointerId) {
       if (event.type === 'pointerup' && !disabled) {
@@ -338,7 +409,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     if (canvasRef.current.hasPointerCapture(event.pointerId)) canvasRef.current.releasePointerCapture(event.pointerId);
   }
 
-  const interacting = drafting || Boolean(selectionPreview);
+  const interacting = drafting || Boolean(selectionPreview) || placing;
   const displayedSelection = selectionPreview || selection;
   return <section className="map-view" aria-labelledby="map-title">
     <div className="map-toolbar">
@@ -380,11 +451,23 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('eraseSelection', { selection, layer })}>擦除选区</button>
       <button disabled={disabled || interacting || !selection} onClick={clearSelection}>清除选区</button>
     </div>
+    <div className="clipboard-controls" role="group" aria-label="复制粘贴">
+      <output aria-label="复制内容">{clipboard ? `${clipboard.data.width} × ${clipboard.data.height} 格 · ${clipboard.source} · 格式 ${clipboard.data.formatVersion}${clipboard.data.formatVersion !== world.formatVersion ? '（与当前世界不同，不能粘贴）' : ''}` : '尚未复制；先框选普通图格区域'}</output>
+      <button disabled={disabled || interacting || !selection || tool === 'paste'} onClick={() => onEdit('copy', { selection })}>复制选区</button>
+      <button disabled={disabled || interacting || !clipboard || tool === 'paste' || clipboard.data.formatVersion !== world.formatVersion} onClick={startPaste}>粘贴预览</button>
+      <label>X<input type="number" aria-label="粘贴 X" value={Number.isFinite(pastePosition?.x) ? pastePosition.x : ''} disabled={disabled || interacting || tool !== 'paste'} onChange={event => setPastePosition(previous => ({ ...previous, x: event.target.valueAsNumber }))} /></label>
+      <label>Y<input type="number" aria-label="粘贴 Y" value={Number.isFinite(pastePosition?.y) ? pastePosition.y : ''} disabled={disabled || interacting || tool !== 'paste'} onChange={event => setPastePosition(previous => ({ ...previous, y: event.target.valueAsNumber }))} /></label>
+      <button disabled={disabled || interacting || tool !== 'paste' || !pasteFits(clipboard?.data, pastePosition, world) || !Object.values(layers).every(Boolean)} onClick={confirmPaste}>确认粘贴</button>
+      <button disabled={disabled || interacting || tool !== 'paste'} onClick={cancelPaste}>取消粘贴</button>
+      <p>完整替换目标矩形的所有图层，含空格；不受旧选区限制。确认前仅预览，最多 10000 格。</p>
+      <output className="paste-state" aria-label="粘贴目标状态">{tool !== 'paste' ? '未开始粘贴' : !pasteFits(clipboard?.data, pastePosition, world) ? '目标超出地图或坐标无效。' : !Object.values(layers).every(Boolean) ? '请显示方块、墙壁和液体后确认。' : '预览中，确认后写入世界；家具及实体检查在确认时执行。'}</output>
+    </div>
     <p className="tool-hint" role="status">{hint || {
       paint: `画笔模式：放大到 200% 以上绘制${layer === 'wall' ? '墙壁' : '方块'}。每次拖动为一步，双指可平移缩放。`,
       erase: `橡皮模式：放大到 200% 以上擦除${layer === 'wall' ? '墙壁' : '方块'}，跳过特殊图格及紧邻支撑；保留其他图层。`,
       pick: `吸管模式：放大到 200% 以上点击，读取${layer === 'wall' ? '墙壁' : '方块'}材料和图格属性。目录以外的材料仅显示 ID。`,
       select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
+      paste: '粘贴预览：点击或拖动定位左上角，也可输入 X/Y；方向键微调，Enter 确认，Esc 取消。家具与实体暂不支持。',
       pan: '平移模式：拖动浏览地图。选择画笔后可绘制基础方块。',
     }[tool]}</p>
     <canvas ref={canvasRef} className={`map-canvas${dragging ? ' dragging' : ''}${tool !== 'pan' ? ' painting' : ''}`} tabIndex="0" role="img" aria-label={`${world.name}的世界地图`} aria-describedby="map-help" aria-busy={drawing}
@@ -395,9 +478,16 @@ export default function MapView({ session, world, disabled, onError, editState, 
         canvasRef.current.setPointerCapture(event.pointerId);
         setDragging(true);
         const cell = showCoordinates(pointOf(event));
-        if (pointers.current.size === 2) { cancelStroke(); return; }
+        if (pointers.current.size === 2) { cancelStroke(); if (tool === 'paste') cancelPaste(); return; }
         if (tool !== 'pan' && cell) {
           if (camera.zoom < 2) { setHint('请先放大到 200% 以上，或点击“出生点”后操作。'); return; }
+          if (tool === 'paste') {
+            pasteDragRef.current = { pointerId: event.pointerId, before: pasteRef.current };
+            pasteRef.current = cell;
+            setPastePosition(cell);
+            setPlacing(true);
+            return;
+          }
           if (tool === 'pick') {
             pickRef.current = { pointerId: event.pointerId, cell, layer, start: pointOf(event) };
             return;
@@ -422,12 +512,20 @@ export default function MapView({ session, world, disabled, onError, editState, 
       onKeyDown={event => {
         if (!camera || disabled) return;
         if (event.key === 'Escape') {
-          if (strokeRef.current || selectionDraftRef.current || pickRef.current) cancelStroke();
+          if (tool === 'paste') cancelPaste();
+          else if (strokeRef.current || selectionDraftRef.current || pickRef.current) cancelStroke();
           else clearSelection();
           return;
         }
-        if (strokeRef.current || selectionDraftRef.current) return;
+        if (strokeRef.current || selectionDraftRef.current || pasteDragRef.current) return;
         pickRef.current = null;
+        if (tool === 'paste' && event.key === 'Enter') { event.preventDefault(); confirmPaste(); return; }
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c' && selection && tool !== 'paste') {
+          event.preventDefault(); onEdit('copy', { selection }); return;
+        }
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v' && clipboard) {
+          event.preventDefault(); startPaste(); return;
+        }
         if ((event.ctrlKey || event.metaKey) && ['z', 'y'].includes(event.key.toLowerCase())) {
           event.preventDefault();
           const action = event.shiftKey || event.key.toLowerCase() === 'y' ? 'redo' : 'undo';
@@ -438,6 +536,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
         if (directions[event.key]) {
           event.preventDefault();
           const [x, y] = directions[event.key];
+          if (tool === 'paste') {
+            setPastePosition(previous => ({ x: previous.x + x * (event.shiftKey ? 10 : 1), y: previous.y + y * (event.shiftKey ? 10 : 1) }));
+            return;
+          }
           changeCamera(constrainCamera({ ...camera, x: camera.x + x * 80 / camera.zoom, y: camera.y + y * 80 / camera.zoom }, size, world));
           hoverRef.current = null;
           setCoordinates(null);
@@ -453,7 +555,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <span>{drawing ? '正在绘制地图…' : '色块地图'} · 黄色十字为出生点</span>
       <output className="map-coordinates">{coordinates ? `X ${coordinates.x} · Y ${coordinates.y}` : '移到地图上查看坐标'}</output>
     </div>
-    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y。Esc 取消草稿，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内；区域操作最多 10000 格。工具只修改选中的编辑图层；擦除同时清除该层的涂料和附属状态。特殊图格受保护。当前为色块显示。</p>
+    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y、Ctrl+C / Ctrl+V。Esc 取消草稿或粘贴预览，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内，且只修改选中的编辑图层；粘贴完整替换所有图层，含空格。区域操作最多 10000 格。特殊图格受保护。当前为色块显示。</p>
     <div className="tile-inspector" aria-label="图格属性" aria-live="polite">
       <strong>取样属性</strong>{sample ? <>
         <p>X {sample.x} · Y {sample.y} · 方块 ID {sample.blockId ?? '无'} · 墙壁 ID {sample.wallId ?? '无'}</p>

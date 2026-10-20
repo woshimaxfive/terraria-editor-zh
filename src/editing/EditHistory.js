@@ -41,6 +41,11 @@ export class EditHistory {
       if (!after) { skipped++; continue; }
       if (!before.every((value, i) => value === after[i])) changes.push({ index, before, after });
     }
+    return this.commit(changes, skipped);
+  }
+
+  // Only the adapter supplies fully validated changes; public payloads never enter here.
+  commit(changes, skipped = 0) {
     if (!changes.length) return { ...this.state, changed: 0, skipped };
     this.source.ensureWritable();
     for (const change of changes) this.source.write(change.index, change.after);

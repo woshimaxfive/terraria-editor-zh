@@ -20,7 +20,8 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [editState, setEditState] = useState(emptyEditState);
   const [drafting, setDrafting] = useState(false);
-  const unsaved = editState.dirty || drafting || ['paint', 'erase', 'fillSelection', 'eraseSelection'].includes(phase);
+  const [clipboard, setClipboard] = useState(null);
+  const unsaved = editState.dirty || drafting || ['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste'].includes(phase);
 
   useEffect(() => {
     if (!unsaved) return;
@@ -60,6 +61,11 @@ export default function App() {
         const result = await session.current.pick(file);
         if (current !== operation.current) return;
         return result.tile;
+      } else if (action === 'copy') {
+        const result = await session.current.copy(file.selection);
+        if (current !== operation.current) return;
+        setClipboard({ data: result.clipboard, image: result.image, source: summary.name });
+        setNotice(`已复制 ${result.clipboard.width} × ${result.clipboard.height} 格，可预览后确认粘贴。`);
       } else if (action === 'export') {
         const result = await session.current.export(onProgress);
         if (current !== operation.current) return;
@@ -71,8 +77,9 @@ export default function App() {
         if (current !== operation.current) return;
         setEditState(result.editState);
         const { changed, skipped } = result.editState;
-        const verb = { undo: '已撤销', redo: '已重做', erase: '已擦除', eraseSelection: '已擦除', fillSelection: '已填充', paint: '已绘制' }[action];
+        const verb = { undo: '已撤销', redo: '已重做', erase: '已擦除', eraseSelection: '已擦除', fillSelection: '已填充', paint: '已绘制', paste: '已粘贴' }[action];
         setNotice(`${verb} ${changed} 格。${skipped ? `跳过 ${skipped} 格受保护图格。` : ''}`);
+        return result.editState;
       }
     } catch (failure) {
       if (current !== operation.current) return;
@@ -123,7 +130,7 @@ export default function App() {
       <main className="welcome" aria-labelledby="page-title">
         <p className="availability">世界文件 · 方块与墙壁编辑</p>
         <h1 id="page-title">泰拉瑞亚地图编辑器</h1>
-        <p className="description">在浏览器中查看地图，搜索中文材料、绘制方块与墙壁，框选填充或擦除区域，再导出世界副本。</p>
+        <p className="description">在浏览器中查看地图，搜索中文材料、绘制方块与墙壁，框选填充、擦除或复制区域，预览粘贴后导出世界副本。</p>
         <div className="file-actions">
           <input ref={input} className="file-input" type="file" accept=".wld" aria-label="选择世界文件" disabled={Boolean(phase) || drafting} onChange={event => {
             const file = event.target.files?.[0];
@@ -140,13 +147,13 @@ export default function App() {
         {summary && <p className={unsaved ? 'save-state unsaved' : 'save-state'} role="status">{unsaved ? '有尚未导出的修改' : '当前没有待导出的修改'}</p>}
         <div className="messages" aria-live="polite" aria-atomic="true">
           {phase && <div className="progress-state" role="status">
-            <span>{phase === 'open' ? '正在读取世界' : phase === 'export' ? '正在生成并校验副本' : phase === 'pick' ? '正在读取图格' : '正在应用编辑'}{['open', 'export'].includes(phase) ? ` · ${percent}%` : '…'}</span>
+            <span>{phase === 'open' ? '正在读取世界' : phase === 'export' ? '正在生成并校验副本' : phase === 'pick' ? '正在读取图格' : phase === 'copy' ? '正在复制选区' : '正在应用编辑'}{['open', 'export'].includes(phase) ? ` · ${percent}%` : '…'}</span>
             {['open', 'export'].includes(phase) && <progress value={percent} max="100" aria-label={phase === 'open' ? '读取进度' : '导出进度'} />}
           </div>}
           {error && <p className="error" role="alert">{error}</p>}
           {notice && <p className="notice" role="status">{notice}</p>}
         </div>
-        {summary && <MapView session={session.current} world={summary} disabled={Boolean(phase)} onError={handleMapError} editState={editState} onEdit={run} onDraftChange={setDrafting} />}
+        {summary && <MapView session={session.current} world={summary} disabled={Boolean(phase)} onError={handleMapError} editState={editState} onEdit={run} onDraftChange={setDrafting} clipboard={clipboard} />}
         {summary && <section className="world-card" aria-labelledby="world-name" aria-busy={Boolean(phase)}>
           <p className="filename">{filename}</p>
           <h2 id="world-name">{summary.name}</h2>
