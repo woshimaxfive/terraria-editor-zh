@@ -71,6 +71,18 @@ select:focus-visible { outline: 2px solid #93cba5; outline-offset: 3px; }
 .selection-controls output { flex-basis: 100%; min-height: 3.2em; line-height: 1.6; overflow-wrap: anywhere; }
 .selection-controls button { padding: 8px 12px; }
 .map-canvas.painting { cursor: crosshair; }
+.material-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 14px; border: 1px solid #3a5645; border-top: 0; }
+.material-picker label { display: flex; align-items: center; gap: 8px; min-width: 0; color: #a9b9ae; font-size: 13px; }
+.material-picker input { width: 190px; max-width: 100%; min-width: 0; padding: 8px; border: 1px solid #3a5645; border-radius: 4px; font: inherit; color: #e6ece8; background: #1d2c23; }
+.material-picker input:focus-visible { outline: 2px solid #93cba5; outline-offset: 3px; }
+.material-picker select { max-width: 190px; }
+.material-count { flex-basis: 100%; line-height: 1.6; min-height: 1.6em; color: #a9b9ae; font-size: 13px; }
+.layer-controls { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; color: #a9b9ae; font-size: 13px; }
+.layer-controls label { display: inline-flex; align-items: center; gap: 6px; }
+.layer-controls input { accent-color: #b6d3bf; }
+.tile-inspector { margin-top: 16px; padding: 14px; background: #17221b; border: 1px solid #3a5645; border-radius: 6px; font-size: 13px; color: #a9b9ae; overflow-wrap: anywhere; line-height: 1.8; }
+.tile-inspector strong { color: #e6ece8; }
+.tile-inspector p { margin: 6px 0 0; }
 .save-state { color: #a9b9ae; font-size: 13px; }
 .save-state.unsaved { color: #ffe199; }
 @media (max-width: 420px) { .brand { gap: 8px; font-size: 14px; } .app-header { padding: 20px 24px; } .welcome { padding-top: 48px; padding-bottom: 48px; } .world-details { grid-template-columns: minmax(0, 1fr); } }

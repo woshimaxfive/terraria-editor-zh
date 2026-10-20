@@ -17,6 +17,7 @@ async function input(name = 'v1.4.5.5') {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 }
 const parse = async bytes => (await new FileReader().loadBuffer(bytes)).parse();
+const blockSample = ({ x, y, blockId, name, paintable, special }) => ({ x, y, blockId, name, paintable, special });
 
 for (const fixture of fixtures) {
   test(`${fixture.name}: paint, pick, erase, undo, redo and reopen preserve all other fields and sections`, async () => {
@@ -30,11 +31,12 @@ for (const fixture of fixtures) {
     assert.equal(document.undo().dirty, false);
     assert.deepEqual(new Uint8Array(document.serialize()), new Uint8Array(bytes));
     assert.equal(document.redo().dirty, true);
-    for (const material of MATERIALS) {
-      const cell = 20 * 1200 + 20 + material.id;
-      assert.equal(document.paint({ cells: [cell], blockId: material.id }).changed, 1);
-      assert.deepEqual(document.pick({ x: 20, y: 20 + material.id }), {
-        x: 20, y: 20 + material.id, blockId: material.id, name: material.name, paintable: true, special: false,
+    for (const [offset, material] of MATERIALS.entries()) {
+      const x = 20 + offset, y = 10, cell = x * 1200 + y;
+      assert.equal(original.worldTiles.tiles.hasBlock(cell), false);
+      assert.equal(document.paint({ cells: [cell], blockId: material.id }).changed, 1, `material ${material.id}`);
+      assert.deepEqual(blockSample(document.pick({ x, y })), {
+        x, y, blockId: material.id, name: material.name, paintable: true, special: false,
       });
       original.worldTiles.tiles.blockId[cell] = material.id;
       original.worldTiles.tiles.flags[cell] |= TileFlag.IS_BLOCK_ACTIVE;
@@ -159,7 +161,7 @@ test('picking empty, unsupported and special blocks never changes history or nor
   const bytes = new FileSaver().save(world);
   new DataView(bytes).setBigUint64(16, 2n, true);
   const document = await openWorld(bytes);
-  assert.deepEqual(document.pick({ x: 10, y: 10 }), { x: 10, y: 10, blockId: 2, name: '方块 ID 2', paintable: false, special: false });
+  assert.deepEqual(blockSample(document.pick({ x: 10, y: 10 })), { x: 10, y: 10, blockId: 2, name: '方块 ID 2', paintable: false, special: false });
   assert.equal(document.pick({ x: 11, y: 10 }).special, true);
   assert.equal(document.pick({ x: 12, y: 10 }).blockId, null);
   for (const point of [null, {}, { x: -1, y: 10 }, { x: 4200, y: 10 }, { x: 10, y: 1200 }, { x: 1.5, y: 10 }, { x: NaN, y: 10 }]) {

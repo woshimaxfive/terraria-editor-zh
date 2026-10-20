@@ -1,9 +1,6 @@
 import { containsCell, validSelection } from './selection.js';
 
-export const MATERIALS = [
-  { id: 0, name: '泥土' }, { id: 1, name: '石块' },
-  { id: 30, name: '木材' }, { id: 38, name: '灰砖' }, { id: 54, name: '玻璃' },
-];
+export { MATERIALS } from './materials.js';
 export const BRUSH_SIZES = [1, 3, 5, 9];
 export const MAX_STROKE_TILES = 10_000;
 

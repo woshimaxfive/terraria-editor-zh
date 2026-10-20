@@ -2,7 +2,8 @@ import { FileReader, FileSaver } from '../../vendor/terraria-world-file/src/inde
 import { rasterizeRegion } from '../rendering/worldRaster.js';
 import { createBlockEditing } from './blockEditing.js';
 import { preservesOtherSections } from './verifyExport.js';
-import { EditError, MATERIALS, selectionCells } from '../editing/brush.js';
+import { EditError, selectionCells } from '../editing/brush.js';
+import { findMaterial } from '../editing/materials.js';
 
 export const MAX_WORLD_BYTES = 128 * 1024 * 1024;
 const MIN_VERSION = 194;
@@ -109,19 +110,31 @@ export async function openWorld(buffer, progress = () => {}) {
       summary,
       get editState() { return editing.state; },
       paint: stroke => editing.paint(stroke),
-      erase: stroke => editing.paint({ ...stroke, blockId: null }),
-      fillSelection: region => editing.paint({ cells: selectionCells(region?.selection, summary), blockId: region?.blockId }),
-      eraseSelection: region => editing.paint({ cells: selectionCells(region?.selection, summary), blockId: null }),
+      erase: stroke => editing.paint({ ...stroke, blockId: null, wallId: null }),
+      fillSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary) }),
+      eraseSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary), blockId: null, wallId: null }),
       pick(point) {
-        const { x, y } = point || {};
+        const { x, y, layer = 'block' } = point || {};
         if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y) || x < 0 || y < 0 || x >= summary.width || y >= summary.height) {
           throw new EditError('请选择地图范围内的一个方块。');
         }
+        if (!['block', 'wall'].includes(layer)) throw new EditError('取样图层无效。');
         const tiles = world.worldTiles.tiles, index = tiles.index(x, y);
         const blockId = tiles.hasBlock(index) ? tiles.blockId[index] : null;
-        const material = MATERIALS.find(item => item.id === blockId);
-        const special = Boolean(blockId !== null && world.fileFormatHeader.importants[blockId]);
-        return { x, y, blockId, name: material?.name ?? (blockId === null ? '空格' : `方块 ID ${blockId}`), paintable: Boolean(material) && !special, special };
+        const wallId = tiles.wallId[index] || null;
+        const materialId = layer === 'wall' ? wallId : blockId;
+        const material = findMaterial(layer, materialId, summary.formatVersion);
+        const special = layer === 'block' && Boolean(blockId !== null && world.fileFormatHeader.importants[blockId]);
+        const tile = tiles.getTile(x, y);
+        return { x, y, layer, blockId, wallId, materialId,
+          name: material?.name ?? (materialId === null ? '空格' : `${layer === 'wall' ? '墙壁' : '方块'} ID ${materialId}`),
+          paintable: Boolean(material) && !special, special,
+          properties: { blockColor: tile.blockColor ?? 0, wallColor: tile.wallColor ?? 0,
+            liquidAmount: tile.liquidAmount ?? 0, liquidType: tile.liquidType ?? 0,
+            slope: tile.slope ?? 0, actuator: Boolean(tile.actuator), actuated: Boolean(tile.actuated),
+            invisibleBlock: Boolean(tile.invisibleBlock), fullBrightBlock: Boolean(tile.fullBrightBlock),
+            invisibleWall: Boolean(tile.invisibleWall), fullBrightWall: Boolean(tile.fullBrightWall),
+            wires: ['Red', 'Blue', 'Green', 'Yellow'].filter(color => tile[`wire${color}`]) } };
       },
       undo: () => editing.undo(),
       redo: () => editing.redo(),

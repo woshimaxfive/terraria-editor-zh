@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { constrainCamera, fitCamera, screenToWorld, visibleRegion, zoomCamera } from '../rendering/viewport.js';
-import { BRUSH_SIZES, BrushStroke, MATERIALS } from '../editing/brush.js';
+import { BRUSH_SIZES, BrushStroke } from '../editing/brush.js';
 import { selectionFromPoints } from '../editing/selection.js';
+import MaterialPicker from './MaterialPicker.jsx';
 
 const MAX_CANVAS_PIXELS = 4 * 1024 * 1024;
 
@@ -16,6 +17,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [dragging, setDragging] = useState(false);
   const [tool, setTool] = useState('pan');
   const [blockId, setBlockId] = useState(1);
+  const [wallId, setWallId] = useState(1);
+  const [layer, setLayer] = useState('block');
+  const [layers, setLayers] = useState({ block: true, wall: true, liquid: true });
+  const [sample, setSample] = useState(null);
   const [brushSize, setBrushSize] = useState(1);
   const [drafting, setDrafting] = useState(false);
   const [selection, setSelection] = useState(null);
@@ -133,7 +138,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     setDrawing(true);
     const timer = setTimeout(async () => {
       try {
-        const { image } = await session.render(visibleRegion(camera, size, world));
+        const { image } = await session.render({ ...visibleRegion(camera, size, world), layers });
         if (!active) return;
         const canvas = document.createElement('canvas');
         canvas.width = image.imageWidth;
@@ -149,7 +154,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
       }
     }, 50);
     return () => { active = false; clearTimeout(timer); };
-  }, [camera, size, disabled, session, world, draw, onError, editState.revision]);
+  }, [camera, size, disabled, session, world, draw, onError, editState.revision, layers]);
+
+  useEffect(() => { setSample(null); }, [editState.revision]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -222,12 +229,15 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const pickBlock = async point => {
     const tile = await onEdit('pick', point);
     if (!tile || !mountedRef.current) return;
-    if (tile.blockId === null) setHint('此处没有方块，未更改画笔材料。');
+    setSample(tile);
+    const label = tile.layer === 'wall' ? '墙壁' : '方块';
+    if (tile.materialId === null) setHint(`此处没有${label}，未更改画笔材料。`);
     else if (!tile.paintable) setHint(`${tile.name}${tile.special ? ' 是特殊图格' : ''}，当前画笔暂不支持，未更改材料。`);
     else {
-      setBlockId(tile.blockId);
+      if (tile.layer === 'wall') setWallId(tile.materialId);
+      else setBlockId(tile.materialId);
       setTool('paint');
-      setHint(`已选取${tile.name}（ID ${tile.blockId}），已切换到画笔。`);
+      setHint(`已选取${tile.name}（ID ${tile.materialId}），已切换到画笔。`);
     }
   };
 
@@ -312,7 +322,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     pickRef.current = null;
     if (pick?.pointerId === event.pointerId && event.type === 'pointerup' && !disabled) {
       const point = pointOf(event);
-      if (Math.hypot(point.x - pick.start.x, point.y - pick.start.y) <= 6) pickBlock(pick.cell);
+      if (Math.hypot(point.x - pick.start.x, point.y - pick.start.y) <= 6) pickBlock({ ...pick.cell, layer: pick.layer });
     }
     const draft = strokeRef.current;
     if (draft?.pointerId === event.pointerId) {
@@ -320,7 +330,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       const commit = strokeRef.current;
       cancelStroke();
       if (event.type === 'pointerup' && commit?.stroke.cells.size && !disabled) {
-        onEdit(commit.tool, { cells: [...commit.stroke.cells], blockId: commit.blockId });
+        onEdit(commit.tool, { cells: [...commit.stroke.cells], blockId: commit.blockId, wallId: commit.wallId, layer: commit.layer });
       }
     }
     pointers.current.delete(event.pointerId);
@@ -349,23 +359,31 @@ export default function MapView({ session, world, disabled, onError, editState, 
         <button disabled={disabled || interacting} aria-pressed={tool === 'pick'} onClick={() => { setTool('pick'); setHint(''); }}>吸管</button>
         <button disabled={disabled || interacting} aria-pressed={tool === 'select'} onClick={() => { setTool('select'); setHint(''); }}>框选</button>
       </div>
-      <label>方块<select aria-label="画笔方块" value={blockId} disabled={disabled || interacting} onChange={event => setBlockId(Number(event.target.value))}>{MATERIALS.map(material => <option key={material.id} value={material.id}>{material.name}</option>)}</select></label>
+      <label>编辑图层<select aria-label="编辑图层" value={layer} disabled={disabled || interacting} onChange={event => { setLayer(event.target.value); setHint(''); }}>
+        <option value="block">方块</option><option value="wall">墙壁</option>
+      </select></label>
       <label>尺寸<select aria-label="画笔尺寸" value={brushSize} disabled={disabled || interacting} onChange={event => setBrushSize(Number(event.target.value))}>{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
       <div className="tool-buttons" role="group" aria-label="编辑历史">
         <button disabled={disabled || interacting || !editState.undoCount} onClick={() => onEdit('undo')}>撤销 ({editState.undoCount})</button>
         <button disabled={disabled || interacting || !editState.redoCount} onClick={() => onEdit('redo')}>重做 ({editState.redoCount})</button>
       </div>
     </div>
+    <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />
+    <div className="layer-controls" role="group" aria-label="图层显示">
+      <span>显示</span>{[['block', '方块'], ['wall', '墙壁'], ['liquid', '液体']].map(([key, name]) => <label key={key}>
+        <input type="checkbox" aria-label={`显示${name}`} checked={layers[key]} disabled={disabled || interacting} onChange={event => setLayers(previous => ({ ...previous, [key]: event.target.checked }))} />{name}
+      </label>)}<span>隐藏图层不参与绘制或擦除</span>
+    </div>
     <div className="selection-controls" role="group" aria-label="选区操作">
       <output aria-label="选区范围">{displayedSelection ? `X ${displayedSelection.x} · Y ${displayedSelection.y} · ${displayedSelection.width} × ${displayedSelection.height}（${displayedSelection.width * displayedSelection.height} 格）` : '未选择区域'}</output>
-      <button disabled={disabled || interacting || !selection} onClick={() => onEdit('fillSelection', { selection, blockId })}>填充选区</button>
-      <button disabled={disabled || interacting || !selection} onClick={() => onEdit('eraseSelection', { selection })}>擦除选区</button>
+      <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('fillSelection', { selection, blockId, wallId, layer })}>填充选区</button>
+      <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('eraseSelection', { selection, layer })}>擦除选区</button>
       <button disabled={disabled || interacting || !selection} onClick={clearSelection}>清除选区</button>
     </div>
     <p className="tool-hint" role="status">{hint || {
-      paint: '画笔模式：放大到 200% 以上绘制。每次拖动为一步，双指可平移缩放。',
-      erase: '橡皮模式：放大到 200% 以上擦除方块，跳过特殊图格及紧邻方块；保留墙壁、液体和电线。',
-      pick: '吸管模式：放大到 200% 以上点击方块。支持选取现有 5 种材料；其他方块仅识别 ID。',
+      paint: `画笔模式：放大到 200% 以上绘制${layer === 'wall' ? '墙壁' : '方块'}。每次拖动为一步，双指可平移缩放。`,
+      erase: `橡皮模式：放大到 200% 以上擦除${layer === 'wall' ? '墙壁' : '方块'}，跳过特殊图格及紧邻支撑；保留其他图层。`,
+      pick: `吸管模式：放大到 200% 以上点击，读取${layer === 'wall' ? '墙壁' : '方块'}材料和图格属性。目录以外的材料仅显示 ID。`,
       select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
       pan: '平移模式：拖动浏览地图。选择画笔后可绘制基础方块。',
     }[tool]}</p>
@@ -381,7 +399,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         if (tool !== 'pan' && cell) {
           if (camera.zoom < 2) { setHint('请先放大到 200% 以上，或点击“出生点”后操作。'); return; }
           if (tool === 'pick') {
-            pickRef.current = { pointerId: event.pointerId, cell, start: pointOf(event) };
+            pickRef.current = { pointerId: event.pointerId, cell, layer, start: pointOf(event) };
             return;
           }
           if (tool === 'select') {
@@ -391,7 +409,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
             redraw();
             return;
           }
-          strokeRef.current = { pointerId: event.pointerId, blockId, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current) };
+          if (!layers[layer]) { setHint('当前编辑图层已隐藏，请先勾选对应的显示开关。'); return; }
+          strokeRef.current = { pointerId: event.pointerId, blockId, wallId, layer, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current) };
           strokeRef.current.stroke.add(cell);
           setDrafting(true);
           onDraftChange(true);
@@ -434,6 +453,13 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <span>{drawing ? '正在绘制地图…' : '色块地图'} · 黄色十字为出生点</span>
       <output className="map-coordinates">{coordinates ? `X ${coordinates.x} · Y ${coordinates.y}` : '移到地图上查看坐标'}</output>
     </div>
-    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y。Esc 取消草稿，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内；区域操作最多 10000 格。画笔和橡皮保留墙壁、液体与电线；橡皮同时清除方块的涂料、坡度及制动器。特殊图格受保护。当前为色块显示。</p>
+    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y。Esc 取消草稿，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内；区域操作最多 10000 格。工具只修改选中的编辑图层；擦除同时清除该层的涂料和附属状态。特殊图格受保护。当前为色块显示。</p>
+    <div className="tile-inspector" aria-label="图格属性" aria-live="polite">
+      <strong>取样属性</strong>{sample ? <>
+        <p>X {sample.x} · Y {sample.y} · 方块 ID {sample.blockId ?? '无'} · 墙壁 ID {sample.wallId ?? '无'}</p>
+        <p>方块涂料 {sample.properties.blockColor} · 墙壁涂料 {sample.properties.wallColor} · 坡面 {sample.properties.slope} · 制动器 {sample.properties.actuator ? '有' : '无'}{sample.properties.actuated ? '（已虚化）' : ''}</p>
+        <p>液体 {sample.properties.liquidAmount ? `${['无', '水', '熔岩', '蜂蜜', '微光'][sample.properties.liquidType] ?? sample.properties.liquidType} ${sample.properties.liquidAmount}/255` : '无'} · 电线 {sample.properties.wires.map(color => ({ Red: '红', Blue: '蓝', Green: '绿', Yellow: '黄' })[color]).join('、') || '无'}</p>
+        <p>方块隐形 / 全亮：{sample.properties.invisibleBlock ? '是' : '否'} / {sample.properties.fullBrightBlock ? '是' : '否'} · 墙壁隐形 / 全亮：{sample.properties.invisibleWall ? '是' : '否'} / {sample.properties.fullBrightWall ? '是' : '否'}</p>
+      </> : <p>使用吸管点击图格后查看；编辑后需重新取样。</p>}</div>
   </section>;
 }

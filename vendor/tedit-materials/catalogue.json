@@ -1,0 +1,1514 @@
+[
+  {
+    "layer": "block",
+    "id": 0,
+    "name": "土块",
+    "english": "Dirt Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 1,
+    "name": "石块",
+    "english": "Stone Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 6,
+    "name": "铁矿",
+    "english": "Iron Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 7,
+    "name": "铜矿",
+    "english": "Copper Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 8,
+    "name": "金矿",
+    "english": "Gold Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 9,
+    "name": "银矿",
+    "english": "Silver Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 22,
+    "name": "魔矿",
+    "english": "Demonite Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 25,
+    "name": "黑檀石块",
+    "english": "Ebonstone Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 30,
+    "name": "木材",
+    "english": "Wood",
+    "group": "木材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 37,
+    "name": "陨石",
+    "english": "Meteorite",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 38,
+    "name": "灰砖",
+    "english": "Gray Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 39,
+    "name": "红砖",
+    "english": "Red Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 40,
+    "name": "粘土块",
+    "english": "Clay Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 41,
+    "name": "蓝砖",
+    "english": "Blue Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 43,
+    "name": "绿砖",
+    "english": "Green Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 44,
+    "name": "粉砖",
+    "english": "Pink Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 45,
+    "name": "金砖",
+    "english": "Gold Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 46,
+    "name": "银砖",
+    "english": "Silver Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 47,
+    "name": "铜砖",
+    "english": "Copper Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 53,
+    "name": "沙块",
+    "english": "Sand Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 54,
+    "name": "玻璃",
+    "english": "Glass",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 56,
+    "name": "黑曜石",
+    "english": "Obsidian",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 57,
+    "name": "灰烬块",
+    "english": "Ash Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 58,
+    "name": "狱石",
+    "english": "Hellstone",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 59,
+    "name": "泥块",
+    "english": "Mud Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 63,
+    "name": "蓝玉",
+    "english": "Gem Sapphire",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 64,
+    "name": "红玉",
+    "english": "Gem Ruby",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 65,
+    "name": "翡翠",
+    "english": "Gem Emerald",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 66,
+    "name": "黄玉",
+    "english": "Gem Topaz",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 67,
+    "name": "紫晶",
+    "english": "Gem Amethyst",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 68,
+    "name": "钻石",
+    "english": "Gem Diamond",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 75,
+    "name": "黑曜石砖",
+    "english": "Obsidian Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 76,
+    "name": "狱石砖",
+    "english": "Hellstone Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 107,
+    "name": "钴矿",
+    "english": "Cobalt Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 108,
+    "name": "秘银矿",
+    "english": "Mythril Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 111,
+    "name": "精金矿",
+    "english": "Adamantite Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 112,
+    "name": "黑檀沙块",
+    "english": "Ebonsand Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 116,
+    "name": "珍珠沙块",
+    "english": "Pearlsand Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 117,
+    "name": "珍珠石块",
+    "english": "Pearlstone Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 118,
+    "name": "珍珠石砖",
+    "english": "Pearlstone Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 119,
+    "name": "荧光砖",
+    "english": "Iridescent Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 120,
+    "name": "泥石砖",
+    "english": "Mudstone Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 121,
+    "name": "钴砖",
+    "english": "Cobalt Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 122,
+    "name": "秘银砖",
+    "english": "Mythril Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 123,
+    "name": "泥沙块",
+    "english": "Silt Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 140,
+    "name": "魔矿砖",
+    "english": "Demonite Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 145,
+    "name": "糖棒块",
+    "english": "Candy Cane Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 146,
+    "name": "绿糖棒块",
+    "english": "Green Candy Cane Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 147,
+    "name": "雪块",
+    "english": "Snow Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 148,
+    "name": "雪砖",
+    "english": "Snow Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 150,
+    "name": "精金梁",
+    "english": "Adamantite Beam",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 151,
+    "name": "沙岩砖",
+    "english": "Sandstone Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 152,
+    "name": "黑檀石砖",
+    "english": "Ebonstone Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 153,
+    "name": "红泥灰",
+    "english": "Red Stucco",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 154,
+    "name": "黄泥灰",
+    "english": "Yellow Stucco",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 155,
+    "name": "绿泥灰",
+    "english": "Green Stucco",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 156,
+    "name": "灰泥灰",
+    "english": "Gray Stucco",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 157,
+    "name": "乌木",
+    "english": "Ebonwood",
+    "group": "木材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 158,
+    "name": "红木",
+    "english": "Rich Mahogany",
+    "group": "木材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 159,
+    "name": "珍珠木",
+    "english": "Pearlwood",
+    "group": "木材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 160,
+    "name": "彩虹砖",
+    "english": "Rainbow Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 161,
+    "name": "冰雪块",
+    "english": "Ice Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 163,
+    "name": "紫冰雪块",
+    "english": "Purple Ice Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 164,
+    "name": "粉冰雪块",
+    "english": "Pink Ice Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 166,
+    "name": "锡矿",
+    "english": "Tin Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 167,
+    "name": "铅矿",
+    "english": "Lead Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 168,
+    "name": "钨矿",
+    "english": "Tungsten Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 169,
+    "name": "铂金矿",
+    "english": "Platinum Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 175,
+    "name": "锡砖",
+    "english": "Tin Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 176,
+    "name": "钨砖",
+    "english": "Tungsten Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 177,
+    "name": "铂金砖",
+    "english": "Platinum Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 189,
+    "name": "云",
+    "english": "Cloud",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 191,
+    "name": "生命木",
+    "english": "Living Wood",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 192,
+    "name": "树叶块",
+    "english": "Leaf Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 193,
+    "name": "史莱姆块",
+    "english": "Slime Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 194,
+    "name": "骨块",
+    "english": "Bone Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 195,
+    "name": "血肉块",
+    "english": "Flesh Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 196,
+    "name": "雨云",
+    "english": "Rain Cloud",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 197,
+    "name": "冰冻史莱姆块",
+    "english": "Frozen Slime Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 198,
+    "name": "沥青块",
+    "english": "Asphalt Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 200,
+    "name": "红冰雪块",
+    "english": "Red Ice Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 202,
+    "name": "日盘块",
+    "english": "Sunplate Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 203,
+    "name": "猩红石块",
+    "english": "Crimstone Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 204,
+    "name": "猩红矿",
+    "english": "Crimtane Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 206,
+    "name": "冰雪砖",
+    "english": "Ice Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 208,
+    "name": "暗影木",
+    "english": "Shadewood",
+    "group": "木材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 211,
+    "name": "叶绿矿",
+    "english": "Chlorophyte Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 221,
+    "name": "钯金矿",
+    "english": "Palladium Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 222,
+    "name": "山铜矿",
+    "english": "Orichalcum Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 223,
+    "name": "钛金矿",
+    "english": "Titanium Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 224,
+    "name": "雪泥块",
+    "english": "Slush Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 225,
+    "name": "蜂巢",
+    "english": "Hive",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 226,
+    "name": "丛林蜥蜴砖",
+    "english": "Lihzahrd Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 229,
+    "name": "蜂蜜块",
+    "english": "Honey Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 230,
+    "name": "松脆蜂蜜块",
+    "english": "Crispy Honey Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 234,
+    "name": "猩红沙块",
+    "english": "Crimsand Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 248,
+    "name": "钯金柱",
+    "english": "Palladium Column",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 249,
+    "name": "泡泡糖块",
+    "english": "Bubblegum Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 250,
+    "name": "钛石块",
+    "english": "Titanstone Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 251,
+    "name": "南瓜",
+    "english": "Pumpkin",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 252,
+    "name": "干草",
+    "english": "Hay",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 253,
+    "name": "阴森木",
+    "english": "Spooky Wood",
+    "group": "木材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 273,
+    "name": "石板",
+    "english": "Stone Slab",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 274,
+    "name": "沙岩板",
+    "english": "Sandstone Slab",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 284,
+    "name": "铜护板",
+    "english": "Copper Plating",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 311,
+    "name": "王朝木",
+    "english": "Dynasty Wood",
+    "group": "木材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 312,
+    "name": "红王朝瓦",
+    "english": "Red Dynasty Shingles",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 313,
+    "name": "蓝王朝瓦",
+    "english": "Blue Dynasty Shingles",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 315,
+    "name": "珊瑚石块",
+    "english": "Coralstone Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 321,
+    "name": "针叶木",
+    "english": "Boreal Wood",
+    "group": "木材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 322,
+    "name": "棕榈木",
+    "english": "Palm Wood",
+    "group": "木材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 325,
+    "name": "锡护板",
+    "english": "Tin Plating",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 346,
+    "name": "叶绿砖",
+    "english": "Chlorophyte Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 347,
+    "name": "猩红矿砖",
+    "english": "Crimtane Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 348,
+    "name": "蘑菇矿护板",
+    "english": "Shroomite Plating",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 350,
+    "name": "火星管道护板",
+    "english": "Martian Conduit Plating",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 357,
+    "name": "光面大理石块",
+    "english": "Smooth Marble Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 367,
+    "name": "大理石块",
+    "english": "Marble Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 368,
+    "name": "花岗岩块",
+    "english": "Granite Block",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 369,
+    "name": "光面花岗岩块",
+    "english": "Smooth Granite Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 370,
+    "name": "陨石砖",
+    "english": "Meteorite Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 371,
+    "name": "粉史莱姆块",
+    "english": "Pink Slime Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 385,
+    "name": "水晶块",
+    "english": "Crystal Block",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 396,
+    "name": "沙岩块",
+    "english": "Sandstone",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 397,
+    "name": "硬化沙块",
+    "english": "Hardened Sand",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 398,
+    "name": "硬化黑檀沙块",
+    "english": "Corrupt Hardened Sand",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 399,
+    "name": "硬化猩红沙块",
+    "english": "Crimson Hardened Sand",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 400,
+    "name": "黑檀沙岩块",
+    "english": "Corrupt Sandstone",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 401,
+    "name": "猩红沙岩块",
+    "english": "Crimson Sandstone",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 402,
+    "name": "硬化珍珠沙块",
+    "english": "Hallow Hardened Sand",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 403,
+    "name": "珍珠沙岩块",
+    "english": "Hallow Sandstone",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 404,
+    "name": "沙漠化石",
+    "english": "Desert Fossil",
+    "group": "地形",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 407,
+    "name": "坚固化石",
+    "english": "Fossil Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 408,
+    "name": "夜明矿",
+    "english": "Lunar Ore",
+    "group": "矿石与宝石",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 409,
+    "name": "夜明砖",
+    "english": "Lunar Brick",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 415,
+    "name": "日耀碎片块",
+    "english": "Lunar Block Solar",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 416,
+    "name": "星旋碎片块",
+    "english": "Lunar Block Vortex",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 417,
+    "name": "星云碎片块",
+    "english": "Lunar Block Nebula",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "block",
+    "id": 418,
+    "name": "星尘碎片块",
+    "english": "Lunar Block Stardust",
+    "group": "砖与建材",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 1,
+    "name": "石墙",
+    "english": "Stone Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 4,
+    "name": "木墙",
+    "english": "Wood Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 5,
+    "name": "灰砖墙",
+    "english": "Gray Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 6,
+    "name": "红砖墙",
+    "english": "Red Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 10,
+    "name": "金砖墙",
+    "english": "Gold Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 11,
+    "name": "银砖墙",
+    "english": "Silver Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 12,
+    "name": "铜砖墙",
+    "english": "Copper Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 16,
+    "name": "土墙",
+    "english": "Dirt Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 17,
+    "name": "蓝砖墙",
+    "english": "Blue Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 18,
+    "name": "绿砖墙",
+    "english": "Green Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 19,
+    "name": "粉砖墙",
+    "english": "Pink Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 20,
+    "name": "黑曜石砖墙",
+    "english": "Obsidian Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 21,
+    "name": "玻璃墙",
+    "english": "Glass Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 22,
+    "name": "珍珠石砖墙",
+    "english": "Pearlstone Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 23,
+    "name": "荧光砖墙",
+    "english": "Iridescent Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 24,
+    "name": "泥石砖墙",
+    "english": "Mudstone Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 25,
+    "name": "钴砖墙",
+    "english": "Cobalt Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 26,
+    "name": "秘银砖墙",
+    "english": "Mythril Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 27,
+    "name": "板条墙",
+    "english": "Planked Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 29,
+    "name": "糖棒墙",
+    "english": "Candy Cane Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 30,
+    "name": "绿糖棒墙",
+    "english": "Green Candy Cane Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 31,
+    "name": "雪砖墙",
+    "english": "Snow Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 32,
+    "name": "精金梁墙",
+    "english": "Adamantite Beam Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 33,
+    "name": "魔矿砖墙",
+    "english": "Demonite Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 34,
+    "name": "沙岩砖墙",
+    "english": "Sandstone Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 35,
+    "name": "黑檀石砖墙",
+    "english": "Ebonstone Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 36,
+    "name": "红泥灰墙",
+    "english": "Red Stucco Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 37,
+    "name": "黄泥灰墙",
+    "english": "Yellow Stucco Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 38,
+    "name": "绿泥灰墙",
+    "english": "Green Stucco Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 39,
+    "name": "灰泥灰墙",
+    "english": "Gray Stucco Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 41,
+    "name": "乌木墙",
+    "english": "Ebonwood Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 42,
+    "name": "红木墙",
+    "english": "Rich Mahogany Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 43,
+    "name": "珍珠木墙",
+    "english": "Pearlwood Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 44,
+    "name": "彩虹砖墙",
+    "english": "Rainbow Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 45,
+    "name": "锡砖墙",
+    "english": "Tin Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 46,
+    "name": "钨砖墙",
+    "english": "Tungsten Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 47,
+    "name": "铂金砖墙",
+    "english": "Platinum Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 66,
+    "name": "草墙",
+    "english": "Grass Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 67,
+    "name": "丛林墙",
+    "english": "Jungle Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 68,
+    "name": "花墙",
+    "english": "Flower Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 72,
+    "name": "仙人掌墙",
+    "english": "Cactus Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 73,
+    "name": "云墙",
+    "english": "Cloud Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 74,
+    "name": "蘑菇墙",
+    "english": "Mushroom Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 75,
+    "name": "骨块墙",
+    "english": "Bone Block Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 76,
+    "name": "史莱姆块墙",
+    "english": "Slime Block Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 77,
+    "name": "血肉块墙",
+    "english": "Flesh Block Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 78,
+    "name": "生命木墙",
+    "english": "Living Wood Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 82,
+    "name": "飞盘墙",
+    "english": "Disc Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 84,
+    "name": "冰雪砖墙",
+    "english": "Ice Brick Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  },
+  {
+    "layer": "wall",
+    "id": 85,
+    "name": "暗影木墙",
+    "english": "Shadewood Wall",
+    "group": "建筑墙壁",
+    "minVersion": 194
+  }
+]

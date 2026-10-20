@@ -1,6 +1,6 @@
 Third-party notices
 
-Static resource caching, build support and map RGB colors adapted from TEdit Web.
+Static resource caching, build support, map RGB colors and selected material ID/name data adapted from TEdit Web.
 Originally created by cokolele; maintained by the TEdit contributors.
 Source: https://github.com/TEdit/terraria-map-editor-web
 
@@ -25,6 +25,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+Terraria names and game resources belong to Re-Logic and their respective
+owners. Only material names needed for identification are included. This
+project's MIT license does not grant rights to game resources. No executable,
+full language resource or game textures are distributed.
 
 
 react 19.2.3

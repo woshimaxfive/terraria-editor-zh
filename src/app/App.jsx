@@ -121,9 +121,9 @@ export default function App() {
         <span className="language">简体中文</span>
       </header>
       <main className="welcome" aria-labelledby="page-title">
-        <p className="availability">世界文件 · 基础方块编辑</p>
+        <p className="availability">世界文件 · 方块与墙壁编辑</p>
         <h1 id="page-title">泰拉瑞亚地图编辑器</h1>
-        <p className="description">在浏览器中查看地图、绘制基础方块，框选填充或擦除区域，再导出世界副本。</p>
+        <p className="description">在浏览器中查看地图，搜索中文材料、绘制方块与墙壁，框选填充或擦除区域，再导出世界副本。</p>
         <div className="file-actions">
           <input ref={input} className="file-input" type="file" accept=".wld" aria-label="选择世界文件" disabled={Boolean(phase) || drafting} onChange={event => {
             const file = event.target.files?.[0];
@@ -140,7 +140,7 @@ export default function App() {
         {summary && <p className={unsaved ? 'save-state unsaved' : 'save-state'} role="status">{unsaved ? '有尚未导出的修改' : '当前没有待导出的修改'}</p>}
         <div className="messages" aria-live="polite" aria-atomic="true">
           {phase && <div className="progress-state" role="status">
-            <span>{phase === 'open' ? '正在读取世界' : phase === 'export' ? '正在生成并校验副本' : phase === 'pick' ? '正在读取方块' : '正在应用编辑'}{['open', 'export'].includes(phase) ? ` · ${percent}%` : '…'}</span>
+            <span>{phase === 'open' ? '正在读取世界' : phase === 'export' ? '正在生成并校验副本' : phase === 'pick' ? '正在读取图格' : '正在应用编辑'}{['open', 'export'].includes(phase) ? ` · ${percent}%` : '…'}</span>
             {['open', 'export'].includes(phase) && <progress value={percent} max="100" aria-label={phase === 'open' ? '读取进度' : '导出进度'} />}
           </div>}
           {error && <p className="error" role="alert">{error}</p>}

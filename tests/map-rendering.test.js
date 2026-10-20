@@ -74,3 +74,17 @@ test('invalid regions fail before allocating pixels or reading tiles', () => {
     { x: 0, y: 0, width: 8400, height: 2400, step: 1 },
   ]) assert.throws(() => rasterizeRegion(source, region), /Invalid map region|pixel budget/);
 });
+
+test('layer visibility changes only composition, revealing walls behind blocks and hiding liquid independently', () => {
+  const tile = { blockId: 1, wallId: 4, liquidAmount: 255, liquidType: 1 };
+  const source = { width: 1, height: 600, surface: 200, rock: 400, readTile: () => tile };
+  const region = { x: 0, y: 100, width: 1, height: 1, step: 1 };
+  const pixel = layers => [...new Uint8Array(rasterizeRegion(source, { ...region, layers }).buffer)];
+  assert.deepEqual(pixel({ liquid: false }), [128, 128, 128, 255]);
+  assert.deepEqual(pixel({ block: false, liquid: false }), [73, 51, 36, 255]);
+  assert.deepEqual(pixel({ block: false, wall: false, liquid: false }), [98, 113, 255, 255]);
+  assert.deepEqual(pixel({ wall: false }), pixel({}));
+  assert.notDeepEqual(pixel({ block: false }), pixel({ block: false, liquid: false }));
+  assert.deepEqual(tile, { blockId: 1, wallId: 4, liquidAmount: 255, liquidType: 1 });
+  assert.throws(() => pixel({ block: 0 }), /Invalid map layers/);
+});
