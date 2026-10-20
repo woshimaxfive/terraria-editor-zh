@@ -4,6 +4,7 @@ import { createBlockEditing } from './blockEditing.js';
 import { preservesOtherSections } from './verifyExport.js';
 import { EditError, selectionCells } from '../editing/brush.js';
 import { findMaterial } from '../editing/materials.js';
+import { clipboardPreview } from './clipboardPreview.js';
 
 export const MAX_WORLD_BYTES = 128 * 1024 * 1024;
 const MIN_VERSION = 194;
@@ -115,7 +116,11 @@ export async function openWorld(buffer, progress = () => {}) {
       eraseSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary), blockId: null, wallId: null }),
       copy(payload) {
         const clipboard = editing.copy(payload?.selection);
-        return { clipboard, image: this.render({ ...payload.selection, step: 1 }) };
+        return { clipboard, image: clipboardPreview(clipboard) };
+      },
+      prepareClipboard(clipboard) {
+        editing.validateClipboard(clipboard);
+        return { clipboard, image: clipboardPreview(clipboard) };
       },
       paste: payload => editing.paste(payload),
       pick(point) {

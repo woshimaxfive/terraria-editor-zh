@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { after, test } from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'vite';
-import { validateClipboard, pasteFits } from '../src/editing/clipboard.js';
+import { validateClipboard, pasteFits, transformClipboard } from '../src/editing/clipboard.js';
+import { decodeTemplate, encodeTemplate } from '../src/editing/template.js';
 import { fixtures, fixtureRoot } from './worldFixtures.js';
 
 const server = await createServer({ configFile: false, server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
@@ -17,6 +18,40 @@ async function input(name = 'v1.4.5.5') {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 }
 const equalBytes = (a, b) => assert.deepEqual(new Uint8Array(a), new Uint8Array(b));
+
+for (const fixture of fixtures) {
+  test(`${fixture.name}: transformed template preparation is read-only and paste round-trips every field`, async () => {
+    const world = await parse(await input(fixture.name)), tiles = world.worldTiles.tiles;
+    const slopes = [0, 2, 3, 4, 5, 0];
+    for (let x = 0; x < 3; x++) for (let y = 0; y < 2; y++) tiles.setTile(10 + x, 10 + y, {
+      blockId: 1, wallId: 4, blockColor: x + 1, wallColor: y + 1, slope: slopes[x * 2 + y],
+      liquidAmount: 100 + x, liquidType: 1, wireRed: true, wireGreen: true, actuator: true,
+    });
+    const bytes = new FileSaver().save(world), document = await openWorld(bytes);
+    const { clipboard } = document.copy({ selection: { x: 10, y: 10, width: 3, height: 2 } });
+    const prepared = document.prepareClipboard(decodeTemplate(encodeTemplate(transformClipboard(clipboard, 'clockwise'))));
+    assert.equal(prepared.image.imageWidth, 2); assert.equal(prepared.image.imageHeight, 3);
+    equalBytes(document.serialize(), bytes); assert.equal(document.editState.undoCount, 0);
+    document.paste({ clipboard: prepared.clipboard, position: { x: 30, y: 10 } });
+    // Independent clockwise coordinate and expected file slope values.
+    const expectedSlopes = [0, 4, 2, 5, 3, 0];
+    for (let x = 0; x < 3; x++) for (let y = 0; y < 2; y++) {
+      const from = (10 + x) * 1200 + 10 + y, to = (31 - y) * 1200 + 10 + x;
+      for (const field of TILE_FIELDS) tiles[field][to] = field === 'flags' ?
+        (tiles.flags[from] & ~TileFlag.SLOPE_MASK) | expectedSlopes[x * 2 + y] << TileFlag.SLOPE_SHIFT : tiles[field][from];
+    }
+    const output = document.serialize(), reloaded = await parse(output);
+    for (const field of TILE_FIELDS) assert.deepEqual(reloaded.worldTiles.tiles[field], tiles[field], field);
+    assert.equal(preservesOtherSections(bytes, output), true);
+    document.undo(); equalBytes(document.serialize(), bytes);
+    document.redo(); equalBytes(document.serialize(), output);
+    const hostile = structuredClone(clipboard); hostile.tiles[5][0] = 21;
+    assert.throws(() => document.prepareClipboard(hostile), /特殊/);
+    equalBytes(document.serialize(), output);
+    const wrongVersion = { ...clipboard, formatVersion: fixture.name === 'v1.3.5.3' ? 326 : 194 };
+    assert.throws(() => document.prepareClipboard(wrongVersion), /跨版本/);
+  });
+}
 
 for (const fixture of fixtures) {
   test(`${fixture.name}: immutable copy, overlapping paste, air replacement and undo preserve all nine fields`, async () => {
@@ -131,4 +166,28 @@ test('malformed, sparse, oversized and out-of-bounds clipboards reject before ch
   validateClipboard(maximum, document.summary.formatVersion);
   equalBytes(document.serialize(), bytes);
   assert.equal(document.editState.undoCount, 0);
+});
+
+test('untrusted template fields that cannot be serialized reject atomically in both preparation and paste', async () => {
+  for (const name of ['v1.3.5.3', 'v1.4.5.5']) {
+    const bytes = await input(name), document = await openWorld(bytes);
+    const valid = { schema: 1, formatVersion: document.summary.formatVersion, width: 2, height: 1,
+      tiles: [[1, 0, 0, 0, 4, 0, 0, 0, 1], [1, 0, 0, 0, 4, 0, 0, 0, 1]] };
+    const cases = [[1, 18], [2, -18], [4, 512], [6, 100], [7, 1]];
+    if (name === 'v1.3.5.3') cases.push([4, 300], [8, 1 | TileFlag.INVISIBLE_WALL]);
+    for (const [field, value] of cases) {
+      const data = structuredClone(valid); data.tiles[1][field] = value;
+      assert.throws(() => document.prepareClipboard(data), /完整保存/);
+      assert.throws(() => document.paste({ clipboard: data, position: { x: 10, y: 10 } }), /完整保存/);
+    }
+    for (const row of [[1, 0, 0, 0, 4, 0, 0, 0, 0], [0, 0, 0, 3, 4, 0, 0, 0, 0], [1, 0, 0, 0, 0, 5, 0, 0, 1]]) {
+      const data = structuredClone(valid); data.tiles[1] = row;
+      assert.throws(() => document.prepareClipboard(data), /完整保存/);
+    }
+    if (name === 'v1.3.5.3') {
+      const shimmer = structuredClone(valid); shimmer.tiles[1][6] = 127; shimmer.tiles[1][7] = 4;
+      assert.throws(() => document.prepareClipboard(shimmer), /完整保存/);
+    }
+    equalBytes(document.serialize(), bytes); assert.equal(document.editState.undoCount, 0);
+  }
 });

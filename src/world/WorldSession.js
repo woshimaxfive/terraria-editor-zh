@@ -85,6 +85,11 @@ export class WorldSession {
     return this.request('copy', { stroke: { selection } });
   }
 
+  prepareClipboard(clipboard) {
+    if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
+    return this.request('prepareClipboard', { stroke: { clipboard } });
+  }
+
   request(action, payload, onProgress) {
     return new Promise((resolve, reject) => {
       this.queue.push({ action, payload, resolve, reject, onProgress });

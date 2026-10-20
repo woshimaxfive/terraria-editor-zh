@@ -4,6 +4,7 @@ export const MAX_RASTER_PIXELS = 1024 * 1024;
 const UNKNOWN = [255, 0, 255];
 
 function background(y, source) {
+  if (source.background) return source.background;
   if (y >= source.height - 200) return palette.background.underworld;
   if (y >= source.rock) return palette.background.cavern;
   if (y >= source.surface) return palette.background.ground;

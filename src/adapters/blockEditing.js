@@ -80,16 +80,30 @@ export function createBlockEditing(world, ensureWritable) {
     validateClipboard(clipboard, world.fileFormatHeader.version);
     return clipboard;
   };
+  editing.validateClipboard = clipboard => {
+    validateClipboard(clipboard, world.fileFormatHeader.version);
+    for (const tile of clipboard.tiles) {
+      if ((tile[8] & TileFlag.IS_BLOCK_ACTIVE) && (tile[0] >= world.fileFormatHeader.importants.length || world.fileFormatHeader.importants[tile[0]])) {
+        throw new EditError('复制内容包含特殊或无法识别的方块，未修改世界。');
+      }
+      const active = tile[8] & TileFlag.IS_BLOCK_ACTIVE, version = world.fileFormatHeader.version;
+      const coatings = TileFlag.INVISIBLE_BLOCK | TileFlag.INVISIBLE_WALL | TileFlag.FULL_BRIGHT_BLOCK | TileFlag.FULL_BRIGHT_WALL;
+      // The current writer only retains ordinary zero frames and one wall high byte.
+      // Old formats cannot express shimmer/coatings. Reject instead of normalising input.
+      if (tile[1] || tile[2] || (!active && (tile[0] || tile[3])) || (!tile[4] && tile[5]) ||
+          tile[4] > (version < 222 ? 255 : 511) || (tile[6] ? !tile[7] : Boolean(tile[7])) ||
+          (version < 269 && (tile[7] === 4 || (tile[8] & coatings)))) {
+        throw new EditError('复制内容存在无法完整保存的图格，未修改世界。');
+      }
+    }
+  };
   editing.paste = payload => {
     const { clipboard, position } = payload || {};
-    validateClipboard(clipboard, world.fileFormatHeader.version);
+    editing.validateClipboard(clipboard);
     if (!pasteFits(clipboard, position, tiles)) throw new EditError('粘贴区域必须完整位于地图内，未修改世界。');
     const changes = [];
     for (let offset = 0; offset < clipboard.tiles.length; offset++) {
       const after = [...clipboard.tiles[offset]];
-      if ((after[8] & TileFlag.IS_BLOCK_ACTIVE) && (after[0] >= world.fileFormatHeader.importants.length || world.fileFormatHeader.importants[after[0]])) {
-        throw new EditError('复制内容包含特殊或无法识别的方块，未修改世界。');
-      }
       const x = position.x + Math.floor(offset / clipboard.height), y = position.y + offset % clipboard.height;
       const index = x * tiles.height + y;
       if (nearImportant(index) || entityNear(x, y)) throw new EditError('粘贴区域接触家具、实体或其支撑，整次未修改世界。');

@@ -91,6 +91,7 @@ select:focus-visible { outline: 2px solid #93cba5; outline-offset: 3px; }
 .clipboard-controls input:focus-visible { outline: 2px solid #93cba5; outline-offset: 3px; }
 .clipboard-controls p { flex-basis: 100%; color: #a9b9ae; line-height: 1.8; margin: 4px 0 0; }
 .clipboard-controls .paste-state { height: 3.2em; min-height: 0; overflow: auto; }
+.clipboard-actions { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; }
 .save-state { color: #a9b9ae; font-size: 13px; }
 .save-state.unsaved { color: #ffe199; }
 @media (max-width: 420px) { .brand { gap: 8px; font-size: 14px; } .app-header { padding: 20px 24px; } .welcome { padding-top: 48px; padding-bottom: 48px; } .world-details { grid-template-columns: minmax(0, 1fr); } }

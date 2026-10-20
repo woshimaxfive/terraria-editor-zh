@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { WorldSession } from '../world/WorldSession.js';
 import { downloadWorld } from '../platform/files/downloadWorld.js';
+import { readTemplate } from '../platform/files/templateFile.js';
+import { encodeTemplate, TEMPLATE_EXTENSION } from '../editing/template.js';
+import { transformClipboard } from '../editing/clipboard.js';
 import MapView from '../map/MapView.jsx';
 import './App.css';
 
@@ -66,6 +69,17 @@ export default function App() {
         if (current !== operation.current) return;
         setClipboard({ data: result.clipboard, image: result.image, source: summary.name });
         setNotice(`已复制 ${result.clipboard.width} × ${result.clipboard.height} 格，可预览后确认粘贴。`);
+      } else if (action === 'transformClipboard' || action === 'importTemplate') {
+        const data = action === 'importTemplate' ? await readTemplate(file) : transformClipboard(clipboard.data, file);
+        if (current !== operation.current) return;
+        const result = await session.current.prepareClipboard(data);
+        if (current !== operation.current) return;
+        setClipboard({ data: result.clipboard, image: result.image, source: action === 'importTemplate' ? file.name : clipboard.source });
+        setNotice(`${action === 'importTemplate' ? '已导入模板' : '已变换复制内容'}：${data.width} × ${data.height} 格；确认粘贴前不会修改世界。`);
+      } else if (action === 'exportTemplate') {
+        const bytes = encodeTemplate(clipboard.data);
+        downloadWorld(bytes, `建筑模板-${clipboard.data.width}x${clipboard.data.height}${TEMPLATE_EXTENSION}`);
+        setNotice('已导出建筑模板；世界的未导出状态保持不变。');
       } else if (action === 'export') {
         const result = await session.current.export(onProgress);
         if (current !== operation.current) return;
@@ -130,7 +144,7 @@ export default function App() {
       <main className="welcome" aria-labelledby="page-title">
         <p className="availability">世界文件 · 方块与墙壁编辑</p>
         <h1 id="page-title">泰拉瑞亚地图编辑器</h1>
-        <p className="description">在浏览器中查看地图，搜索中文材料、绘制方块与墙壁，框选填充、擦除或复制区域，预览粘贴后导出世界副本。</p>
+        <p className="description">在浏览器中查看地图，搜索中文材料、绘制方块与墙壁，框选复制区域、旋转翻转或保存建筑模板，再导出世界副本。</p>
         <div className="file-actions">
           <input ref={input} className="file-input" type="file" accept=".wld" aria-label="选择世界文件" disabled={Boolean(phase) || drafting} onChange={event => {
             const file = event.target.files?.[0];
@@ -147,7 +161,7 @@ export default function App() {
         {summary && <p className={unsaved ? 'save-state unsaved' : 'save-state'} role="status">{unsaved ? '有尚未导出的修改' : '当前没有待导出的修改'}</p>}
         <div className="messages" aria-live="polite" aria-atomic="true">
           {phase && <div className="progress-state" role="status">
-            <span>{phase === 'open' ? '正在读取世界' : phase === 'export' ? '正在生成并校验副本' : phase === 'pick' ? '正在读取图格' : phase === 'copy' ? '正在复制选区' : '正在应用编辑'}{['open', 'export'].includes(phase) ? ` · ${percent}%` : '…'}</span>
+            <span>{phase === 'open' ? '正在读取世界' : phase === 'export' ? '正在生成并校验副本' : phase === 'pick' ? '正在读取图格' : phase === 'copy' ? '正在复制选区' : phase === 'transformClipboard' ? '正在变换复制内容' : phase === 'importTemplate' ? '正在检查模板' : phase === 'exportTemplate' ? '正在导出模板' : '正在应用编辑'}{['open', 'export'].includes(phase) ? ` · ${percent}%` : '…'}</span>
             {['open', 'export'].includes(phase) && <progress value={percent} max="100" aria-label={phase === 'open' ? '读取进度' : '导出进度'} />}
           </div>}
           {error && <p className="error" role="alert">{error}</p>}

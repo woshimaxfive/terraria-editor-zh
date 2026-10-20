@@ -26,9 +26,9 @@ self.addEventListener('message', async ({ data }) => {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const editState = document[action](stroke);
       self.postMessage({ id, type: 'result', editState });
-    } else if (action === 'copy') {
+    } else if (action === 'copy' || action === 'prepareClipboard') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
-      const result = document.copy(stroke);
+      const result = action === 'copy' ? document.copy(stroke) : document.prepareClipboard(stroke?.clipboard);
       self.postMessage({ id, type: 'result', ...result }, [result.image.buffer]);
     } else if (action === 'pick') {
       if (!document) throw new WorldFileError('请先打开一个世界。');

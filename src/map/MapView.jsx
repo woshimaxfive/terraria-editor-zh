@@ -32,6 +32,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const pasteRef = useRef(null);
   const pasteDragRef = useRef(null);
   const clipboardImageRef = useRef(null);
+  const templateInputRef = useRef(null);
   pasteRef.current = tool === 'paste' ? pastePosition : null;
   const strokeRef = useRef(null);
   const pickRef = useRef(null);
@@ -459,7 +460,18 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <label>Y<input type="number" aria-label="粘贴 Y" value={Number.isFinite(pastePosition?.y) ? pastePosition.y : ''} disabled={disabled || interacting || tool !== 'paste'} onChange={event => setPastePosition(previous => ({ ...previous, y: event.target.valueAsNumber }))} /></label>
       <button disabled={disabled || interacting || tool !== 'paste' || !pasteFits(clipboard?.data, pastePosition, world) || !Object.values(layers).every(Boolean)} onClick={confirmPaste}>确认粘贴</button>
       <button disabled={disabled || interacting || tool !== 'paste'} onClick={cancelPaste}>取消粘贴</button>
+      <div className="clipboard-actions">
+        {[['counterclockwise', '左转 90°'], ['clockwise', '右转 90°'], ['horizontal', '左右翻转'], ['vertical', '上下翻转']].map(([operation, label]) =>
+          <button key={operation} disabled={disabled || interacting || !clipboard || clipboard.data.formatVersion !== world.formatVersion} onClick={() => onEdit('transformClipboard', operation)}>{label}</button>)}
+        <input ref={templateInputRef} className="file-input" type="file" accept=".tedit-template.json,.json" aria-label="选择建筑模板文件" disabled={disabled || interacting} onChange={event => {
+          const file = event.target.files?.[0]; event.target.value = '';
+          if (file) onEdit('importTemplate', file);
+        }} />
+        <button disabled={disabled || interacting} onClick={() => templateInputRef.current.click()}>导入模板</button>
+        <button disabled={disabled || interacting || !clipboard} onClick={() => onEdit('exportTemplate')}>导出模板</button>
+      </div>
       <p>完整替换目标矩形的所有图层，含空格；不受旧选区限制。确认前仅预览，最多 10000 格。</p>
+      <p>半砖仅支持左右翻转。模板为本项目的 JSON 格式（最多 2 MiB），导入需与当前世界格式相同，不支持桌面 .TEditSch。</p>
       <output className="paste-state" aria-label="粘贴目标状态">{tool !== 'paste' ? '未开始粘贴' : !pasteFits(clipboard?.data, pastePosition, world) ? '目标超出地图或坐标无效。' : !Object.values(layers).every(Boolean) ? '请显示方块、墙壁和液体后确认。' : '预览中，确认后写入世界；家具及实体检查在确认时执行。'}</output>
     </div>
     <p className="tool-hint" role="status">{hint || {

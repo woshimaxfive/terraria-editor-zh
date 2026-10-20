@@ -219,3 +219,20 @@ test('copy is queued read-only; paste is serialized before export and failed pas
   const pending = session.copy(selection), cancelled = assert.rejects(pending, error => error.name === 'AbortError');
   session.close(); await cancelled;
 });
+
+test('template preparation queues before export, preserves recoverable sessions and is cancelled on close', async () => {
+  const { session, workers } = setup();
+  await assert.rejects(session.prepareClipboard({}), /先打开/);
+  const opening = session.open({ name: 'world.wld' });
+  workers[0].reply({ type: 'result', summary: {} }); await opening;
+  const clipboard = { schema: 1, width: 1, height: 1, tiles: [] };
+  const preparing = session.prepareClipboard(clipboard), exporting = session.export();
+  assert.equal(workers[0].message.action, 'prepareClipboard');
+  assert.deepEqual(workers[0].message.stroke, { clipboard });
+  const rejected = assert.rejects(preparing, /跨版本/);
+  workers[0].reply({ type: 'error', recoverable: true, message: '暂不支持跨版本粘贴。' }); await rejected;
+  assert.equal(session.loaded, true); assert.equal(workers[0].message.action, 'export');
+  workers[0].reply({ type: 'result', buffer: new ArrayBuffer(1) }); await exporting;
+  const pending = session.prepareClipboard(clipboard), cancelled = assert.rejects(pending, error => error.name === 'AbortError');
+  session.close(); await cancelled;
+});
