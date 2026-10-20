@@ -145,3 +145,29 @@ test('paint runs before queued export; a rejected edit keeps the loaded world us
   assert.equal((await undoing).editState.revision, 0);
   session.close();
 });
+
+test('erase, pick and export run in order, and closing cancels pending inspection', async () => {
+  const { session, workers } = setup();
+  await assert.rejects(session.pick({ x: 10, y: 10 }), /先打开/);
+  const opening = session.open({ name: 'world.wld' });
+  workers[0].reply({ type: 'result', summary: {} });
+  await opening;
+  const erasing = session.edit('erase', { cells: [12010] });
+  const picking = session.pick({ x: 10, y: 10 });
+  const exporting = session.export();
+  assert.equal(workers[0].message.action, 'erase');
+  workers[0].reply({ type: 'result', editState: { revision: 1 } });
+  await erasing;
+  assert.equal(workers[0].message.action, 'pick');
+  assert.deepEqual(workers[0].message.point, { x: 10, y: 10 });
+  workers[0].reply({ type: 'result', tile: { blockId: null } });
+  assert.equal((await picking).tile.blockId, null);
+  assert.equal(workers[0].message.action, 'export');
+  workers[0].reply({ type: 'result', buffer: new ArrayBuffer(1) });
+  await exporting;
+  const stale = session.pick({ x: 10, y: 10 });
+  const rejection = assert.rejects(stale, error => error.name === 'AbortError');
+  session.close();
+  await rejection;
+  workers[0].reply({ type: 'result', tile: { blockId: 1 } });
+});

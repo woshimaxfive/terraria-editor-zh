@@ -24,7 +24,7 @@ export class EditHistory {
 
   paint(stroke) {
     const { cells, blockId } = stroke || {};
-    if (!MATERIALS.some(material => material.id === blockId) || !Array.isArray(cells) ||
+    if ((blockId !== null && !MATERIALS.some(material => material.id === blockId)) || !Array.isArray(cells) ||
         cells.length < 1 || cells.length > MAX_STROKE_TILES ||
         !cells.every(index => Number.isSafeInteger(index) && index >= 0 && index < this.source.count)) {
       throw new EditError('画笔参数无效，未修改世界。');

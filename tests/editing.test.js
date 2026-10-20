@@ -19,7 +19,7 @@ async function input(name = 'v1.4.5.5') {
 const parse = async bytes => (await new FileReader().loadBuffer(bytes)).parse();
 
 for (const fixture of fixtures) {
-  test(`${fixture.name}: paint, undo, redo and reopen preserve every other tile field and section`, async () => {
+  test(`${fixture.name}: paint, pick, erase, undo, redo and reopen preserve all other fields and sections`, async () => {
     const bytes = await input(fixture.name);
     const original = await parse(bytes);
     const document = await openWorld(bytes);
@@ -33,6 +33,9 @@ for (const fixture of fixtures) {
     for (const material of MATERIALS) {
       const cell = 20 * 1200 + 20 + material.id;
       assert.equal(document.paint({ cells: [cell], blockId: material.id }).changed, 1);
+      assert.deepEqual(document.pick({ x: 20, y: 20 + material.id }), {
+        x: 20, y: 20 + material.id, blockId: material.id, name: material.name, paintable: true, special: false,
+      });
       original.worldTiles.tiles.blockId[cell] = material.id;
       original.worldTiles.tiles.flags[cell] |= TileFlag.IS_BLOCK_ACTIVE;
     }
@@ -51,6 +54,20 @@ for (const fixture of fixtures) {
     assert.deepEqual(reloaded.footer, original.footer);
     const reopened = await openWorld(output);
     assert.deepEqual(new Uint8Array(reopened.serialize()), new Uint8Array(output));
+    const chest = original.chests.chests[0].position;
+    const chestCells = [];
+    for (let cx = chest.x; cx <= chest.x + 1; cx++) {
+      for (let cy = chest.y; cy <= chest.y + 2; cy++) chestCells.push(cx * 1200 + cy);
+    }
+    assert.equal(document.erase({ cells: chestCells }).changed, 0, 'real chest and its support must remain untouched');
+    assert.equal(document.editState.dirty, false);
+    assert.equal(document.erase({ cells: [index, index + 1] }).changed, 2);
+    const erased = await parse(document.serialize());
+    for (const i of [index, index + 1]) expected.flags[i] &= ~TileFlag.IS_BLOCK_ACTIVE;
+    for (const field of TILE_FIELDS) assert.deepEqual(erased.worldTiles.tiles[field], expected[field], field);
+    document.undo();
+    assert.deepEqual(new Uint8Array(document.serialize()), new Uint8Array(output));
+    assert.equal(document.redo().changed, 2);
   });
 }
 
@@ -74,6 +91,52 @@ test('paint preserves liquid, wall, wires, coatings, slopes and dormant flags; s
   for (const field of TILE_FIELDS) assert.deepEqual(output.worldTiles.tiles[field], tiles[field], field);
   document.undo();
   assert.deepEqual(new Uint8Array(document.serialize()), new Uint8Array(bytes));
+});
+
+test('erase clears block-only data, preserves every other field and protects special tile supports', async () => {
+  const world = await parse(await input());
+  const tiles = world.worldTiles.tiles;
+  tiles.setTile(10, 10, { blockId: 1, blockColor: 5, slope: 3, actuator: true, actuated: true,
+    invisibleBlock: true, fullBrightBlock: true, wallId: 300, wallColor: 7,
+    invisibleWall: true, fullBrightWall: true, liquidAmount: 127, liquidType: 4,
+    wireRed: true, wireBlue: true, wireGreen: true, wireYellow: true });
+  tiles.setTile(20, 10, { blockId: 21, frameX: 18, frameY: 36 });
+  for (const x of [20, 21, 22]) tiles.setTile(x, 11, { blockId: 1 });
+  const empty = 12 * 1200 + 10;
+  tiles.flags[empty] = TileFlag.ACTUATOR | TileFlag.WIRE_RED;
+  const bytes = new FileSaver().save(world);
+  const document = await openWorld(bytes);
+  const state = document.erase({ cells: [12010, 24010, 24011, 25211, 26411, empty] });
+  assert.equal(state.changed, 2);
+  assert.equal(state.skipped, 3);
+  const output = document.serialize();
+  assert.equal(preservesOtherSections(bytes, output), true);
+  const reloaded = await parse(output);
+  tiles.setTile(10, 10, { wallId: 300, wallColor: 7, invisibleWall: true, fullBrightWall: true,
+    liquidAmount: 127, liquidType: 4, wireRed: true, wireBlue: true, wireGreen: true, wireYellow: true });
+  tiles.setTile(22, 11, {});
+  for (const field of TILE_FIELDS) assert.deepEqual(reloaded.worldTiles.tiles[field], tiles[field], field);
+  document.undo();
+  assert.deepEqual(new Uint8Array(document.serialize()), new Uint8Array(bytes));
+  document.redo();
+  assert.deepEqual(new Uint8Array(document.serialize()), new Uint8Array(output));
+});
+
+test('picking empty, unsupported and special blocks never changes history or normalizes the file', async () => {
+  const world = await parse(await input());
+  world.worldTiles.tiles.setTile(10, 10, { blockId: 2 });
+  world.worldTiles.tiles.setTile(11, 10, { blockId: 21, frameX: 18 });
+  const bytes = new FileSaver().save(world);
+  new DataView(bytes).setBigUint64(16, 2n, true);
+  const document = await openWorld(bytes);
+  assert.deepEqual(document.pick({ x: 10, y: 10 }), { x: 10, y: 10, blockId: 2, name: '方块 ID 2', paintable: false, special: false });
+  assert.equal(document.pick({ x: 11, y: 10 }).special, true);
+  assert.equal(document.pick({ x: 12, y: 10 }).blockId, null);
+  for (const point of [null, {}, { x: -1, y: 10 }, { x: 4200, y: 10 }, { x: 10, y: 1200 }, { x: 1.5, y: 10 }, { x: NaN, y: 10 }]) {
+    assert.throws(() => document.pick(point), /地图范围/);
+  }
+  assert.deepEqual(document.editState, { revision: 0, dirty: false, undoCount: 0, redoCount: 0 });
+  assert.throws(() => document.serialize(), error => error.code === 'EXPORT_CHANGED');
 });
 
 test('invalid strokes are atomic; a new branch clears redo and preserves export revision identity', async () => {

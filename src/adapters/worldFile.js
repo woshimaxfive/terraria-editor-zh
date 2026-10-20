@@ -2,7 +2,7 @@ import { FileReader, FileSaver } from '../../vendor/terraria-world-file/src/inde
 import { rasterizeRegion } from '../rendering/worldRaster.js';
 import { createBlockEditing } from './blockEditing.js';
 import { preservesOtherSections } from './verifyExport.js';
-import { EditError } from '../editing/brush.js';
+import { EditError, MATERIALS } from '../editing/brush.js';
 
 export const MAX_WORLD_BYTES = 128 * 1024 * 1024;
 const MIN_VERSION = 194;
@@ -109,6 +109,18 @@ export async function openWorld(buffer, progress = () => {}) {
       summary,
       get editState() { return editing.state; },
       paint: stroke => editing.paint(stroke),
+      erase: stroke => editing.paint({ ...stroke, blockId: null }),
+      pick(point) {
+        const { x, y } = point || {};
+        if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y) || x < 0 || y < 0 || x >= summary.width || y >= summary.height) {
+          throw new EditError('请选择地图范围内的一个方块。');
+        }
+        const tiles = world.worldTiles.tiles, index = tiles.index(x, y);
+        const blockId = tiles.hasBlock(index) ? tiles.blockId[index] : null;
+        const material = MATERIALS.find(item => item.id === blockId);
+        const special = Boolean(blockId !== null && world.fileFormatHeader.importants[blockId]);
+        return { x, y, blockId, name: material?.name ?? (blockId === null ? '空格' : `方块 ID ${blockId}`), paintable: Boolean(material) && !special, special };
+      },
       undo: () => editing.undo(),
       redo: () => editing.redo(),
       render(region) {

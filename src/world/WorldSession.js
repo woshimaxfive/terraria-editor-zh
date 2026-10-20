@@ -71,8 +71,13 @@ export class WorldSession {
 
   edit(action, stroke) {
     if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
-    if (!['paint', 'undo', 'redo'].includes(action)) return Promise.reject(new Error('无法识别这项编辑操作。'));
+    if (!['paint', 'erase', 'undo', 'redo'].includes(action)) return Promise.reject(new Error('无法识别这项编辑操作。'));
     return this.request(action, { stroke });
+  }
+
+  pick(point) {
+    if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
+    return this.request('pick', { point });
   }
 
   request(action, payload, onProgress) {

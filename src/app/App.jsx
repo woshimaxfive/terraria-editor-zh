@@ -20,7 +20,7 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [editState, setEditState] = useState(emptyEditState);
   const [drafting, setDrafting] = useState(false);
-  const unsaved = editState.dirty || drafting || phase === 'paint';
+  const unsaved = editState.dirty || drafting || phase === 'paint' || phase === 'erase';
 
   useEffect(() => {
     if (!unsaved) return;
@@ -56,6 +56,10 @@ export default function App() {
         setSummary(result.summary);
         setFilename(file.name);
         setEditState(result.editState);
+      } else if (action === 'pick') {
+        const result = await session.current.pick(file);
+        if (current !== operation.current) return;
+        return result.tile;
       } else if (action === 'export') {
         const result = await session.current.export(onProgress);
         if (current !== operation.current) return;
@@ -67,7 +71,8 @@ export default function App() {
         if (current !== operation.current) return;
         setEditState(result.editState);
         const { changed, skipped } = result.editState;
-        setNotice(`${action === 'undo' ? '已撤销' : action === 'redo' ? '已重做' : '已绘制'} ${changed} 格。${skipped ? `跳过 ${skipped} 格特殊图格。` : ''}`);
+        const verb = { undo: '已撤销', redo: '已重做', erase: '已擦除', paint: '已绘制' }[action];
+        setNotice(`${verb} ${changed} 格。${skipped ? `跳过 ${skipped} 格受保护图格。` : ''}`);
       }
     } catch (failure) {
       if (current !== operation.current) return;
@@ -135,7 +140,7 @@ export default function App() {
         {summary && <p className={unsaved ? 'save-state unsaved' : 'save-state'} role="status">{unsaved ? '有尚未导出的修改' : '当前没有待导出的修改'}</p>}
         <div className="messages" aria-live="polite" aria-atomic="true">
           {phase && <div className="progress-state" role="status">
-            <span>{phase === 'open' ? '正在读取世界' : phase === 'export' ? '正在生成并校验副本' : '正在应用编辑'}{['open', 'export'].includes(phase) ? ` · ${percent}%` : '…'}</span>
+            <span>{phase === 'open' ? '正在读取世界' : phase === 'export' ? '正在生成并校验副本' : phase === 'pick' ? '正在读取方块' : '正在应用编辑'}{['open', 'export'].includes(phase) ? ` · ${percent}%` : '…'}</span>
             {['open', 'export'].includes(phase) && <progress value={percent} max="100" aria-label={phase === 'open' ? '读取进度' : '导出进度'} />}
           </div>}
           {error && <p className="error" role="alert">{error}</p>}

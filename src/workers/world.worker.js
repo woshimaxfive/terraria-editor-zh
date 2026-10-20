@@ -6,7 +6,7 @@ let filename = '';
 let busy = false;
 
 self.addEventListener('message', async ({ data }) => {
-  const { id, action, file, region, stroke } = data;
+  const { id, action, file, region, stroke, point } = data;
   if (busy) return;
   busy = true;
   const progress = percent => self.postMessage({ id, type: 'progress', percent });
@@ -22,10 +22,13 @@ self.addEventListener('message', async ({ data }) => {
       filename = file.name;
       document = await openWorld(await file.arrayBuffer(), progress);
       self.postMessage({ id, type: 'result', summary: document.summary, editState: document.editState });
-    } else if (['paint', 'undo', 'redo'].includes(action)) {
+    } else if (['paint', 'erase', 'undo', 'redo'].includes(action)) {
       if (!document) throw new WorldFileError('请先打开一个世界。');
-      const editState = action === 'paint' ? document.paint(stroke) : document[action]();
+      const editState = document[action](stroke);
       self.postMessage({ id, type: 'result', editState });
+    } else if (action === 'pick') {
+      if (!document) throw new WorldFileError('请先打开一个世界。');
+      self.postMessage({ id, type: 'result', tile: document.pick(point) });
     } else if (action === 'render') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const image = document.render(region);

@@ -19,6 +19,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [drafting, setDrafting] = useState(false);
   const [hint, setHint] = useState('');
   const strokeRef = useRef(null);
+  const pickRef = useRef(null);
+  const mountedRef = useRef(false);
   const hoverRef = useRef(null);
   const frameRef = useRef(0);
   const brush = useRef({ tool, blockId, brushSize });
@@ -36,6 +38,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const observer = new ResizeObserver(([entry]) => {
       const next = { width: Math.round(entry.contentRect.width), height: Math.round(entry.contentRect.height) };
       if (next.width < 1 || next.height < 1) return;
+      pickRef.current = null;
       if (strokeRef.current) {
         strokeRef.current = null;
         setDrafting(false);
@@ -86,16 +89,17 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const toX = x => (x - camera.x) * camera.zoom + size.width / 2;
     const toY = y => (y - camera.y) * camera.zoom + size.height / 2;
     if (strokeRef.current) {
-      context.fillStyle = '#ffe19980';
+      context.fillStyle = strokeRef.current.tool === 'erase' ? '#ff927980' : '#ffe19980';
       for (const index of strokeRef.current.stroke.cells) {
         context.fillRect(toX(Math.floor(index / world.height)), toY(index % world.height), camera.zoom, camera.zoom);
       }
     }
-    if (hoverRef.current && brush.current.tool === 'paint' && camera.zoom >= 2) {
-      const radius = (brush.current.brushSize - 1) / 2;
+    if (hoverRef.current && brush.current.tool !== 'pan' && camera.zoom >= 2) {
+      const size = brush.current.tool === 'pick' ? 1 : brush.current.brushSize;
+      const radius = (size - 1) / 2;
       context.strokeStyle = '#ffffff';
       context.lineWidth = 1;
-      context.strokeRect(toX(hoverRef.current.x - radius), toY(hoverRef.current.y - radius), brush.current.brushSize * camera.zoom, brush.current.brushSize * camera.zoom);
+      context.strokeRect(toX(hoverRef.current.x - radius), toY(hoverRef.current.y - radius), size * camera.zoom, size * camera.zoom);
     }
   }, [camera, size, world]);
 
@@ -130,11 +134,15 @@ export default function MapView({ session, world, disabled, onError, editState, 
     return () => { active = false; clearTimeout(timer); };
   }, [camera, size, disabled, session, world, draw, onError, editState.revision]);
 
-  useEffect(() => () => {
-    if (imageRef.current) imageRef.current.canvas.width = 0;
-    imageRef.current = null;
-    pointers.current.clear();
-    cancelAnimationFrame(frameRef.current);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (imageRef.current) imageRef.current.canvas.width = 0;
+      imageRef.current = null;
+      pointers.current.clear();
+      cancelAnimationFrame(frameRef.current);
+    };
   }, []);
 
   const redraw = () => {
@@ -158,6 +166,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   };
   const cancelStroke = () => {
     strokeRef.current = null;
+    pickRef.current = null;
     setDrafting(false);
     onDraftChange(false);
     redraw();
@@ -177,12 +186,25 @@ export default function MapView({ session, world, disabled, onError, editState, 
     setCoordinates(null);
   };
 
+  const pickBlock = async point => {
+    const tile = await onEdit('pick', point);
+    if (!tile || !mountedRef.current) return;
+    if (tile.blockId === null) setHint('此处没有方块，未更改画笔材料。');
+    else if (!tile.paintable) setHint(`${tile.name}${tile.special ? ' 是特殊图格' : ''}，当前画笔暂不支持，未更改材料。`);
+    else {
+      setBlockId(tile.blockId);
+      setTool('paint');
+      setHint(`已选取${tile.name}（ID ${tile.blockId}），已切换到画笔。`);
+    }
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const wheel = event => {
       if (disabled) return;
       event.preventDefault();
       if (strokeRef.current) return;
+      pickRef.current = null;
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? current.current.size.height : 1);
       const rect = canvas.getBoundingClientRect();
       const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
@@ -206,6 +228,14 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const previous = pointers.current.get(event.pointerId);
     const { camera: view, size: dimensions } = current.current;
     if (!view) return;
+    if (pickRef.current?.pointerId === event.pointerId) {
+      if (Math.hypot(point.x - pickRef.current.start.x, point.y - pickRef.current.start.y) <= 6) {
+        pointers.current.set(event.pointerId, point);
+        showCoordinates(point);
+        return;
+      }
+      pickRef.current = null;
+    }
     if (strokeRef.current && strokeRef.current.pointerId === event.pointerId && !disabled) {
       pointers.current.set(event.pointerId, point);
       extendStroke(point);
@@ -231,13 +261,19 @@ export default function MapView({ session, world, disabled, onError, editState, 
   }
 
   function release(event) {
+    const pick = pickRef.current;
+    pickRef.current = null;
+    if (pick?.pointerId === event.pointerId && event.type === 'pointerup' && !disabled) {
+      const point = pointOf(event);
+      if (Math.hypot(point.x - pick.start.x, point.y - pick.start.y) <= 6) pickBlock(pick.cell);
+    }
     const draft = strokeRef.current;
     if (draft?.pointerId === event.pointerId) {
       if (event.type === 'pointerup' && !disabled) extendStroke(pointOf(event));
       const commit = strokeRef.current;
       cancelStroke();
       if (event.type === 'pointerup' && commit?.stroke.cells.size && !disabled) {
-        onEdit('paint', { cells: [...commit.stroke.cells], blockId: commit.blockId });
+        onEdit(commit.tool, { cells: [...commit.stroke.cells], blockId: commit.blockId });
       }
     }
     pointers.current.delete(event.pointerId);
@@ -258,8 +294,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
     </div>
     <div className="editor-tools" aria-label="编辑工具">
       <div className="tool-buttons" role="group" aria-label="工具模式">
-        <button disabled={disabled || drafting} aria-pressed={tool === 'pan'} onClick={() => setTool('pan')}>平移</button>
-        <button disabled={disabled || drafting} aria-pressed={tool === 'paint'} onClick={() => setTool('paint')}>画笔</button>
+        <button disabled={disabled || drafting} aria-pressed={tool === 'pan'} onClick={() => { setTool('pan'); setHint(''); }}>平移</button>
+        <button disabled={disabled || drafting} aria-pressed={tool === 'paint'} onClick={() => { setTool('paint'); setHint(''); }}>画笔</button>
+        <button disabled={disabled || drafting} aria-pressed={tool === 'erase'} onClick={() => { setTool('erase'); setHint(''); }}>橡皮</button>
+        <button disabled={disabled || drafting} aria-pressed={tool === 'pick'} onClick={() => { setTool('pick'); setHint(''); }}>吸管</button>
       </div>
       <label>方块<select aria-label="画笔方块" value={blockId} disabled={disabled || drafting} onChange={event => setBlockId(Number(event.target.value))}>{MATERIALS.map(material => <option key={material.id} value={material.id}>{material.name}</option>)}</select></label>
       <label>尺寸<select aria-label="画笔尺寸" value={brushSize} disabled={disabled || drafting} onChange={event => setBrushSize(Number(event.target.value))}>{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
@@ -268,8 +306,13 @@ export default function MapView({ session, world, disabled, onError, editState, 
         <button disabled={disabled || drafting || !editState.redoCount} onClick={() => onEdit('redo')}>重做 ({editState.redoCount})</button>
       </div>
     </div>
-    <p className="tool-hint" role="status">{hint || (tool === 'paint' ? '画笔模式：放大到 200% 以上绘制。每次拖动为一步，双指可平移缩放。' : '平移模式：拖动浏览地图。选择画笔后可绘制基础方块。')}</p>
-    <canvas ref={canvasRef} className={`map-canvas${dragging ? ' dragging' : ''}${tool === 'paint' ? ' painting' : ''}`} tabIndex="0" role="img" aria-label={`${world.name}的世界地图`} aria-describedby="map-help" aria-busy={drawing}
+    <p className="tool-hint" role="status">{hint || {
+      paint: '画笔模式：放大到 200% 以上绘制。每次拖动为一步，双指可平移缩放。',
+      erase: '橡皮模式：放大到 200% 以上擦除方块，跳过特殊图格及紧邻方块；保留墙壁、液体和电线。',
+      pick: '吸管模式：放大到 200% 以上点击方块。支持选取现有 5 种材料；其他方块仅识别 ID。',
+      pan: '平移模式：拖动浏览地图。选择画笔后可绘制基础方块。',
+    }[tool]}</p>
+    <canvas ref={canvasRef} className={`map-canvas${dragging ? ' dragging' : ''}${tool !== 'pan' ? ' painting' : ''}`} tabIndex="0" role="img" aria-label={`${world.name}的世界地图`} aria-describedby="map-help" aria-busy={drawing}
       onPointerDown={event => {
         if (disabled || !camera || pointers.current.size >= 2 || (event.pointerType === 'mouse' && event.button !== 0)) return;
         canvasRef.current.focus({ preventScroll: true });
@@ -278,10 +321,14 @@ export default function MapView({ session, world, disabled, onError, editState, 
         setDragging(true);
         const cell = showCoordinates(pointOf(event));
         if (pointers.current.size === 2) { cancelStroke(); return; }
-        if (tool === 'paint' && cell) {
-          if (camera.zoom < 2) { setHint('请先放大到 200% 以上，或点击“出生点”后绘制。'); return; }
+        if (tool !== 'pan' && cell) {
+          if (camera.zoom < 2) { setHint('请先放大到 200% 以上，或点击“出生点”后操作。'); return; }
           setHint('');
-          strokeRef.current = { pointerId: event.pointerId, blockId, stroke: new BrushStroke(world, brushSize) };
+          if (tool === 'pick') {
+            pickRef.current = { pointerId: event.pointerId, cell, start: pointOf(event) };
+            return;
+          }
+          strokeRef.current = { pointerId: event.pointerId, blockId, tool, stroke: new BrushStroke(world, brushSize) };
           strokeRef.current.stroke.add(cell);
           setDrafting(true);
           onDraftChange(true);
@@ -294,6 +341,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         if (!camera || disabled) return;
         if (event.key === 'Escape') { cancelStroke(); return; }
         if (strokeRef.current) return;
+        pickRef.current = null;
         if ((event.ctrlKey || event.metaKey) && ['z', 'y'].includes(event.key.toLowerCase())) {
           event.preventDefault();
           const action = event.shiftKey || event.key.toLowerCase() === 'y' ? 'redo' : 'undo';
@@ -319,6 +367,6 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <span>{drawing ? '正在绘制地图…' : '色块地图'} · 黄色十字为出生点</span>
       <output className="map-coordinates">{coordinates ? `X ${coordinates.x} · Y ${coordinates.y}` : '移到地图上查看坐标'}</output>
     </div>
-    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y，Esc 取消当前笔画。画笔保留墙壁、液体、电线及原有方块状态，跳过家具等特殊图格。当前为色块显示。</p>
+    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y，Esc 取消当前操作。画笔和橡皮保留墙壁、液体与电线；橡皮同时清除方块的涂料、坡度及制动器。特殊图格受保护。当前为色块显示。</p>
   </section>;
 }
