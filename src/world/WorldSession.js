@@ -21,7 +21,13 @@ export class WorldSession {
         if (data.type === 'progress') {
           this.pending.onProgress?.(Math.max(0, Math.min(100, data.percent)));
         } else if (data.type === 'error') {
-          this.close(new Error(data.message));
+          if (data.recoverable) {
+            const request = this.pending;
+            clearTimeout(request.timer);
+            this.pending = null;
+            request.reject(new Error(data.message));
+            this.dispatch();
+          } else this.close(new Error(data.message));
         } else if (data.type === 'result') {
           const request = this.pending;
           clearTimeout(request.timer);
@@ -61,6 +67,12 @@ export class WorldSession {
       return false;
     });
     return this.request('render', { region });
+  }
+
+  edit(action, stroke) {
+    if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
+    if (!['paint', 'undo', 'redo'].includes(action)) return Promise.reject(new Error('无法识别这项编辑操作。'));
+    return this.request(action, { stroke });
   }
 
   request(action, payload, onProgress) {

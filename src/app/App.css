@@ -59,4 +59,15 @@ h2 { font-size: 24px; margin: 0 0 28px; line-height: 1.4; }
 .map-canvas:focus-visible { outline: 2px solid #93cba5; outline-offset: 4px; }
 .map-status { justify-content: space-between; color: #a9b9ae; font-size: 13px; margin-top: 12px; }
 .map-coordinates { min-width: 150px; font-variant-numeric: tabular-nums; }
+.editor-tools, .tool-buttons { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.editor-tools { gap: 16px; padding: 14px; background: #17221b; border: 1px solid #3a5645; border-radius: 6px; }
+.editor-tools label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #a9b9ae; }
+.editor-tools button { padding: 8px 12px; }
+.editor-tools button[aria-pressed="true"] { background: #b6d3bf; color: #142319; border-color: #b6d3bf; }
+select { max-width: 100%; padding: 8px; border: 1px solid #3a5645; border-radius: 4px; font: inherit; color: #e6ece8; background: #1d2c23; }
+select:focus-visible { outline: 2px solid #93cba5; outline-offset: 3px; }
+.tool-hint { color: #b6d3bf; font-size: 13px; line-height: 1.8; margin: 12px 0; }
+.map-canvas.painting { cursor: crosshair; }
+.save-state { color: #a9b9ae; font-size: 13px; }
+.save-state.unsaved { color: #ffe199; }
 @media (max-width: 420px) { .brand { gap: 8px; font-size: 14px; } .app-header { padding: 20px 24px; } .welcome { padding-top: 48px; padding-bottom: 48px; } .world-details { grid-template-columns: minmax(0, 1fr); } }

@@ -124,3 +124,24 @@ test('closing rejects both active rendering and queued export before starting a 
   assert.equal(workers[0].terminated, true);
   await assert.rejects(session.render({ x: 1 }), /先打开/);
 });
+
+test('paint runs before queued export; a rejected edit keeps the loaded world usable', async () => {
+  const { session, workers } = setup();
+  const opening = session.open({ name: 'world.wld' });
+  workers[0].reply({ type: 'result', summary: {} });
+  await opening;
+  const painting = session.edit('paint', { cells: [12010], blockId: 0 });
+  assert.equal(workers[0].message.action, 'paint');
+  const exporting = session.export();
+  const rejected = assert.rejects(painting, /未修改/);
+  workers[0].reply({ type: 'error', recoverable: true, message: '参数无效，未修改世界。' });
+  await rejected;
+  assert.equal(session.loaded, true);
+  assert.equal(workers[0].message.action, 'export');
+  workers[0].reply({ type: 'result', buffer: new ArrayBuffer(1) });
+  await exporting;
+  const undoing = session.edit('undo');
+  workers[0].reply({ type: 'result', editState: { revision: 0 } });
+  assert.equal((await undoing).editState.revision, 0);
+  session.close();
+});

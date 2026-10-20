@@ -1,5 +1,8 @@
 import { FileReader, FileSaver } from '../../vendor/terraria-world-file/src/index.ts';
 import { rasterizeRegion } from '../rendering/worldRaster.js';
+import { createBlockEditing } from './blockEditing.js';
+import { preservesOtherSections } from './verifyExport.js';
+import { EditError } from '../editing/brush.js';
 
 export const MAX_WORLD_BYTES = 128 * 1024 * 1024;
 const MIN_VERSION = 194;
@@ -88,8 +91,26 @@ export async function openWorld(buffer, progress = () => {}) {
         tileEntities: world.tileEntities.entities.length,
       },
     };
+    let editable = false;
+    function save(onProgress) {
+      if (typeof ArrayBuffer.prototype.transfer !== 'function') {
+        throw new WorldFileError('当前浏览器缺少文件导出能力，请更新浏览器后重试。');
+      }
+      return new FileSaver().save(world, onProgress);
+    }
+    const editing = createBlockEditing(world, () => {
+      if (editable) return;
+      if (!bytesEqual(buffer, save())) {
+        throw new EditError('当前解析器不能完整保留这份存档，未进行修改。仍可浏览地图。');
+      }
+      editable = true;
+    });
     return {
       summary,
+      get editState() { return editing.state; },
+      paint: stroke => editing.paint(stroke),
+      undo: () => editing.undo(),
+      redo: () => editing.redo(),
       render(region) {
         return rasterizeRegion({
           width: summary.width, height: summary.height,
@@ -98,14 +119,15 @@ export async function openWorld(buffer, progress = () => {}) {
         }, region);
       },
       serialize(onProgress = () => {}) {
-        if (typeof ArrayBuffer.prototype.transfer !== 'function') {
-          throw new WorldFileError('当前浏览器缺少文件导出能力，请更新浏览器后重试。');
-        }
-        const output = new FileSaver().save(world, onProgress);
-        // This read-only milestone must not silently normalize or drop data.
-        if (!bytesEqual(buffer, output)) {
+        const output = save(onProgress);
+        validateWorldContainer(output);
+        if (!editable && !bytesEqual(buffer, output)) {
           throw new WorldFileError('重新生成的文件与原文件存在差异，本次未导出。当前版本暂不能完整保留这份存档。', 'EXPORT_CHANGED');
         }
+        if (editable && !preservesOtherSections(buffer, output)) {
+          throw new WorldFileError('未编辑的存档区段出现差异，本次未导出。请撤销修改或重新打开原始文件。', 'EXPORT_CHANGED');
+        }
+        editing.markExported();
         return output;
       },
     };
