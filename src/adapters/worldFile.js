@@ -1,4 +1,5 @@
 import { FileReader, FileSaver } from '../../vendor/terraria-world-file/src/index.ts';
+import { rasterizeRegion } from '../rendering/worldRaster.js';
 
 export const MAX_WORLD_BYTES = 128 * 1024 * 1024;
 const MIN_VERSION = 194;
@@ -89,6 +90,13 @@ export async function openWorld(buffer, progress = () => {}) {
     };
     return {
       summary,
+      render(region) {
+        return rasterizeRegion({
+          width: summary.width, height: summary.height,
+          surface: header.worldSurface, rock: header.rockLayer,
+          readTile: (x, y) => world.worldTiles.tiles.getTile(x, y),
+        }, region);
+      },
       serialize(onProgress = () => {}) {
         if (typeof ArrayBuffer.prototype.transfer !== 'function') {
           throw new WorldFileError('当前浏览器缺少文件导出能力，请更新浏览器后重试。');

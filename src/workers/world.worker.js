@@ -5,7 +5,7 @@ let filename = '';
 let busy = false;
 
 self.addEventListener('message', async ({ data }) => {
-  const { id, action, file } = data;
+  const { id, action, file, region } = data;
   if (busy) return;
   busy = true;
   const progress = percent => self.postMessage({ id, type: 'progress', percent });
@@ -21,6 +21,10 @@ self.addEventListener('message', async ({ data }) => {
       filename = file.name;
       document = await openWorld(await file.arrayBuffer(), progress);
       self.postMessage({ id, type: 'result', summary: document.summary });
+    } else if (action === 'render') {
+      if (!document) throw new WorldFileError('请先打开一个世界。');
+      const image = document.render(region);
+      self.postMessage({ id, type: 'result', image }, [image.buffer]);
     } else if (action === 'export') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const buffer = document.serialize(progress);

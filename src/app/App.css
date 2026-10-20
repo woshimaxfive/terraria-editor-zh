@@ -43,4 +43,20 @@ h2 { font-size: 24px; margin: 0 0 28px; line-height: 1.4; }
 .world-details .wide { grid-column: 1 / -1; }
 .card-note { border-top: 1px solid #29372f; margin: 28px 0 0; padding-top: 20px; }
 .app-footer { gap: 24px; color: #a9b9ae; font-size: 13px; }
+.has-world .welcome { width: min(100%, 1480px); margin: 0 auto; padding-top: 32px; padding-bottom: 32px; }
+.has-world h1 { font-size: 28px; margin: 16px 0; }
+.has-world .description { max-width: none; }
+.has-world .file-actions { margin-top: 20px; }
+.map-view { margin-top: 28px; }
+.map-toolbar, .map-controls, .map-status { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.map-toolbar { justify-content: space-between; margin-bottom: 14px; }
+.map-toolbar h2 { margin: 0; font-size: 18px; }
+.map-controls { gap: 8px; }
+.map-controls button { padding: 8px 12px; min-width: 40px; }
+.map-zoom { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; color: #b6d3bf; }
+.map-canvas { display: block; width: 100%; height: clamp(320px, 55vh, 640px); background: #0d1511; border-radius: 6px; touch-action: none; cursor: grab; }
+.map-canvas.dragging { cursor: grabbing; }
+.map-canvas:focus-visible { outline: 2px solid #93cba5; outline-offset: 4px; }
+.map-status { justify-content: space-between; color: #a9b9ae; font-size: 13px; margin-top: 12px; }
+.map-coordinates { min-width: 150px; font-variant-numeric: tabular-nums; }
 @media (max-width: 420px) { .brand { gap: 8px; font-size: 14px; } .app-header { padding: 20px 24px; } .welcome { padding-top: 48px; padding-bottom: 48px; } .world-details { grid-template-columns: minmax(0, 1fr); } }

@@ -1,6 +1,6 @@
 Third-party notices
 
-Static resource caching and build support adapted from TEdit Web.
+Static resource caching, build support and map RGB colors adapted from TEdit Web.
 Originally created by cokolele; maintained by the TEdit contributors.
 Source: https://github.com/TEdit/terraria-map-editor-web
 

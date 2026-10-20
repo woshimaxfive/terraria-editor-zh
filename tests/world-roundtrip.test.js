@@ -23,6 +23,10 @@ for (const fixture of fixtures) {
     assert.equal(document.summary.height, 1200);
     assert.equal(document.summary.counts.chests, fixture.chests);
     assert.equal(document.summary.counts.npcs, 2);
+    const image = document.render({ x: 100, y: 200, width: 129, height: 65, step: 2 });
+    assert.equal(image.imageWidth, 65);
+    assert.equal(image.imageHeight, 33);
+    assert.equal(image.buffer.byteLength, 65 * 33 * 4);
     const output = document.serialize();
     assert.notEqual(output, bytes, 'must use the serializer, not return the original buffer');
     assert.deepEqual(new Uint8Array(output), new Uint8Array(bytes));

@@ -7,10 +7,11 @@
 ## 当前功能
 
 - 在本机浏览器中打开 `.wld`，查看世界名称、尺寸、种子、出生点、难度和对象数量。
+- 浏览色块地图，支持拖动、滚轮或双指缩放、坐标查看、全图与出生点定位。也可聚焦地图后使用方向键、+ / − 和 Home。
 - 导出未经编辑的副本：实际重新生成文件，与原文件逐字节一致后才提供下载；存在差异时停止导出。
 - 首次成功缓存网站后，可以断网打开与导出文件。存档不会上传，也不会写入网站离线缓存；关闭或刷新页面后需要重新选择文件。
 
-当前读取范围为文件格式版本 194–326，且受上游解析器的标准世界尺寸限制。格式范围不代表所有存档均经过游戏验证。不支持 `.twld` 模组配套文件，尚未提供地图显示与编辑。请保留原始存档，使用更新的浏览器。
+当前读取范围为文件格式版本 194–326，且受上游解析器的标准世界尺寸限制。格式范围不代表所有存档均经过游戏验证。地图为基础色块预览，尚未显示游戏贴图、帧变体、油漆、电线、坡面和完整家具效果；缩小时使用采样，放大可查看单格。当前不支持编辑或 `.twld` 模组配套文件。请保留原始存档，使用更新的浏览器。
 
 ## 本地运行
 
@@ -39,6 +40,6 @@ npm test
 
 ## 开源来源
 
-文件格式与功能研究参考 [TEdit](https://github.com/TEdit/Terraria-Map-Editor) 和 [TEdit Web](https://github.com/TEdit/terraria-map-editor-web)。世界文件读写通过项目适配层接入 [terraria-world-file-ts](https://github.com/TEdit/terraria-world-file-ts)，固定来源和局部修改见 [vendor/terraria-world-file](vendor/terraria-world-file/README.md)。界面只接收基本信息，完整世界留在 Worker 中处理。
+文件格式与功能研究参考 [TEdit](https://github.com/TEdit/Terraria-Map-Editor) 和 [TEdit Web](https://github.com/TEdit/terraria-map-editor-web)。世界文件读写通过项目适配层接入 [terraria-world-file-ts](https://github.com/TEdit/terraria-world-file-ts)，固定来源和局部修改见 [vendor/terraria-world-file](vendor/terraria-world-file/README.md)。完整世界留在 Worker 中处理，界面接收基本信息和当前视图的像素数据。
 
-静态资源缓存与构建支持沿用并适配此前基于 TEdit Web 的实现。复用部分保留原有许可与署名，详见 [开源声明](public/THIRD_PARTY_NOTICES.txt)。新增代码采用 [MIT 许可证](LICENSE)。
+静态资源缓存、构建支持与地图颜色数据沿用并适配此前基于 TEdit Web 的实现；颜色来源见 [vendor/tedit-map-colors](vendor/tedit-map-colors/README.md)。复用部分保留原有许可与署名，详见 [开源声明](public/THIRD_PARTY_NOTICES.txt)。新增代码采用 [MIT 许可证](LICENSE)。

@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { WorldSession } from '../world/WorldSession.js';
 import { downloadWorld } from '../platform/files/downloadWorld.js';
+import MapView from '../map/MapView.jsx';
 import './App.css';
 
 const modes = ['经典', '专家', '大师', '旅行'];
@@ -68,8 +69,17 @@ export default function App() {
     setError('');
     setNotice(wasBusy ? '操作已取消，可以重新选择世界。' : '世界已关闭。');
   }
+
+  const handleMapError = useCallback(failure => {
+    operation.current++;
+    session.current.close();
+    setSummary(null);
+    setFilename('');
+    setPhase(null);
+    setError(failure.message);
+  }, []);
   return (
-    <div className="app-shell">
+    <div className={`app-shell${summary ? ' has-world' : ''}`}>
       <header className="app-header">
         <a className="brand" href={import.meta.env.BASE_URL}>
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width="28" height="28" />
@@ -80,7 +90,7 @@ export default function App() {
       <main className="welcome" aria-labelledby="page-title">
         <p className="availability">世界文件 · 只读预览</p>
         <h1 id="page-title">泰拉瑞亚地图编辑器</h1>
-        <p className="description">打开世界，查看基本信息，导出未经编辑的副本。地图显示与编辑功能尚未开放。</p>
+        <p className="description">打开世界，浏览地图与基本信息，导出未经编辑的副本。当前为只读预览，编辑功能尚未开放。</p>
         <div className="file-actions">
           <input ref={input} className="file-input" type="file" accept=".wld" aria-label="选择世界文件" disabled={Boolean(phase)} onChange={event => {
             const file = event.target.files?.[0];
@@ -100,6 +110,7 @@ export default function App() {
           {error && <p className="error" role="alert">{error}</p>}
           {notice && <p className="notice" role="status">{notice}</p>}
         </div>
+        {summary && <MapView session={session.current} world={summary} disabled={Boolean(phase)} onError={handleMapError} />}
         {summary && <section className="world-card" aria-labelledby="world-name" aria-busy={Boolean(phase)}>
           <p className="filename">{filename}</p>
           <h2 id="world-name">{summary.name}</h2>

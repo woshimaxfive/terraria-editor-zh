@@ -6,6 +6,7 @@ export class WorldSession {
     this.timeoutMs = timeoutMs;
     this.worker = null;
     this.pending = null;
+    this.queue = [];
     this.nextId = 0;
     this.loaded = false;
   }
@@ -27,6 +28,7 @@ export class WorldSession {
           this.pending = null;
           if (request.action === 'open') this.loaded = true;
           request.resolve(data);
+          this.dispatch();
         }
       };
       worker.onerror = event => {
@@ -45,24 +47,43 @@ export class WorldSession {
 
   export(onProgress) {
     if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
+    if (this.pending?.action === 'export' || this.queue.some(request => request.action === 'export')) {
+      return Promise.reject(new Error('请等待当前导出完成。'));
+    }
     return this.request('export', {}, onProgress);
   }
 
+  render(region) {
+    if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
+    this.queue = this.queue.filter(request => {
+      if (request.action !== 'render') return true;
+      request.reject(new DOMException('视图已更新。', 'AbortError'));
+      return false;
+    });
+    return this.request('render', { region });
+  }
+
   request(action, payload, onProgress) {
-    if (this.pending) return Promise.reject(new Error('请等待当前操作完成。'));
     return new Promise((resolve, reject) => {
-      const id = ++this.nextId;
-      const timer = setTimeout(() => this.close(new Error('处理超过一分钟，已停止。请重新打开文件。')), this.timeoutMs);
-      this.pending = { id, action, resolve, reject, timer, onProgress };
-      try {
-        this.worker.postMessage({ id, action, ...payload });
-      } catch {
-        this.close(new Error('无法将文件交给处理程序，请重新选择。'));
-      }
+      this.queue.push({ action, payload, resolve, reject, onProgress });
+      this.dispatch();
     });
   }
 
-  close(reason = new Error('操作已取消。')) {
+  dispatch() {
+    if (this.pending || !this.queue.length) return;
+    const request = this.queue.shift();
+    const id = ++this.nextId;
+    const timer = setTimeout(() => this.close(new Error('处理超过一分钟，已停止。请重新打开文件。')), this.timeoutMs);
+    this.pending = { ...request, id, timer };
+    try {
+      this.worker.postMessage({ id, action: request.action, ...request.payload });
+    } catch {
+      this.close(new Error('无法将文件交给处理程序，请重新选择。'));
+    }
+  }
+
+  close(reason = new DOMException('操作已取消。', 'AbortError')) {
     this.worker?.terminate();
     this.worker = null;
     this.loaded = false;
@@ -71,5 +92,6 @@ export class WorldSession {
       this.pending.reject(reason);
       this.pending = null;
     }
+    for (const request of this.queue.splice(0)) request.reject(reason);
   }
 }

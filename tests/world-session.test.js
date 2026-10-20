@@ -84,3 +84,43 @@ test('worker crashes and clone failures invalidate the session', async () => {
     await assert.rejects(session.export(), /先打开/);
   }
 });
+
+test('rendering and export are serialized; only the latest queued view is retained', async () => {
+  const { session, workers } = setup();
+  const opening = session.open({ name: 'world.wld' });
+  workers[0].reply({ type: 'result', summary: {} });
+  await opening;
+  const first = session.render({ x: 1 });
+  const outdated = session.render({ x: 2 });
+  const rejected = assert.rejects(outdated, error => error.name === 'AbortError');
+  const exporting = session.export();
+  const latest = session.render({ x: 3 });
+  await rejected;
+  const firstId = workers[0].message.id;
+  workers[0].reply({ type: 'result', image: { x: 1 } });
+  assert.equal(workers[0].message.action, 'export');
+  workers[0].onmessage({ data: { id: firstId, type: 'result', image: { x: 999 } } });
+  workers[0].reply({ type: 'result', buffer: new ArrayBuffer(1) });
+  assert.equal(workers[0].message.action, 'render');
+  assert.equal(workers[0].message.region.x, 3);
+  workers[0].reply({ type: 'result', image: { x: 3 } });
+  assert.equal((await first).image.x, 1);
+  await exporting;
+  assert.equal((await latest).image.x, 3);
+  session.close();
+});
+
+test('closing rejects both active rendering and queued export before starting a new world', async () => {
+  const { session, workers } = setup();
+  const opening = session.open({ name: 'world.wld' });
+  workers[0].reply({ type: 'result', summary: {} });
+  await opening;
+  const rendering = session.render({ x: 1 });
+  const exporting = session.export();
+  const rejectedRender = assert.rejects(rendering, error => error.name === 'AbortError');
+  const rejectedExport = assert.rejects(exporting, error => error.name === 'AbortError');
+  session.close();
+  await Promise.all([rejectedRender, rejectedExport]);
+  assert.equal(workers[0].terminated, true);
+  await assert.rejects(session.render({ x: 1 }), /先打开/);
+});
