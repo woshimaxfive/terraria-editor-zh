@@ -24,6 +24,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npm test
       - uses: actions/configure-pages@v5
         id: pages
       - run: npm run build

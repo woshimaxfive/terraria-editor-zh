@@ -1,0 +1,75 @@
+const createWorker = () => new Worker(new URL('../workers/world.worker.js', import.meta.url), { type: 'module' });
+
+export class WorldSession {
+  constructor(workerFactory = createWorker, timeoutMs = 60_000) {
+    this.workerFactory = workerFactory;
+    this.timeoutMs = timeoutMs;
+    this.worker = null;
+    this.pending = null;
+    this.nextId = 0;
+    this.loaded = false;
+  }
+
+  open(file, onProgress) {
+    this.close();
+    try {
+      const worker = this.workerFactory();
+      this.worker = worker;
+      worker.onmessage = ({ data }) => {
+        if (worker !== this.worker || data.id !== this.pending?.id) return;
+        if (data.type === 'progress') {
+          this.pending.onProgress?.(Math.max(0, Math.min(100, data.percent)));
+        } else if (data.type === 'error') {
+          this.close(new Error(data.message));
+        } else if (data.type === 'result') {
+          const request = this.pending;
+          clearTimeout(request.timer);
+          this.pending = null;
+          if (request.action === 'open') this.loaded = true;
+          request.resolve(data);
+        }
+      };
+      worker.onerror = event => {
+        event.preventDefault?.();
+        if (worker === this.worker) this.close(new Error('文件处理程序发生错误，请重新打开世界。'));
+      };
+      worker.onmessageerror = () => {
+        if (worker === this.worker) this.close(new Error('无法读取文件处理结果，请重新打开世界。'));
+      };
+      return this.request('open', { file }, onProgress);
+    } catch (error) {
+      this.close();
+      return Promise.reject(new Error('无法启动文件处理程序，请刷新网页后重试。', { cause: error }));
+    }
+  }
+
+  export(onProgress) {
+    if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
+    return this.request('export', {}, onProgress);
+  }
+
+  request(action, payload, onProgress) {
+    if (this.pending) return Promise.reject(new Error('请等待当前操作完成。'));
+    return new Promise((resolve, reject) => {
+      const id = ++this.nextId;
+      const timer = setTimeout(() => this.close(new Error('处理超过一分钟，已停止。请重新打开文件。')), this.timeoutMs);
+      this.pending = { id, action, resolve, reject, timer, onProgress };
+      try {
+        this.worker.postMessage({ id, action, ...payload });
+      } catch {
+        this.close(new Error('无法将文件交给处理程序，请重新选择。'));
+      }
+    });
+  }
+
+  close(reason = new Error('操作已取消。')) {
+    this.worker?.terminate();
+    this.worker = null;
+    this.loaded = false;
+    if (this.pending) {
+      clearTimeout(this.pending.timer);
+      this.pending.reject(reason);
+      this.pending = null;
+    }
+  }
+}

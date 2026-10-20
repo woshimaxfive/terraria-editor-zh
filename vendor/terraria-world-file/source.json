@@ -1,0 +1,28 @@
+{
+  "repository": "https://github.com/TEdit/terraria-world-file-ts",
+  "commit": "7292cb8509d2aa869583cf9f8549d6f78f7f9a24",
+  "license": "MIT (upstream package.json)",
+  "sourceSha256Lf": {
+    "src/BinaryReader.ts": "afa62a2cc25a3d429303d8fc7c33e9a37845302593558315348c55c6eba31a4c",
+    "src/BinarySaver.ts": "e1cb48ce8f81840bf84ce29ce01f54bc0c6e8b08e9ff266808dd57e4b15e360b",
+    "src/FileReader.ts": "03a617f7f049e1ba1c07c32dc4de6ab190e9f7d061cee7d14106deafe6dd6869",
+    "src/FileSaver.ts": "d6254d5e5e2cc59b4f50648fc7ac392c550fa676e0ea19a283343031ce68f643",
+    "src/index.ts": "7558ccfd140eb64675384d68bf71f1e4b851bf25f96f613ed5cfb45a6808d80b",
+    "src/sections.ts": "ae14d1e1ec431dcbdd49707abc454eb8cbe6f6ae906e96f36883ceeb6c34f260",
+    "src/TerrariaWorldFileError.ts": "7f48ae457395a909feb63b21da42781e39aca873a3e72def5fad1e68c8557c2d",
+    "src/TileData.ts": "5ee0f9d9f07dd6760aafa1ff29de05ddc468596983b6ed91ff1aa872b1f1e013",
+    "src/types.ts": "cf530eb1322a2293265c19b7658b57b6c2ec0a73c7fcd80974bc9b505e797634",
+    "src/section/Bestiary.ts": "2865c4550af8c7aeca974ce674299c019930775d0393e9413ac4daab3593eb91",
+    "src/section/Chests.ts": "93f560c3a11069ef375c680f742071f0aefdfc6bc7d4721a04eac6f8c4bcd911",
+    "src/section/CreativePowers.ts": "16eedfe2b870f4ba68144575c8d25e2b135ebe778e8366ade0c2656832bf9cae",
+    "src/section/FileFormatHeader.ts": "54e476741d77e867cb2686b5020f7ddfbff8d1a34a993af18cd33d49b4d6e42f",
+    "src/section/Footer.ts": "c1bacc50f312c09cd738e41ef1299feae2f7b1f18cadce67089254434d3b9077",
+    "src/section/Header.ts": "7b10eefc767eb5fbfb73f9ff74c5567a58b1ef31761f75e3b5cf87934949cd00",
+    "src/section/NPCs.ts": "46422ad91f456cca3d67c449d044ef0c2e6d191b1330f7264ba142b121e108f2",
+    "src/section/Signs.ts": "4521ec3adde7a6e87695c4600e519134a2a6d07860fcc4d73b86526609ccec78",
+    "src/section/TileEntities.ts": "3089d8ee6679a273712b8ffe5f5518075285a43a884467d6a60d3d16d12a0002",
+    "src/section/TownManager.ts": "4186b21d29ae0c88f75a9228af9c2a794181550ead2dac6dcd55bed160ca9795",
+    "src/section/WeightedPressurePlates.ts": "1c30bdeee18a0410e95105a51c978ace0fcab93159ff91f4697be4c2dd7a4999",
+    "src/section/WorldTiles.ts": "4386396d069b2e5b6ebad8ceeb1b3ce8be8dce851912fde53f0d973e881fb900"
+  }
+}
