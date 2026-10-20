@@ -2,7 +2,7 @@ import { FileReader, FileSaver } from '../../vendor/terraria-world-file/src/inde
 import { rasterizeRegion } from '../rendering/worldRaster.js';
 import { createBlockEditing } from './blockEditing.js';
 import { preservesOtherSections } from './verifyExport.js';
-import { EditError, MATERIALS } from '../editing/brush.js';
+import { EditError, MATERIALS, selectionCells } from '../editing/brush.js';
 
 export const MAX_WORLD_BYTES = 128 * 1024 * 1024;
 const MIN_VERSION = 194;
@@ -110,6 +110,8 @@ export async function openWorld(buffer, progress = () => {}) {
       get editState() { return editing.state; },
       paint: stroke => editing.paint(stroke),
       erase: stroke => editing.paint({ ...stroke, blockId: null }),
+      fillSelection: region => editing.paint({ cells: selectionCells(region?.selection, summary), blockId: region?.blockId }),
+      eraseSelection: region => editing.paint({ cells: selectionCells(region?.selection, summary), blockId: null }),
       pick(point) {
         const { x, y } = point || {};
         if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y) || x < 0 || y < 0 || x >= summary.width || y >= summary.height) {

@@ -171,3 +171,25 @@ test('erase, pick and export run in order, and closing cancels pending inspectio
   await rejection;
   workers[0].reply({ type: 'result', tile: { blockId: 1 } });
 });
+
+test('area edits are queued before export and send rectangle coordinates without expanding main-thread cells', async () => {
+  const { session, workers } = setup();
+  const opening = session.open({ name: 'world.wld' });
+  workers[0].reply({ type: 'result', summary: {} });
+  await opening;
+  const selection = { x: 10, y: 10, width: 3, height: 2 };
+  const filling = session.edit('fillSelection', { selection, blockId: 1 });
+  const erasing = session.edit('eraseSelection', { selection });
+  const exporting = session.export();
+  assert.equal(workers[0].message.action, 'fillSelection');
+  assert.deepEqual(workers[0].message.stroke, { selection, blockId: 1 });
+  workers[0].reply({ type: 'result', editState: { undoCount: 1 } });
+  await filling;
+  assert.equal(workers[0].message.action, 'eraseSelection');
+  workers[0].reply({ type: 'result', editState: { undoCount: 2 } });
+  await erasing;
+  assert.equal(workers[0].message.action, 'export');
+  workers[0].reply({ type: 'result', buffer: new ArrayBuffer(1) });
+  await exporting;
+  session.close();
+});

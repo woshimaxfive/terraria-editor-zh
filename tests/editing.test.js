@@ -69,6 +69,36 @@ for (const fixture of fixtures) {
     assert.deepEqual(new Uint8Array(document.serialize()), new Uint8Array(output));
     assert.equal(document.redo().changed, 2);
   });
+
+  test(`${fixture.name}: area fill and erase are single undo steps and export only selected cells`, async () => {
+    const bytes = await input(fixture.name), world = await parse(bytes), document = await openWorld(bytes);
+    const selection = { x: 10, y: 10, width: 4, height: 3 };
+    assert.equal(document.fillSelection({ selection, blockId: 54 }).changed, 12);
+    assert.equal(document.editState.undoCount, 1);
+    const filled = document.serialize();
+    assert.equal(document.eraseSelection({ selection: { x: 11, y: 11, width: 2, height: 1 } }).changed, 2);
+    assert.equal(document.editState.undoCount, 2);
+    const output = document.serialize(), reloaded = await parse(output), expected = world.worldTiles.tiles;
+    for (let x = 10; x < 14; x++) for (let y = 10; y < 13; y++) {
+      if (y === 11 && (x === 11 || x === 12)) continue;
+      const index = x * 1200 + y;
+      expected.blockId[index] = 54;
+      expected.flags[index] |= TileFlag.IS_BLOCK_ACTIVE;
+    }
+    for (const field of TILE_FIELDS) assert.deepEqual(reloaded.worldTiles.tiles[field], expected[field], field);
+    assert.equal(preservesOtherSections(bytes, output), true);
+    document.undo();
+    assert.deepEqual(new Uint8Array(document.serialize()), new Uint8Array(filled));
+    document.undo();
+    assert.deepEqual(new Uint8Array(document.serialize()), new Uint8Array(bytes));
+    assert.equal(document.redo().changed, 12);
+    assert.equal(document.redo().changed, 2);
+    assert.deepEqual(new Uint8Array(document.serialize()), new Uint8Array(output));
+    const { x, y } = world.chests.chests[0].position;
+    assert.equal(document.eraseSelection({ selection: { x, y, width: 2, height: 3 } }).changed, 0);
+    assert.equal(document.fillSelection({ selection: { x, y, width: 2, height: 2 }, blockId: 1 }).changed, 0);
+    assert.equal(document.editState.dirty, false);
+  });
 }
 
 test('paint preserves liquid, wall, wires, coatings, slopes and dormant flags; special tiles are skipped', async () => {
@@ -158,6 +188,22 @@ test('invalid strokes are atomic; a new branch clears redo and preserves export 
   assert.equal(document.editState.dirty, true);
   assert.equal(document.paint({ cells: [12010], blockId: 30 }).changed, 0);
   assert.equal(document.editState.undoCount, 1);
+});
+
+test('invalid and oversized areas leave tiles, history and exported revision unchanged', async () => {
+  const bytes = await input(), document = await openWorld(bytes);
+  for (const payload of [null, undefined]) {
+    assert.throws(() => document.fillSelection(payload), /选区范围/);
+    assert.throws(() => document.eraseSelection(payload), /选区范围/);
+  }
+  for (const selection of [undefined, { x: -1, y: 10, width: 2, height: 2 },
+    { x: 4199, y: 1199, width: 2, height: 1 }, { x: 10, y: 10, width: 101, height: 100 }]) {
+    assert.throws(() => document.fillSelection({ selection, blockId: 1 }), /选区范围|10000/);
+    assert.throws(() => document.eraseSelection({ selection }), /选区范围|10000/);
+  }
+  assert.throws(() => document.fillSelection({ selection: { x: 10, y: 10, width: 2, height: 2 }, blockId: 21 }), /画笔参数/);
+  assert.deepEqual(document.editState, { revision: 0, dirty: false, undoCount: 0, redoCount: 0 });
+  assert.deepEqual(new Uint8Array(document.serialize()), new Uint8Array(bytes));
 });
 
 test('baseline mismatch blocks edits, and export corruption cannot be marked exported', async () => {

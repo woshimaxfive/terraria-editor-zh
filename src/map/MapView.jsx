@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { constrainCamera, fitCamera, screenToWorld, visibleRegion, zoomCamera } from '../rendering/viewport.js';
 import { BRUSH_SIZES, BrushStroke, MATERIALS } from '../editing/brush.js';
+import { selectionFromPoints } from '../editing/selection.js';
 
 const MAX_CANVAS_PIXELS = 4 * 1024 * 1024;
 
@@ -17,9 +18,13 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [blockId, setBlockId] = useState(1);
   const [brushSize, setBrushSize] = useState(1);
   const [drafting, setDrafting] = useState(false);
+  const [selection, setSelection] = useState(null);
+  const [selectionPreview, setSelectionPreview] = useState(null);
   const [hint, setHint] = useState('');
   const strokeRef = useRef(null);
   const pickRef = useRef(null);
+  const selectionRef = useRef(null);
+  const selectionDraftRef = useRef(null);
   const mountedRef = useRef(false);
   const hoverRef = useRef(null);
   const frameRef = useRef(0);
@@ -39,6 +44,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
       const next = { width: Math.round(entry.contentRect.width), height: Math.round(entry.contentRect.height) };
       if (next.width < 1 || next.height < 1) return;
       pickRef.current = null;
+      selectionDraftRef.current = null;
+      setSelectionPreview(null);
       if (strokeRef.current) {
         strokeRef.current = null;
         setDrafting(false);
@@ -88,6 +95,16 @@ export default function MapView({ session, world, disabled, onError, editState, 
     }
     const toX = x => (x - camera.x) * camera.zoom + size.width / 2;
     const toY = y => (y - camera.y) * camera.zoom + size.height / 2;
+    const selected = selectionDraftRef.current?.rectangle || selectionRef.current;
+    if (selected) {
+      context.fillStyle = '#79c9ff20';
+      context.fillRect(toX(selected.x), toY(selected.y), selected.width * camera.zoom, selected.height * camera.zoom);
+      context.strokeStyle = '#9ed7ff';
+      context.lineWidth = 1.5;
+      context.setLineDash([6, 4]);
+      context.strokeRect(toX(selected.x), toY(selected.y), selected.width * camera.zoom, selected.height * camera.zoom);
+      context.setLineDash([]);
+    }
     if (strokeRef.current) {
       context.fillStyle = strokeRef.current.tool === 'erase' ? '#ff927980' : '#ffe19980';
       for (const index of strokeRef.current.stroke.cells) {
@@ -95,7 +112,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       }
     }
     if (hoverRef.current && brush.current.tool !== 'pan' && camera.zoom >= 2) {
-      const size = brush.current.tool === 'pick' ? 1 : brush.current.brushSize;
+      const size = ['pick', 'select'].includes(brush.current.tool) ? 1 : brush.current.brushSize;
       const radius = (size - 1) / 2;
       context.strokeStyle = '#ffffff';
       context.lineWidth = 1;
@@ -167,8 +184,24 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const cancelStroke = () => {
     strokeRef.current = null;
     pickRef.current = null;
+    selectionDraftRef.current = null;
+    setSelectionPreview(null);
     setDrafting(false);
     onDraftChange(false);
+    redraw();
+  };
+  const clearSelection = () => {
+    selectionRef.current = null;
+    setSelection(null);
+    setHint('');
+    redraw();
+  };
+  const extendSelection = point => {
+    const position = screenToWorld(point, current.current.camera, current.current.size);
+    const draft = selectionDraftRef.current;
+    draft.rectangle = selectionFromPoints(draft.start, { x: Math.floor(position.x), y: Math.floor(position.y) }, world);
+    setSelectionPreview(draft.rectangle);
+    showCoordinates(point);
     redraw();
   };
   const extendStroke = point => {
@@ -203,7 +236,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const wheel = event => {
       if (disabled) return;
       event.preventDefault();
-      if (strokeRef.current) return;
+      if (strokeRef.current || selectionDraftRef.current) return;
       pickRef.current = null;
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? current.current.size.height : 1);
       const rect = canvas.getBoundingClientRect();
@@ -228,6 +261,11 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const previous = pointers.current.get(event.pointerId);
     const { camera: view, size: dimensions } = current.current;
     if (!view) return;
+    if (selectionDraftRef.current?.pointerId === event.pointerId && !disabled) {
+      pointers.current.set(event.pointerId, point);
+      extendSelection(point);
+      return;
+    }
     if (pickRef.current?.pointerId === event.pointerId) {
       if (Math.hypot(point.x - pickRef.current.start.x, point.y - pickRef.current.start.y) <= 6) {
         pointers.current.set(event.pointerId, point);
@@ -261,6 +299,15 @@ export default function MapView({ session, world, disabled, onError, editState, 
   }
 
   function release(event) {
+    if (event.type === 'pointerup' && (strokeRef.current || pickRef.current || selectionDraftRef.current)) setHint('');
+    if (selectionDraftRef.current?.pointerId === event.pointerId) {
+      if (event.type === 'pointerup' && !disabled) {
+        extendSelection(pointOf(event));
+        selectionRef.current = selectionDraftRef.current.rectangle;
+        setSelection(selectionRef.current);
+      }
+      cancelStroke();
+    }
     const pick = pickRef.current;
     pickRef.current = null;
     if (pick?.pointerId === event.pointerId && event.type === 'pointerup' && !disabled) {
@@ -281,35 +328,45 @@ export default function MapView({ session, world, disabled, onError, editState, 
     if (canvasRef.current.hasPointerCapture(event.pointerId)) canvasRef.current.releasePointerCapture(event.pointerId);
   }
 
+  const interacting = drafting || Boolean(selectionPreview);
+  const displayedSelection = selectionPreview || selection;
   return <section className="map-view" aria-labelledby="map-title">
     <div className="map-toolbar">
       <h2 id="map-title">地图工作区</h2>
       <div className="map-controls" role="group" aria-label="地图视图控制">
-        <button disabled={disabled || drafting || !camera} aria-label="缩小地图" onClick={() => zoomAt(1 / 1.5)}>−</button>
+        <button disabled={disabled || interacting || !camera} aria-label="缩小地图" onClick={() => zoomAt(1 / 1.5)}>−</button>
         <output className="map-zoom" aria-label="地图缩放比例">{camera ? Math.round(camera.zoom * 100) : 0}%</output>
-        <button disabled={disabled || drafting || !camera} aria-label="放大地图" onClick={() => zoomAt(1.5)}>＋</button>
-        <button disabled={disabled || drafting || !camera} onClick={() => { changeCamera(fitCamera(size, world)); hoverRef.current = null; setCoordinates(null); }}>全图</button>
-        <button disabled={disabled || drafting || !camera} onClick={() => { changeCamera(constrainCamera({ x: world.spawn.x + .5, y: world.spawn.y + .5, zoom: Math.max(4, camera.zoom) }, size, world)); hoverRef.current = null; setCoordinates(null); }}>出生点</button>
+        <button disabled={disabled || interacting || !camera} aria-label="放大地图" onClick={() => zoomAt(1.5)}>＋</button>
+        <button disabled={disabled || interacting || !camera} onClick={() => { changeCamera(fitCamera(size, world)); hoverRef.current = null; setCoordinates(null); }}>全图</button>
+        <button disabled={disabled || interacting || !camera} onClick={() => { changeCamera(constrainCamera({ x: world.spawn.x + .5, y: world.spawn.y + .5, zoom: Math.max(4, camera.zoom) }, size, world)); hoverRef.current = null; setCoordinates(null); }}>出生点</button>
       </div>
     </div>
     <div className="editor-tools" aria-label="编辑工具">
       <div className="tool-buttons" role="group" aria-label="工具模式">
-        <button disabled={disabled || drafting} aria-pressed={tool === 'pan'} onClick={() => { setTool('pan'); setHint(''); }}>平移</button>
-        <button disabled={disabled || drafting} aria-pressed={tool === 'paint'} onClick={() => { setTool('paint'); setHint(''); }}>画笔</button>
-        <button disabled={disabled || drafting} aria-pressed={tool === 'erase'} onClick={() => { setTool('erase'); setHint(''); }}>橡皮</button>
-        <button disabled={disabled || drafting} aria-pressed={tool === 'pick'} onClick={() => { setTool('pick'); setHint(''); }}>吸管</button>
+        <button disabled={disabled || interacting} aria-pressed={tool === 'pan'} onClick={() => { setTool('pan'); setHint(''); }}>平移</button>
+        <button disabled={disabled || interacting} aria-pressed={tool === 'paint'} onClick={() => { setTool('paint'); setHint(''); }}>画笔</button>
+        <button disabled={disabled || interacting} aria-pressed={tool === 'erase'} onClick={() => { setTool('erase'); setHint(''); }}>橡皮</button>
+        <button disabled={disabled || interacting} aria-pressed={tool === 'pick'} onClick={() => { setTool('pick'); setHint(''); }}>吸管</button>
+        <button disabled={disabled || interacting} aria-pressed={tool === 'select'} onClick={() => { setTool('select'); setHint(''); }}>框选</button>
       </div>
-      <label>方块<select aria-label="画笔方块" value={blockId} disabled={disabled || drafting} onChange={event => setBlockId(Number(event.target.value))}>{MATERIALS.map(material => <option key={material.id} value={material.id}>{material.name}</option>)}</select></label>
-      <label>尺寸<select aria-label="画笔尺寸" value={brushSize} disabled={disabled || drafting} onChange={event => setBrushSize(Number(event.target.value))}>{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
+      <label>方块<select aria-label="画笔方块" value={blockId} disabled={disabled || interacting} onChange={event => setBlockId(Number(event.target.value))}>{MATERIALS.map(material => <option key={material.id} value={material.id}>{material.name}</option>)}</select></label>
+      <label>尺寸<select aria-label="画笔尺寸" value={brushSize} disabled={disabled || interacting} onChange={event => setBrushSize(Number(event.target.value))}>{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
       <div className="tool-buttons" role="group" aria-label="编辑历史">
-        <button disabled={disabled || drafting || !editState.undoCount} onClick={() => onEdit('undo')}>撤销 ({editState.undoCount})</button>
-        <button disabled={disabled || drafting || !editState.redoCount} onClick={() => onEdit('redo')}>重做 ({editState.redoCount})</button>
+        <button disabled={disabled || interacting || !editState.undoCount} onClick={() => onEdit('undo')}>撤销 ({editState.undoCount})</button>
+        <button disabled={disabled || interacting || !editState.redoCount} onClick={() => onEdit('redo')}>重做 ({editState.redoCount})</button>
       </div>
+    </div>
+    <div className="selection-controls" role="group" aria-label="选区操作">
+      <output aria-label="选区范围">{displayedSelection ? `X ${displayedSelection.x} · Y ${displayedSelection.y} · ${displayedSelection.width} × ${displayedSelection.height}（${displayedSelection.width * displayedSelection.height} 格）` : '未选择区域'}</output>
+      <button disabled={disabled || interacting || !selection} onClick={() => onEdit('fillSelection', { selection, blockId })}>填充选区</button>
+      <button disabled={disabled || interacting || !selection} onClick={() => onEdit('eraseSelection', { selection })}>擦除选区</button>
+      <button disabled={disabled || interacting || !selection} onClick={clearSelection}>清除选区</button>
     </div>
     <p className="tool-hint" role="status">{hint || {
       paint: '画笔模式：放大到 200% 以上绘制。每次拖动为一步，双指可平移缩放。',
       erase: '橡皮模式：放大到 200% 以上擦除方块，跳过特殊图格及紧邻方块；保留墙壁、液体和电线。',
       pick: '吸管模式：放大到 200% 以上点击方块。支持选取现有 5 种材料；其他方块仅识别 ID。',
+      select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
       pan: '平移模式：拖动浏览地图。选择画笔后可绘制基础方块。',
     }[tool]}</p>
     <canvas ref={canvasRef} className={`map-canvas${dragging ? ' dragging' : ''}${tool !== 'pan' ? ' painting' : ''}`} tabIndex="0" role="img" aria-label={`${world.name}的世界地图`} aria-describedby="map-help" aria-busy={drawing}
@@ -323,12 +380,18 @@ export default function MapView({ session, world, disabled, onError, editState, 
         if (pointers.current.size === 2) { cancelStroke(); return; }
         if (tool !== 'pan' && cell) {
           if (camera.zoom < 2) { setHint('请先放大到 200% 以上，或点击“出生点”后操作。'); return; }
-          setHint('');
           if (tool === 'pick') {
             pickRef.current = { pointerId: event.pointerId, cell, start: pointOf(event) };
             return;
           }
-          strokeRef.current = { pointerId: event.pointerId, blockId, tool, stroke: new BrushStroke(world, brushSize) };
+          if (tool === 'select') {
+            const rectangle = selectionFromPoints(cell, cell, world);
+            selectionDraftRef.current = { pointerId: event.pointerId, start: cell, rectangle };
+            setSelectionPreview(rectangle);
+            redraw();
+            return;
+          }
+          strokeRef.current = { pointerId: event.pointerId, blockId, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current) };
           strokeRef.current.stroke.add(cell);
           setDrafting(true);
           onDraftChange(true);
@@ -339,8 +402,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
       onPointerLeave={() => { if (!pointers.current.size) { hoverRef.current = null; setCoordinates(null); redraw(); } }}
       onKeyDown={event => {
         if (!camera || disabled) return;
-        if (event.key === 'Escape') { cancelStroke(); return; }
-        if (strokeRef.current) return;
+        if (event.key === 'Escape') {
+          if (strokeRef.current || selectionDraftRef.current || pickRef.current) cancelStroke();
+          else clearSelection();
+          return;
+        }
+        if (strokeRef.current || selectionDraftRef.current) return;
         pickRef.current = null;
         if ((event.ctrlKey || event.metaKey) && ['z', 'y'].includes(event.key.toLowerCase())) {
           event.preventDefault();
@@ -367,6 +434,6 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <span>{drawing ? '正在绘制地图…' : '色块地图'} · 黄色十字为出生点</span>
       <output className="map-coordinates">{coordinates ? `X ${coordinates.x} · Y ${coordinates.y}` : '移到地图上查看坐标'}</output>
     </div>
-    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y，Esc 取消当前操作。画笔和橡皮保留墙壁、液体与电线；橡皮同时清除方块的涂料、坡度及制动器。特殊图格受保护。当前为色块显示。</p>
+    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y。Esc 取消草稿，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内；区域操作最多 10000 格。画笔和橡皮保留墙壁、液体与电线；橡皮同时清除方块的涂料、坡度及制动器。特殊图格受保护。当前为色块显示。</p>
   </section>;
 }

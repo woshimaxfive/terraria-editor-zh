@@ -20,7 +20,7 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [editState, setEditState] = useState(emptyEditState);
   const [drafting, setDrafting] = useState(false);
-  const unsaved = editState.dirty || drafting || phase === 'paint' || phase === 'erase';
+  const unsaved = editState.dirty || drafting || ['paint', 'erase', 'fillSelection', 'eraseSelection'].includes(phase);
 
   useEffect(() => {
     if (!unsaved) return;
@@ -71,7 +71,7 @@ export default function App() {
         if (current !== operation.current) return;
         setEditState(result.editState);
         const { changed, skipped } = result.editState;
-        const verb = { undo: '已撤销', redo: '已重做', erase: '已擦除', paint: '已绘制' }[action];
+        const verb = { undo: '已撤销', redo: '已重做', erase: '已擦除', eraseSelection: '已擦除', fillSelection: '已填充', paint: '已绘制' }[action];
         setNotice(`${verb} ${changed} 格。${skipped ? `跳过 ${skipped} 格受保护图格。` : ''}`);
       }
     } catch (failure) {
@@ -123,7 +123,7 @@ export default function App() {
       <main className="welcome" aria-labelledby="page-title">
         <p className="availability">世界文件 · 基础方块编辑</p>
         <h1 id="page-title">泰拉瑞亚地图编辑器</h1>
-        <p className="description">在浏览器中查看地图、绘制基础方块，撤销或重做修改，再导出世界副本。</p>
+        <p className="description">在浏览器中查看地图、绘制基础方块，框选填充或擦除区域，再导出世界副本。</p>
         <div className="file-actions">
           <input ref={input} className="file-input" type="file" accept=".wld" aria-label="选择世界文件" disabled={Boolean(phase) || drafting} onChange={event => {
             const file = event.target.files?.[0];

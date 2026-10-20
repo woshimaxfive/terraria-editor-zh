@@ -67,6 +67,9 @@ h2 { font-size: 24px; margin: 0 0 28px; line-height: 1.4; }
 select { max-width: 100%; padding: 8px; border: 1px solid #3a5645; border-radius: 4px; font: inherit; color: #e6ece8; background: #1d2c23; }
 select:focus-visible { outline: 2px solid #93cba5; outline-offset: 3px; }
 .tool-hint { color: #b6d3bf; font-size: 13px; line-height: 1.8; margin: 12px 0; }
+.selection-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; color: #9ed7ff; font-size: 13px; }
+.selection-controls output { flex-basis: 100%; min-height: 3.2em; line-height: 1.6; overflow-wrap: anywhere; }
+.selection-controls button { padding: 8px 12px; }
 .map-canvas.painting { cursor: crosshair; }
 .save-state { color: #a9b9ae; font-size: 13px; }
 .save-state.unsaved { color: #ffe199; }
