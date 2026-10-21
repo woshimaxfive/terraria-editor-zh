@@ -12,6 +12,8 @@ import { validMasks } from '../editing/masks.js';
 import { continuesLine } from '../editing/constraints.js';
 import { brushOutline, createBrushShape, maxLineThickness } from '../editing/brushShape.js';
 import BrushShapeControls from './BrushShapeControls.jsx';
+import HollowBrushControls from './HollowBrushControls.jsx';
+import { createHollowBrushShape } from '../editing/hollowBrush.js';
 import { drawShapes } from '../rendering/appearance.js';
 import { drawCircuitOverlay } from '../rendering/circuitOverlay.js';
 import { sampledLiquidAmount } from '../editing/liquids.js';
@@ -59,6 +61,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
     thickness: Math.min(previous.thickness, maxLineThickness({ width: size, height: size })) }));
   const footprint = useMemo(() => createBrushShape(brushSettings), [brushSettings]);
   const outline = useMemo(() => brushOutline(footprint), [footprint]);
+  const hollowEnabled = Boolean(brushSettings.hollow && ['block', 'wall'].includes(layer));
+  const strokeSettings = useMemo(() => ({ ...brushSettings, hollow: hollowEnabled, hollowBlock: layer === 'block' }), [brushSettings, hollowEnabled, layer]);
+  const innerOutline = useMemo(() => hollowEnabled ? brushOutline(createHollowBrushShape(brushSettings).interior) : [], [hollowEnabled, brushSettings]);
   const [strokeMode, setStrokeMode] = useState('freehand');
   const [chainAnchor, setChainAnchor] = useState(null);
   const chainRef = useRef(null);
@@ -93,7 +98,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const hoverRef = useRef(null);
   const frameRef = useRef(0);
   const brush = useRef(null);
-  brush.current = { tool, blockId, settings: brushSettings, outline, strokeMode };
+  brush.current = { tool, blockId, settings: strokeSettings, outline, innerOutline, strokeMode };
   const current = useRef({ size, camera });
   current.current = { size, camera };
   const selectLayer = id => {
@@ -218,6 +223,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     if (strokeRef.current) {
       context.fillStyle = strokeRef.current.tool === 'erase' ? '#ff927980' : '#ffe19980';
       for (const index of strokeRef.current.stroke.cells) {
+        context.fillStyle = strokeRef.current.tool === 'erase' ? '#ff927980' : strokeRef.current.stroke.interior.has(index) ? '#79c9ff80' : '#ffe19980';
         context.fillRect(toX(Math.floor(index / world.height)), toY(index % world.height), camera.zoom, camera.zoom);
       }
     }
@@ -228,7 +234,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
         try {
           preview.add(hoverRef.current);
           context.fillStyle = brush.current.tool === 'erase' ? '#ff927940' : '#ffe19940';
-          for (const index of preview.cells) context.fillRect(toX(Math.floor(index / world.height)), toY(index % world.height), camera.zoom, camera.zoom);
+          for (const index of preview.cells) {
+            context.fillStyle = brush.current.tool === 'erase' ? '#ff927940' : preview.interior.has(index) ? '#79c9ff40' : '#ffe19940';
+            context.fillRect(toX(Math.floor(index / world.height)), toY(index % world.height), camera.zoom, camera.zoom);
+          }
         } catch (error) { if (!(error instanceof EditError)) throw error; }
       }
       context.strokeStyle = '#ffe199'; context.lineWidth = 2;
@@ -261,6 +270,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
       } else {
         context.beginPath();
         for (const [x1, y1, x2, y2] of brush.current.outline) {
+          context.moveTo(toX(hoverRef.current.x + x1), toY(hoverRef.current.y + y1));
+          context.lineTo(toX(hoverRef.current.x + x2), toY(hoverRef.current.y + y2));
+        }
+        context.stroke();
+        context.beginPath(); context.strokeStyle = '#79c9ff';
+        for (const [x1, y1, x2, y2] of brush.current.innerOutline) {
           context.moveTo(toX(hoverRef.current.x + x1), toY(hoverRef.current.y + y1));
           context.lineTo(toX(hoverRef.current.x + x2), toY(hoverRef.current.y + y2));
         }
@@ -575,9 +590,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
       const commit = strokeRef.current;
       cancelStroke();
       if (event.type === 'pointerup' && commit?.stroke.cells.size && !disabled) {
-        const { stroke, pointerId, tool: action, ...options } = commit;
+        const { stroke, pointerId, tool: action, hollowFillWall, ...options } = commit;
         const generation = chainGeneration.current;
-        onEdit(action, { ...options, cells: [...stroke.cells] }).then(result => {
+        onEdit(action, { ...options, cells: [...stroke.cells], ...(stroke.hollow ? { hollow: {
+          interior: [...stroke.interior], solid: [...stroke.solid], fillWall: hollowFillWall } } : {}) }).then(result => {
           if (result && mountedRef.current && generation === chainGeneration.current && stroke.mode === 'polyline' && continuesLine(stroke.inputStart, stroke.inputEnd)) {
             chainRef.current = stroke.inputEnd; setChainAnchor(stroke.inputEnd);
           }
@@ -595,7 +611,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const showPanel = name => { setPanel(name); setPanelOpen(true); };
   const closePanel = () => { setPanelOpen(false); panelToggleRef.current?.focus({ preventScroll: true }); };
   const trajectoryName = { freehand: '', line: '直线', polyline: '折线', constrain: '约束' }[strokeMode];
-  const toolName = { pan: '平移', paint: trajectoryName + '画笔', erase: trajectoryName + '橡皮', pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
+  const toolName = { pan: '平移', paint: trajectoryName + (hollowEnabled ? '空心画笔' : '画笔'), erase: trajectoryName + (hollowEnabled ? '空心橡皮' : '橡皮'), pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
   const usesBrush = tool === 'paint' || tool === 'erase';
   const usesLayer = usesBrush || tool === 'fill' || tool === 'pick' || tool === 'select' || (selection && tool !== 'paste');
   return <section className={`map-view${panelOpen ? ' panel-open' : ''}`} aria-labelledby="map-title" onKeyDownCapture={event => {
@@ -701,6 +717,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
             return;
           }
           if (!editVisible) { setHint('当前编辑图层已隐藏，请先勾选对应的显示开关。'); return; }
+          if (['paint', 'erase'].includes(tool) && hollowEnabled && layer === 'block' && brushSettings.fillWall && !layers.wall) { setHint('空心填墙需要显示墙壁图层，请先勾选墙壁显示。'); return; }
           if (!masksValid) { setHint('匹配条件无效，请先修正条件数值。'); return; }
           if (['paint', 'erase'].includes(tool) && footprint.issue) { setHint(footprint.issue); return; }
           if (tool === 'fill') {
@@ -708,7 +725,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
             pickRef.current = { tool, pointerId: event.pointerId, cell, start: pointOf(event) };
             return;
           }
-          strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, stroke: new BrushStroke(world, brushSettings, selectionRef.current, strokeMode, strokeMode === 'polyline' ? chainRef.current : null) };
+          strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, hollowFillWall: Boolean(brushSettings.fillWall && layer === 'block'), stroke: new BrushStroke(world, strokeSettings, selectionRef.current, strokeMode, strokeMode === 'polyline' ? chainRef.current : null) };
           if (strokeMode === 'constrain') strokeRef.current.stroke.direction = lastConstraintDirection.current;
           extendStroke(pointOf(event));
           if (!strokeRef.current) return;
@@ -767,7 +784,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       </div>
     <p className={`tool-hint${hint ? ' has-hint' : ''}`} role="status">{hint || {
       paint: `画笔${trajectoryName}模式：放大到 200% 以上绘制${layerName}。${strokeMode === 'line' ? '拖动预览起终点直线，抬起提交，Esc 取消。' : strokeMode === 'polyline' ? '点击续接上一端点；拖动超过 2 格结束续接，Esc 清除锚点。' : strokeMode === 'constrain' ? '开始移动后锁定水平、竖直或45°方向；Esc 取消。' : '每次拖动为一步，双指可平移缩放。'}${masksEnabled ? '条件过滤已启用。' : ''}`,
-      erase: `橡皮${trajectoryName}模式：放大到 200% 以上擦除${layerName}；只修改当前层，电线仅移除选中颜色。${masksEnabled ? '条件过滤已启用。' : ''}`,
+      erase: `橡皮${trajectoryName}模式：放大到 200% 以上擦除${layerName}；${hollowEnabled ? '空心按启用的内部填墙设置处理相关层' : '只修改当前层，电线仅移除选中颜色'}。${masksEnabled ? '条件过滤已启用。' : ''}`,
       pick: `吸管模式：放大到 200% 以上点击，读取${layerName}和图格属性。`,
       select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
       fill: '连通填充：点击起点，预览四方向连通区域后确认；Esc、双指或尺寸变化取消。最多 10000 格，可先框选限制范围。条件只过滤写入，不阻断连通路径；不支持电线。',
@@ -791,6 +808,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     {['slope', 'paint'].includes(layer) ? <AppearancePicker layer={layer} version={world.formatVersion} slope={slope} onSlope={setSlope} value={appearance} onChange={setAppearance} disabled={disabled || interacting} /> : ['wire', 'actuator'].includes(layer) ? <CircuitPicker layer={layer} mask={wireMask} onMask={setWireMask} actuator={actuator} actuated={actuated} onActuator={setActuator} onActuated={setActuated} disabled={disabled || interacting} /> : layer === 'liquid' ? <LiquidPicker version={world.formatVersion} type={liquidType} amount={liquidAmount} onType={setLiquidType} onAmount={setLiquidAmount} disabled={disabled || interacting} /> : <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />}
           <div className="stroke-options"><label>画笔轨迹<select aria-label="画笔轨迹" value={strokeMode} disabled={disabled || interacting} onChange={event => setStrokeMode(event.target.value)}><option value="freehand">自由绘制</option><option value="line">起终点直线</option><option value="polyline">连续折线</option><option value="constrain">方向约束</option></select></label>
           <BrushShapeControls value={brushSettings} geometry={footprint} onChange={setBrushSettings} disabled={disabled || interacting} />
+          <HollowBrushControls value={brushSettings} onChange={setBrushSettings} layer={layer} version={world.formatVersion} wallId={wallId} onWallChange={setWallId} disabled={disabled || interacting} />
           {strokeMode === 'polyline' && <p className="card-note">点击续接上一端点，每段一步历史；拖动超过 2 格后结束续接。Esc、双指、尺寸或参数变化清除锚点。</p>}
           {strokeMode === 'constrain' && <p className="card-note">开始移动后锁定水平、竖直或 45° 方向，按原版整数规则吸附。每次拖动为一步，Esc 取消。</p>}</div>
           <MaskControls enabled={masksEnabled} onEnabled={setMasksEnabled} rules={masks} onRules={setMasks} sample={sample} disabled={disabled || interacting} />
@@ -854,7 +872,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         <section id="panel-world" hidden={panel !== 'world'}>{worldDetails}</section>
         <section id="panel-help" hidden={panel !== 'help'}>
           <h3>地图操作</h3><dl className="shortcut-list"><div><dt>平移地图</dt><dd>拖动 / 方向键</dd></div><div><dt>缩放地图</dt><dd>滚轮 / 双指 / ＋ −</dd></div><div><dt>撤销 / 重做</dt><dd>Ctrl Z / Ctrl Y</dd></div><div><dt>复制 / 粘贴</dt><dd>Ctrl C / Ctrl V</dd></div><div><dt>确认 / 取消粘贴</dt><dd>Enter / Esc</dd></div></dl>
-    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y、Ctrl+C / Ctrl+V。Esc 取消草稿或粘贴预览，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内，且只修改选中的编辑图层；粘贴完整替换所有图层，含空格。区域操作最多 10000 格。特殊图格受保护。显示面板可选择本机资源并切换贴图，未支持的外观使用色块。</p>
+    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y、Ctrl+C / Ctrl+V。Esc 取消草稿或粘贴预览，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内，普通绘制只修改选中的编辑图层，空心填墙同时处理墙壁；粘贴完整替换所有图层，含空格。区域操作最多 10000 格。特殊图格受保护。显示面板可选择本机资源并切换贴图，未支持的外观使用色块。</p>
 
           <p className="panel-description">液体在材料面板选择种类和液量；0% 或橡皮清除液体，旧格式不支持微光。液体显示为基础色彩，不模拟流动或反应。</p>
           <p className="panel-description">电线可多选颜色；制动器仅作用于已有方块。选择对应编辑图层会打开显示，放大到 200% 以上显示连线与制动器标记；显示面板可分别关闭。这里只编辑存档，不运行电路。</p>

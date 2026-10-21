@@ -120,11 +120,11 @@ export async function openWorld(buffer, progress = () => {}) {
     return {
       summary,
       get editState() { return editing.state; },
-      paint: stroke => editing.paint(stroke),
+      paint: stroke => stroke?.hollow ? editing.paintHollow(stroke) : editing.paint(stroke),
       prepareFill: (payload, control) => editing.prepareFill(payload, control),
       cancelFill: () => editing.cancelFill(),
       commitFill: payload => editing.commitFill(payload),
-      erase: stroke => editing.paint(eraser(stroke)),
+      erase: stroke => stroke?.hollow ? editing.paintHollow({ ...stroke, erase: true }) : editing.paint(eraser(stroke)),
       fillSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary) }),
       eraseSelection: region => editing.paint({ ...eraser(region), cells: selectionCells(region?.selection, summary) }),
       copy(payload) {

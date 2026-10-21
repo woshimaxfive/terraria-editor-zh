@@ -1,10 +1,11 @@
 import { TileFlag } from '../../vendor/terraria-world-file/src/index.ts';
 import { EditHistory } from '../editing/EditHistory.js';
-import { EditError, selectionCells } from '../editing/brush.js';
+import { EditError, selectionCells, MAX_STROKE_TILES } from '../editing/brush.js';
 import { pasteFits, validateClipboard } from '../editing/clipboard.js';
 import { supportsSlope } from '../editing/appearance.js';
 import { tileMaskValues } from './tileMaskValues.js';
 import { floodCells } from '../editing/floodFill.js';
+import { passesMasks } from '../editing/masks.js';
 import fillMetadata from '../../vendor/tedit-editing-rules/fill-metadata.json' with { type: 'json' };
 
 const solidIds = new Set(fillMetadata.solidIds), framedIds = new Set(fillMetadata.framedIds), wallStopIds = new Set(fillMetadata.wallStopIds);
@@ -117,6 +118,45 @@ export function createBlockEditing(world, ensureWritable) {
       return after;
     },
   });
+  editing.paintHollow = stroke => {
+    const { cells, layer, materialId, filters } = editing.validateStroke(stroke);
+    const { hollow, erase = false } = stroke;
+    const candidates = new Set(cells);
+    if (!['block', 'wall'].includes(layer) || !hollow || typeof hollow.fillWall !== 'boolean' || typeof erase !== 'boolean' ||
+        !Array.isArray(hollow.interior) || !Array.isArray(hollow.solid) ||
+        hollow.interior.length > MAX_STROKE_TILES || hollow.solid.length > MAX_STROKE_TILES ||
+        !hollow.interior.every(index => candidates.has(index)) || !hollow.solid.every(index => candidates.has(index))) {
+      throw new EditError('空心画笔参数无效，未修改世界。');
+    }
+    const interior = new Set(hollow.interior), solid = new Set(hollow.solid);
+    if ([...interior].some(index => solid.has(index))) throw new EditError('空心画笔区域冲突，未修改世界。');
+    const walls = layer === 'wall' || hollow.fillWall;
+    if (walls) editing.validateStroke({ ...stroke, layer: 'wall' });
+    const changes = [], filtered = new Set(); let skipped = 0;
+    for (const index of candidates) {
+      const x = Math.floor(index / tiles.height), y = index % tiles.height;
+      if (nearImportant(index) || entityNear(x, y)) { skipped++; continue; }
+      const before = read(index); let after = before, protectedTile = false;
+      const stage = operations => {
+        if (filters.length && !passesMasks(tileMaskValues(after), filters)) { filtered.add(index); return; }
+        for (const [target, id] of operations) {
+          const next = editing.source.paint(index, after, id, target);
+          if (!next) { protectedTile = true; return; }
+          after = next;
+        }
+      };
+      const blockTarget = erase ? null : materialId, wallTarget = erase ? null : stroke.wallId;
+      if (solid.has(index)) stage([...(layer === 'block' ? [['block', blockTarget]] : []), ...(walls ? [['wall', wallTarget]] : [])]);
+      else if (interior.has(index)) {
+        stage([...(layer === 'block' ? [['block', null]] : []), ...(walls ? [['wall', null]] : [])]);
+        // The desktop checks masks again after clearing the interior, before wall filling.
+        if (!protectedTile && walls) stage([['wall', wallTarget]]);
+      } else if (layer === 'block') stage([['block', blockTarget]]);
+      if (protectedTile) { skipped++; continue; }
+      if (!before.every((value, i) => value === after[i])) changes.push({ index, before, after });
+    }
+    return { ...editing.commit(changes, skipped), filtered: filtered.size };
+  };
   let fillDraft = null, nextFillToken = 0;
   editing.prepareFill = async (payload, control) => {
     fillDraft = null;
