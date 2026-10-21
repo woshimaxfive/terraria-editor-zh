@@ -10,7 +10,7 @@ import AppearancePicker from './AppearancePicker.jsx';
 import MaskControls from './MaskControls.jsx';
 import { validMasks } from '../editing/masks.js';
 import { continuesLine } from '../editing/constraints.js';
-import { brushOutline, createBrushShape } from '../editing/brushShape.js';
+import { brushOutline, createBrushShape, maxLineThickness } from '../editing/brushShape.js';
 import BrushShapeControls from './BrushShapeControls.jsx';
 import { drawShapes } from '../rendering/appearance.js';
 import { drawCircuitOverlay } from '../rendering/circuitOverlay.js';
@@ -52,9 +52,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [layer, setLayer] = useState('block');
   const [layers, setLayers] = useState({ block: true, wall: true, liquid: true, wire: false, actuator: false });
   const [sample, setSample] = useState(null);
-  const [brushSettings, setBrushSettings] = useState({ shape: 'rectangle', width: 1, height: 1, locked: true });
+  const [brushSettings, setBrushSettings] = useState({ shape: 'rectangle', width: 1, height: 1, locked: true, thickness: 1 });
   const brushSize = brushSettings.width === brushSettings.height && BRUSH_SIZES.includes(brushSettings.width) ? brushSettings.width : 'custom';
-  const setBrushSize = size => setBrushSettings(previous => ({ ...previous, width: size, height: size }));
+  const setBrushSize = size => setBrushSettings(previous => ({ ...previous, width: size, height: size,
+    thickness: Math.min(previous.thickness, maxLineThickness({ width: size, height: size })) }));
   const footprint = useMemo(() => createBrushShape(brushSettings), [brushSettings]);
   const outline = useMemo(() => brushOutline(footprint), [footprint]);
   const [strokeMode, setStrokeMode] = useState('freehand');
