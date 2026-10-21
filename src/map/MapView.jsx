@@ -7,6 +7,8 @@ import MaterialPicker from './MaterialPicker.jsx';
 import LiquidPicker from './LiquidPicker.jsx';
 import CircuitPicker from './CircuitPicker.jsx';
 import AppearancePicker from './AppearancePicker.jsx';
+import MaskControls from './MaskControls.jsx';
+import { validMasks } from '../editing/masks.js';
 import { drawShapes } from '../rendering/appearance.js';
 import { drawCircuitOverlay } from '../rendering/circuitOverlay.js';
 import { sampledLiquidAmount } from '../editing/liquids.js';
@@ -48,6 +50,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [layers, setLayers] = useState({ block: true, wall: true, liquid: true, wire: false, actuator: false });
   const [sample, setSample] = useState(null);
   const [brushSize, setBrushSize] = useState(1);
+  const [strokeMode, setStrokeMode] = useState('freehand');
+  const [masksEnabled, setMasksEnabled] = useState(false);
+  const [masks, setMasks] = useState([]);
   const [drafting, setDrafting] = useState(false);
   const [selection, setSelection] = useState(null);
   const [selectionPreview, setSelectionPreview] = useState(null);
@@ -78,7 +83,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
     setLayer(id); setHint('');
     if (id === 'wire' || id === 'actuator') setLayers(previous => ({ ...previous, [id]: true }));
   };
-  const parameters = { blockId, wallId, liquidType, liquidAmount, wireMask, actuator, actuated, slope, appearance, layer };
+  const activeMasks = masksEnabled ? masks : [];
+  const masksValid = validMasks(activeMasks);
+  const parameters = { blockId, wallId, liquidType, liquidAmount, wireMask, actuator, actuated, slope, appearance, layer, masks: activeMasks };
   const editVisible = layers[layer === 'paint' ? appearance.target : layer === 'slope' ? 'block' : layer];
   const layerName = EDIT_LAYERS.find(([id]) => id === layer)[1];
 
@@ -336,7 +343,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   };
   const extendStroke = point => {
     const cell = showCoordinates(point);
-    if (!cell) { strokeRef.current.stroke.previous = null; return; }
+    if (!cell) { if (strokeRef.current.stroke.mode !== 'line') strokeRef.current.stroke.previous = null; return; }
     try { strokeRef.current.stroke.add(cell); }
     catch (error) { setHint(error.message); cancelStroke(); }
     redraw();
@@ -486,7 +493,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const displayedSelection = selectionPreview || selection;
   const showPanel = name => { setPanel(name); setPanelOpen(true); };
   const closePanel = () => { setPanelOpen(false); panelToggleRef.current?.focus({ preventScroll: true }); };
-  const toolName = { pan: '平移', paint: '画笔', erase: '橡皮', pick: '吸管', select: '框选', paste: '粘贴' }[tool];
+  const toolName = { pan: '平移', paint: strokeMode === 'line' ? '直线画笔' : '画笔', erase: strokeMode === 'line' ? '直线橡皮' : '橡皮', pick: '吸管', select: '框选', paste: '粘贴' }[tool];
   const usesBrush = tool === 'paint' || tool === 'erase';
   const usesLayer = usesBrush || tool === 'pick' || tool === 'select' || (selection && tool !== 'paste');
   return <section className={`map-view${panelOpen ? ' panel-open' : ''}`} aria-labelledby="map-title">
@@ -542,8 +549,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <div className="selection-strip" aria-label="选区与区域编辑" hidden={!displayedSelection && tool !== 'select' && tool !== 'paste'}>
     <div className="selection-controls" role="group" aria-label="选区操作" hidden={tool === 'paste'}>
       <output aria-label="选区范围">{displayedSelection ? `X ${displayedSelection.x} · Y ${displayedSelection.y} · ${displayedSelection.width} × ${displayedSelection.height}（${displayedSelection.width * displayedSelection.height} 格）` : '未选择区域'}</output>
-      <button disabled={disabled || interacting || !selection || !editVisible} onClick={() => onEdit('fillSelection', { selection, ...parameters })}>填充选区</button>
-      <button disabled={disabled || interacting || !selection || !editVisible} onClick={() => onEdit('eraseSelection', { selection, ...parameters })}>擦除选区</button>
+      <button disabled={disabled || interacting || !selection || !editVisible || !masksValid} onClick={() => onEdit('fillSelection', { selection, ...parameters })}>填充选区</button>
+      <button disabled={disabled || interacting || !selection || !editVisible || !masksValid} onClick={() => onEdit('eraseSelection', { selection, ...parameters })}>擦除选区</button>
       <button disabled={disabled || interacting || !selection} onClick={clearSelection}>清除选区</button>
       <button disabled={disabled || interacting || !selection || tool === 'paste'} onClick={() => { onEdit('copy', { selection }); setPanel('templates'); setPanelOpen(true); }}>复制选区</button>
     </div>
@@ -584,7 +591,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
             return;
           }
           if (!editVisible) { setHint('当前编辑图层已隐藏，请先勾选对应的显示开关。'); return; }
-          strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current) };
+          if (!masksValid) { setHint('匹配条件无效，请先修正条件数值。'); return; }
+          strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current, strokeMode) };
           strokeRef.current.stroke.add(cell);
           setDrafting(true);
           onDraftChange(true);
@@ -638,8 +646,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
 
       </div>
     <p className={`tool-hint${hint ? ' has-hint' : ''}`} role="status">{hint || {
-      paint: `画笔模式：放大到 200% 以上绘制${layerName}。每次拖动为一步，双指可平移缩放。`,
-      erase: `橡皮模式：放大到 200% 以上擦除${layerName}；只修改当前层，电线仅移除选中颜色。`,
+      paint: `画笔${strokeMode === 'line' ? '直线' : ''}模式：放大到 200% 以上绘制${layerName}。${strokeMode === 'line' ? '拖动预览起终点直线，抬起提交，Esc 取消。' : '每次拖动为一步，双指可平移缩放。'}${masksEnabled ? '条件过滤已启用。' : ''}`,
+      erase: `橡皮${strokeMode === 'line' ? '直线' : ''}模式：放大到 200% 以上擦除${layerName}；只修改当前层，电线仅移除选中颜色。${masksEnabled ? '条件过滤已启用。' : ''}`,
       pick: `吸管模式：放大到 200% 以上点击，读取${layerName}和图格属性。`,
       select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
       paste: '粘贴预览：点击或拖动定位左上角，也可输入 X/Y；方向键微调，Enter 确认，Esc 取消。家具与实体暂不支持。',
@@ -660,6 +668,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
             {EDIT_LAYERS.map(([id, name]) => <button key={id} aria-label={`${name}材料`} aria-pressed={layer === id} disabled={disabled || interacting} onClick={() => selectLayer(id)}>{name}</button>)}
           </div>
     {['slope', 'paint'].includes(layer) ? <AppearancePicker layer={layer} version={world.formatVersion} slope={slope} onSlope={setSlope} value={appearance} onChange={setAppearance} disabled={disabled || interacting} /> : ['wire', 'actuator'].includes(layer) ? <CircuitPicker layer={layer} mask={wireMask} onMask={setWireMask} actuator={actuator} actuated={actuated} onActuator={setActuator} onActuated={setActuated} disabled={disabled || interacting} /> : layer === 'liquid' ? <LiquidPicker version={world.formatVersion} type={liquidType} amount={liquidAmount} onType={setLiquidType} onAmount={setLiquidAmount} disabled={disabled || interacting} /> : <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />}
+          <div className="stroke-options"><label>画笔轨迹<select aria-label="画笔轨迹" value={strokeMode} disabled={disabled || interacting} onChange={event => setStrokeMode(event.target.value)}><option value="freehand">自由绘制</option><option value="line">起终点直线</option></select></label></div>
+          <MaskControls enabled={masksEnabled} onEnabled={setMasksEnabled} rules={masks} onRules={setMasks} sample={sample} disabled={disabled || interacting} />
           <details className="inspector-details" open={sample ? true : undefined}><summary>图格属性</summary>
     <div className="tile-inspector" aria-label="图格属性" aria-live="polite">
       <strong>取样属性</strong>{sample ? <>
@@ -731,6 +741,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     </aside>
     <div className="map-status">
       <span className="render-status" aria-label="地图渲染状态"><span className="status-dot" />{drawing ? '正在绘制地图…' : displayMode === 'texture' ? textureStats?.detailed ? `贴图 ${textureStats.drawn} 格 · 色块 ${textureStats.fallback} 格` : '色块概览 · 放大查看贴图' : '色块地图'}<span className="status-detail"> · 黄色十字为出生点</span></span>
+      {tool !== 'paste' && masksEnabled && masks.some(rule => rule.mode !== 'off') && <span className="filter-status" aria-label="当前过滤条件">{masksValid ? `筛选 ${masks.filter(rule => rule.mode !== 'off').length}` : '条件无效'}</span>}
       <output className="map-coordinates">{coordinates ? `X ${coordinates.x} · Y ${coordinates.y}` : '移到地图上查看坐标'}</output>
       <span className="world-size">{world.width} × {world.height}</span>
       <span className="selection-size" aria-label="状态栏选区">{displayedSelection ? `选区 ${displayedSelection.width} × ${displayedSelection.height}` : '无选区'}</span>

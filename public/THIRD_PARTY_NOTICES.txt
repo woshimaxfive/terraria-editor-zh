@@ -153,3 +153,9 @@ Source: https://github.com/TEdit/Terraria-Map-Editor/tree/84e3fc3466d405675a09da
 Extracted slope IDs/paint colors and browser adaptations: vendor/tedit-appearance/,
 src/editing/appearance.js and src/rendering/appearance.js.
 Pinned source references and full license: vendor/tedit-appearance/source.json and LICENSE.
+
+Desktop TEdit mask rules
+TEdit contributors, MS-PL.
+Source: https://github.com/TEdit/Terraria-Map-Editor/tree/84e3fc3466d405675a09da763169774b82c22d4d
+Browser adaptation: src/editing/masks.js.
+Pinned source references and full license: vendor/tedit-editing-rules/source.json and LICENSE.

@@ -3,6 +3,7 @@ import { findMaterial } from './materials.js';
 import { validLiquid } from './liquids.js';
 import { validCircuit } from './circuits.js';
 import { validAppearance } from './appearance.js';
+import { passesMasks, validMasks } from './masks.js';
 
 const MAX_HISTORY_STEPS = 100;
 const MAX_HISTORY_TILES = 50_000;
@@ -27,7 +28,7 @@ export class EditHistory {
   }
 
   paint(stroke) {
-    const { cells, layer = 'block' } = stroke || {};
+    const { cells, layer = 'block', masks } = stroke || {};
     const version = this.source.version ?? 194;
     const materialId = layer === 'slope' ? stroke?.slope : layer === 'paint' ? stroke?.appearance :
       layer === 'wire' ? { mask: stroke?.wireMask, erase: stroke?.wireErase ?? false } :
@@ -38,19 +39,23 @@ export class EditHistory {
       materialId === null || Boolean(findMaterial(layer, materialId, version));
     if (!['block', 'wall', 'liquid', 'wire', 'actuator', 'slope', 'paint'].includes(layer) || !validMaterial || !Array.isArray(cells) ||
         cells.length < 1 || cells.length > MAX_STROKE_TILES ||
-        !cells.every(index => Number.isSafeInteger(index) && index >= 0 && index < this.source.count)) {
+        ![...cells].every(index => Number.isSafeInteger(index) && index >= 0 && index < this.source.count)) {
       throw new EditError('画笔参数无效，未修改世界。');
     }
+    if (!validMasks(masks)) throw new EditError('匹配条件无效，未修改世界。');
+    const filters = (masks ?? []).filter(rule => rule.mode !== 'off');
+    if (filters.length && !this.source.maskValues) throw new EditError('匹配条件无效，未修改世界。');
     this.source.validateMaterial?.(layer, materialId);
     const changes = [];
-    let skipped = 0;
+    let skipped = 0, filtered = 0;
     for (const index of new Set(cells)) {
       const before = this.source.read(index);
+      if (filters.length && !passesMasks(this.source.maskValues(before), filters)) { filtered++; continue; }
       const after = this.source.paint(index, before, materialId, layer);
       if (!after) { skipped++; continue; }
       if (!before.every((value, i) => value === after[i])) changes.push({ index, before, after });
     }
-    return this.commit(changes, skipped);
+    return { ...this.commit(changes, skipped), filtered };
   }
 
   // Only the adapter supplies fully validated changes; public payloads never enter here.

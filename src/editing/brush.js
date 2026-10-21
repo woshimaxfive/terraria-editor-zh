@@ -18,15 +18,22 @@ export function selectionCells(selection, world) {
 
 // The preview and Worker use the same bounded, column-major cell indices.
 export class BrushStroke {
-  constructor(world, size, selection = null) {
+  constructor(world, size, selection = null, mode = 'freehand') {
     this.world = world;
     this.size = size;
     this.selection = selection;
     this.cells = new Set();
     this.previous = null;
+    this.mode = mode;
+    this.anchor = null;
   }
 
   add(point) {
+    if (this.mode === 'line') {
+      this.anchor ??= point;
+      this.cells.clear();
+      this.previous = this.anchor;
+    }
     let { x, y } = this.previous || point;
     const dx = Math.abs(point.x - x), dy = -Math.abs(point.y - y);
     const sx = x < point.x ? 1 : -1, sy = y < point.y ? 1 : -1;

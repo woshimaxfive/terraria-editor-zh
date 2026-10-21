@@ -3,6 +3,7 @@ import { EditHistory } from '../editing/EditHistory.js';
 import { EditError, selectionCells } from '../editing/brush.js';
 import { pasteFits, validateClipboard } from '../editing/clipboard.js';
 import { supportsSlope } from '../editing/appearance.js';
+import { tileMaskValues } from './tileMaskValues.js';
 
 // Read and restore every stored field, including dormant flags hidden by getTile.
 export const TILE_FIELDS = ['blockId', 'frameX', 'frameY', 'blockColor', 'wallId', 'wallColor', 'liquidAmount', 'liquidType', 'flags'];
@@ -38,6 +39,7 @@ export function createBlockEditing(world, ensureWritable) {
       }
     },
     read,
+    maskValues: tileMaskValues,
     write(index, values) { TILE_FIELDS.forEach((field, i) => { tiles[field][index] = values[i]; }); },
     paint(index, before, blockId, layer) {
       if (layer === 'slope') {

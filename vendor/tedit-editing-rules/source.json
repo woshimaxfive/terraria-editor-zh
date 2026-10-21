@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/TEdit/Terraria-Map-Editor",
+  "commit": "84e3fc3466d405675a09da763169774b82c22d4d",
+  "files": [
+    "src/TEdit.Common/Geometry/Shape.cs",
+    "src/TEdit/Editor/Tools/BrushTool.cs",
+    "src/TEdit.Editor/TileMaskSettings.cs",
+    "src/TEdit.Editor/MaskMode.cs",
+    "src/TEdit.Editor/LiquidLevelMaskMode.cs"
+  ],
+  "license": "MS-PL",
+  "changes": "Adapt integer line rasterization and mask evaluation to bounded browser editing."
+}

@@ -1,6 +1,7 @@
 import { FileReader, FileSaver } from '../../vendor/terraria-world-file/src/index.ts';
 import { rasterizeRegion } from '../rendering/worldRaster.js';
-import { createBlockEditing } from './blockEditing.js';
+import { createBlockEditing, TILE_FIELDS } from './blockEditing.js';
+import { tileMaskValues } from './tileMaskValues.js';
 import { preservesOtherSections } from './verifyExport.js';
 import { EditError, selectionCells } from '../editing/brush.js';
 import { findMaterial } from '../editing/materials.js';
@@ -146,7 +147,7 @@ export async function openWorld(buffer, progress = () => {}) {
         const material = layer === 'liquid' ? findLiquid(materialId, summary.formatVersion) : findMaterial(layer, materialId, summary.formatVersion);
         const special = layer === 'block' && Boolean(blockId !== null && world.fileFormatHeader.importants[blockId]);
         const tile = tiles.getTile(x, y);
-        const result = { x, y, layer, blockId, wallId, materialId,
+        const result = { x, y, layer, blockId, wallId, materialId, maskValues: tileMaskValues(TILE_FIELDS.map(field => tiles[field][index])),
           name: material?.name ?? (materialId === null ? '空格' : `${layer === 'liquid' ? '液体' : layer === 'wall' ? '墙壁' : '方块'} ID ${materialId}`),
           paintable: Boolean(material) && !special, special,
           properties: { blockColor: tile.blockColor ?? 0, wallColor: tile.wallColor ?? 0,

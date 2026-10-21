@@ -93,9 +93,9 @@ export default function App() {
         const result = await session.current.edit(action, file);
         if (current !== operation.current) return;
         setEditState(result.editState);
-        const { changed, skipped } = result.editState;
+        const { changed, skipped, filtered } = result.editState;
         const verb = { undo: '已撤销', redo: '已重做', erase: '已擦除', eraseSelection: '已擦除', fillSelection: '已填充', paint: '已绘制', paste: '已粘贴' }[action];
-        setNotice(`${verb} ${changed} 格。${skipped ? `跳过 ${skipped} 格受保护图格。` : ''}`);
+        setNotice(`${verb} ${changed} 格。${skipped ? `跳过 ${skipped} 格受保护图格。` : ''}${filtered ? `${filtered} 格不符合匹配条件。` : ''}`);
         return result.editState;
       }
     } catch (failure) {
