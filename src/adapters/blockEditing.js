@@ -2,6 +2,7 @@ import { TileFlag } from '../../vendor/terraria-world-file/src/index.ts';
 import { EditHistory } from '../editing/EditHistory.js';
 import { EditError, selectionCells } from '../editing/brush.js';
 import { pasteFits, validateClipboard } from '../editing/clipboard.js';
+import { supportsSlope } from '../editing/appearance.js';
 
 // Read and restore every stored field, including dormant flags hidden by getTile.
 export const TILE_FIELDS = ['blockId', 'frameX', 'frameY', 'blockColor', 'wallId', 'wallColor', 'liquidAmount', 'liquidType', 'flags'];
@@ -39,6 +40,30 @@ export function createBlockEditing(world, ensureWritable) {
     read,
     write(index, values) { TILE_FIELDS.forEach((field, i) => { tiles[field][index] = values[i]; }); },
     paint(index, before, blockId, layer) {
+      if (layer === 'slope') {
+        if (!tiles.hasBlock(index) || !supportsSlope(tiles.blockId[index])) return null;
+        const after = [...before];
+        after[8] = (after[8] & ~TileFlag.SLOPE_MASK) | (blockId << TileFlag.SLOPE_SHIFT);
+        return after;
+      }
+      if (layer === 'paint') {
+        const after = [...before], wall = blockId.target === 'wall';
+        const exists = wall ? Boolean(before[4]) : tiles.hasBlock(index);
+        const color = wall ? 5 : 3;
+        const invisible = wall ? TileFlag.INVISIBLE_WALL : TileFlag.INVISIBLE_BLOCK;
+        const bright = wall ? TileFlag.FULL_BRIGHT_WALL : TileFlag.FULL_BRIGHT_BLOCK;
+        if (blockId.mode === 'color') {
+          after[color] = exists ? blockId.color : 0;
+          // Desktop converts legacy illuminant paint into a full-bright coating.
+          if (exists && blockId.color === 31 && world.fileFormatHeader.version >= 269) {
+            after[color] = 0; after[8] |= bright;
+          }
+        } else if (exists) {
+          after[8] = (after[8] & ~(invisible | bright)) |
+            (blockId.invisible ? invisible : 0) | (blockId.fullBright ? bright : 0);
+        }
+        return after;
+      }
       if (layer === 'wire') {
         const after = [...before], mask = blockId.mask << 1;
         after[8] = blockId.erase ? after[8] & ~mask : after[8] | mask;

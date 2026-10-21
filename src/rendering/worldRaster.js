@@ -1,6 +1,7 @@
 import palette from '../../vendor/tedit-map-colors/palette.json' with { type: 'json' };
 import { atlasSupports, createDesktopFrames, MAX_DETAIL_TILES } from './desktopTerrain.js';
 import { circuitFlags } from './circuitOverlay.js';
+import { appearanceColor } from './appearance.js';
 
 export const MAX_RASTER_PIXELS = 1024 * 1024;
 const UNKNOWN = [255, 0, 255];
@@ -29,7 +30,7 @@ export function rasterizeRegion(source, region) {
   const pixels = new Uint8ClampedArray(imageWidth * imageHeight * 4);
   const detailed = Boolean(region.atlases) && step === 1 && width * height <= MAX_DETAIL_TILES;
   const frameAt = detailed && layers.block && Object.keys(region.atlases).length ? createDesktopFrames(source, region) : null;
-  const sprites = [], plants = [], circuits = [];
+  const sprites = [], plants = [], circuits = [], shapes = [];
   let fallbackCount = 0;
   for (let row = 0; row < imageHeight; row++) {
     const tileY = y + row * step;
@@ -44,14 +45,22 @@ export function rasterizeRegion(source, region) {
         const flags = circuitFlags(tile, nearby, layers);
         if (flags) circuits.push(column, row, flags);
       }
-      let color = layers.wall && tile.wallId ? palette.walls[tile.wallId] ?? UNKNOWN : base;
-      if (layers.block && tile.blockId !== undefined) color = palette.blocks[tile.blockId] ?? UNKNOWN;
+      const wallColor = layers.wall && tile.wallId ? appearanceColor(palette.walls[tile.wallId] ?? UNKNOWN,
+        tile.wallColor, tile.invisibleWall, tile.fullBrightWall) : base;
+      let color = wallColor;
+      if (layers.block && tile.blockId !== undefined) color = appearanceColor(palette.blocks[tile.blockId] ?? UNKNOWN,
+        tile.blockColor, tile.invisibleBlock, tile.fullBrightBlock);
       const liquid = layers.liquid && tile.liquidAmount > 0 && palette.liquids[tile.liquidType];
+      if (region.detailShapes && step === 1 && layers.block && tile.blockId !== undefined && tile.slope >= 1 && tile.slope <= 5) {
+        const shapeColor = liquid ? color.map((value, channel) => Math.round(value * .35 + liquid[channel] * .65)) : color;
+        shapes.push(column, row, tile.slope, ...shapeColor);
+        color = wallColor;
+      }
       if (detailed && layers.block && tile.blockId !== undefined) {
         const atlas = region.atlases[tile.blockId];
         const frame = atlas ? frameAt(x + column, tileY, tile) : null;
         if (frame && atlasSupports(atlas, frame)) {
-          color = layers.wall && tile.wallId ? palette.walls[tile.wallId] ?? UNKNOWN : base;
+          color = wallColor;
           (tile.blockId === 3 ? plants : sprites).push(tile.blockId, frame.sourceX, frame.sourceY, frame.width, frame.height, column, row, frame.offsetY);
         } else fallbackCount++;
       }
@@ -63,6 +72,7 @@ export function rasterizeRegion(source, region) {
     }
   }
   const result = { x, y, width, height, step, imageWidth, imageHeight, buffer: pixels.buffer };
+  if (shapes.length) result.shapes = new Int32Array(shapes).buffer;
   if (layers.wire || layers.actuator) result.circuits = new Int32Array(circuits).buffer;
   if (region.atlases) {
     const commands = new Int32Array([...sprites, ...plants]);

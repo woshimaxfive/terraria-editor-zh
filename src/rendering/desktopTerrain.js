@@ -12,7 +12,7 @@ export const SUPPORTED_TEXTURE_IDS = Object.freeze([0, 1, 2, 3]);
 export const MAX_DETAIL_TILES = 65_536;
 
 function shapeSupported(tile) {
-  return !tile.slope && !tile.actuated && !tile.invisibleBlock && !tile.blockColor && !tile.liquidAmount;
+  return !tile.slope && !tile.actuated && !tile.invisibleBlock && !tile.fullBrightBlock && !tile.blockColor && !tile.liquidAmount;
 }
 
 // Browser adaptation of desktop WorldRenderXna's sameStyle/mergeMask and

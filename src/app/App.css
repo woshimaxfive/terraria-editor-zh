@@ -130,6 +130,7 @@ select { max-width: 100%; }
 .material-layers button { padding: 5px; border: 1px solid transparent; background: transparent; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .material-layers button[aria-pressed="true"] { background: #30363f; border-color: #454e5c; color: #edf1f6; }
 .material-picker { display: flex; flex-direction: column; gap: 9px; }
+.shape-symbol { width: 24px; font-size: 22px; line-height: 1; text-align: center; }
 .current-material { display: flex; align-items: center; gap: 10px; padding: 9px; background: #252a31; border: 1px solid #3b444e; border-radius: 3px; }
 .current-material > .material-swatch { width: 32px; height: 32px; }
 .current-material > div { display: grid; gap: 3px; min-width: 0; }

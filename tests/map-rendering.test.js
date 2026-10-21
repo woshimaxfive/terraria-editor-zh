@@ -47,7 +47,8 @@ test('colors distinguish dirt ID zero, stone, liquid and unknown blocks', () => 
     readTile: x => [{ blockId: 0 }, { blockId: 1 }, { blockId: 1, liquidAmount: 255, liquidType: 1 }, { blockId: 99999 }][x],
   };
   const image = rasterizeRegion(source, { x: 0, y: 100, width: 4, height: 1, step: 1 });
-  assert.deepEqual([...new Uint8Array(image.buffer)], [151, 107, 75, 255, 128, 128, 128, 255, 51, 84, 169, 255, 255, 0, 255, 255]);
+  // Desktop coating preview uses brightness 211 for ordinary blocks.
+  assert.deepEqual([...new Uint8Array(image.buffer)], [124, 88, 62, 255, 105, 105, 105, 255, 43, 76, 161, 255, 211, 0, 211, 255]);
 });
 
 test('sampled region matches independently cropped full pixels, including the final partial cell', () => {
@@ -80,8 +81,8 @@ test('layer visibility changes only composition, revealing walls behind blocks a
   const source = { width: 1, height: 600, surface: 200, rock: 400, readTile: () => tile };
   const region = { x: 0, y: 100, width: 1, height: 1, step: 1 };
   const pixel = layers => [...new Uint8Array(rasterizeRegion(source, { ...region, layers }).buffer)];
-  assert.deepEqual(pixel({ liquid: false }), [128, 128, 128, 255]);
-  assert.deepEqual(pixel({ block: false, liquid: false }), [73, 51, 36, 255]);
+  assert.deepEqual(pixel({ liquid: false }), [105, 105, 105, 255]);
+  assert.deepEqual(pixel({ block: false, liquid: false }), [60, 42, 29, 255]);
   assert.deepEqual(pixel({ block: false, wall: false, liquid: false }), [98, 113, 255, 255]);
   assert.deepEqual(pixel({ wall: false }), pixel({}));
   assert.notDeepEqual(pixel({ block: false }), pixel({ block: false, liquid: false }));

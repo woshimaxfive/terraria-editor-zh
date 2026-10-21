@@ -6,6 +6,7 @@ import { EditError, selectionCells } from '../editing/brush.js';
 import { findMaterial } from '../editing/materials.js';
 import { findLiquid } from '../editing/liquids.js';
 import { WIRES, wireMaskOf } from '../editing/circuits.js';
+import { PAINTS, SHAPES, supportsSlope } from '../editing/appearance.js';
 import { clipboardPreview } from './clipboardPreview.js';
 
 export const MAX_WORLD_BYTES = 128 * 1024 * 1024;
@@ -68,6 +69,12 @@ export function exportFilename(name) {
   return `${name.replace(/\.wld$/i, '')}-副本.wld`;
 }
 
+function eraser(stroke) {
+  return { ...stroke, blockId: null, wallId: null, liquidAmount: 0, liquidType: 0,
+    wireErase: true, actuator: false, actuated: false, slope: 0,
+    appearance: stroke?.appearance && { ...stroke.appearance, color: 0, invisible: false, fullBright: false } };
+}
+
 // The third-party world stays inside this adapter and its Worker.
 export async function openWorld(buffer, progress = () => {}) {
   validateWorldContainer(buffer);
@@ -113,9 +120,9 @@ export async function openWorld(buffer, progress = () => {}) {
       summary,
       get editState() { return editing.state; },
       paint: stroke => editing.paint(stroke),
-      erase: stroke => editing.paint({ ...stroke, blockId: null, wallId: null, liquidAmount: 0, liquidType: 0, wireErase: true, actuator: false, actuated: false }),
+      erase: stroke => editing.paint(eraser(stroke)),
       fillSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary) }),
-      eraseSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary), blockId: null, wallId: null, liquidAmount: 0, liquidType: 0, wireErase: true, actuator: false, actuated: false }),
+      eraseSelection: region => editing.paint({ ...eraser(region), cells: selectionCells(region?.selection, summary) }),
       copy(payload) {
         const clipboard = editing.copy(payload?.selection);
         return { clipboard, image: clipboardPreview(clipboard) };
@@ -130,7 +137,8 @@ export async function openWorld(buffer, progress = () => {}) {
         if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y) || x < 0 || y < 0 || x >= summary.width || y >= summary.height) {
           throw new EditError('请选择地图范围内的一个方块。');
         }
-        if (!['block', 'wall', 'liquid', 'wire', 'actuator'].includes(layer)) throw new EditError('取样图层无效。');
+        if (!['block', 'wall', 'liquid', 'wire', 'actuator', 'slope', 'paint'].includes(layer)) throw new EditError('取样图层无效。');
+        if (layer === 'paint' && (!['block', 'wall'].includes(point.target) || !['color', 'coating'].includes(point.mode))) throw new EditError('取样外观参数无效。');
         const tiles = world.worldTiles.tiles, index = tiles.index(x, y);
         const blockId = tiles.hasBlock(index) ? tiles.blockId[index] : null;
         const wallId = tiles.wallId[index] || null;
@@ -147,7 +155,20 @@ export async function openWorld(buffer, progress = () => {}) {
             invisibleBlock: Boolean(tile.invisibleBlock), fullBrightBlock: Boolean(tile.fullBrightBlock),
             invisibleWall: Boolean(tile.invisibleWall), fullBrightWall: Boolean(tile.fullBrightWall),
             wires: ['Red', 'Blue', 'Green', 'Yellow'].filter(color => tile[`wire${color}`]) } };
-        if (layer === 'wire') {
+        if (layer === 'slope') {
+          result.materialId = tile.slope ?? 0;
+          result.name = SHAPES[result.materialId]?.name ?? '未知坡面';
+          result.paintable = blockId !== null && supportsSlope(blockId) && Boolean(SHAPES[result.materialId]);
+        } else if (layer === 'paint') {
+          const wall = point.target === 'wall';
+          result.materialId = (wall ? tile.wallColor : tile.blockColor) ?? 0;
+          result.appearance = { target: point.target, mode: point.mode, color: result.materialId,
+            invisible: Boolean(wall ? tile.invisibleWall : tile.invisibleBlock),
+            fullBright: Boolean(wall ? tile.fullBrightWall : tile.fullBrightBlock) };
+          result.name = point.mode === 'color' ? PAINTS[result.materialId]?.name ?? '未知涂料' : '涂层状态';
+          result.paintable = (wall ? wallId !== null : blockId !== null) &&
+            (point.mode === 'color' ? Boolean(PAINTS[result.materialId]) : summary.formatVersion >= 269);
+        } else if (layer === 'wire') {
           result.materialId = wireMaskOf(tile);
           result.name = WIRES.filter(wire => result.materialId & wire.bit).map(wire => wire.name).join('、') + '电线';
           if (!result.materialId) result.name = '无电线';

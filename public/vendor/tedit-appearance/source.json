@@ -1,0 +1,16 @@
+{
+  "repository": "https://github.com/TEdit/Terraria-Map-Editor",
+  "commit": "84e3fc3466d405675a09da763169774b82c22d4d",
+  "files": [
+    "src/TEdit.Terraria/Data/tiles.json",
+    "src/TEdit.Terraria/Data/paints.json",
+    "src/TEdit.Terraria/Objects/TileProperty.cs",
+    "src/TEdit.Terraria/BrickStyle.cs",
+    "src/TEdit.Editor/WorldEditor.cs",
+    "src/TEdit.Terraria/World.FileV2.cs",
+    "src/TEdit/Render/PixelMap.cs",
+    "src/TEdit/View/WorldRenderXna.xaml.cs"
+  ],
+  "license": "MS-PL",
+  "changes": "Extract slope-capable IDs and paint data; adapt appearance editing and color overview to the browser."
+}
