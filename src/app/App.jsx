@@ -5,6 +5,8 @@ import { readTemplate } from '../platform/files/templateFile.js';
 import { encodeTemplate, TEMPLATE_EXTENSION } from '../editing/template.js';
 import { transformClipboard } from '../editing/clipboard.js';
 import MapView from '../map/MapView.jsx';
+import Icon from './Icon.jsx';
+import EditorMenu from './EditorMenu.jsx';
 import './App.css';
 
 const modes = ['经典', '专家', '大师', '旅行'];
@@ -24,6 +26,7 @@ export default function App() {
   const [editState, setEditState] = useState(emptyEditState);
   const [drafting, setDrafting] = useState(false);
   const [clipboard, setClipboard] = useState(null);
+  const [menuHost, setMenuHost] = useState(null);
   const unsaved = editState.dirty || drafting || ['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste'].includes(phase);
 
   useEffect(() => {
@@ -132,57 +135,70 @@ export default function App() {
     setDrafting(false);
     setError(failure.message);
   }, []);
+  const fileActions = <div className="file-actions" role="group" aria-label="世界文件">
+    <input ref={input} className="file-input" type="file" accept=".wld" aria-label="选择世界文件" disabled={Boolean(phase) || drafting} onChange={event => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (file) run('open', file);
+    }} />
+    <button className="primary" aria-label={summary ? '选择其他世界' : '打开世界文件'} title={summary ? '选择其他世界' : '打开世界文件'} disabled={Boolean(phase) || drafting} onClick={() => {
+      if (!unsaved || window.confirm('当前有尚未导出的修改，打开其他世界后会丢失。仍要继续吗？')) input.current.click();
+    }}><Icon name="open" /><span>{summary ? '打开' : '打开世界文件'}</span></button>
+    {summary && <button className="export-button" aria-label={editState.revision === 0 ? '导出未修改副本' : '导出世界副本'} title="导出世界副本" disabled={drafting || Boolean(phase)} onClick={() => run('export')}><Icon name="save" /><span>导出副本</span></button>}
+    {(summary || phase) && <button className="quiet" aria-label={phase ? '取消操作' : '关闭世界'} title={phase ? '取消操作' : '关闭世界'} onClick={close}><Icon name="close" /><span>{phase ? '取消操作' : '关闭'}</span></button>}
+  </div>;
+  const worldDetails = summary && <section className="world-card" aria-labelledby="world-name" aria-busy={Boolean(phase)}>
+    <p className="filename">{filename}</p>
+    <h2 id="world-name">{summary.name}</h2>
+    <dl className="world-details">
+      <div><dt>世界尺寸</dt><dd>{summary.width} × {summary.height} 格</dd></div>
+      <div><dt>难度</dt><dd>{modes[summary.gameMode] ?? '未知'}</dd></div>
+      <div><dt>出生点</dt><dd>X {summary.spawn.x} · Y {summary.spawn.y}</dd></div>
+      <div><dt>文件格式版本</dt><dd>{summary.formatVersion}</dd></div>
+      <div><dt>世界 ID</dt><dd>{summary.worldId}</dd></div>
+      <div><dt>箱子 / 告示牌</dt><dd>{summary.counts.chests} / {summary.counts.signs}</dd></div>
+      <div><dt>城镇 NPC / 图格实体</dt><dd>{summary.counts.npcs} / {summary.counts.tileEntities}</dd></div>
+      {summary.seed && <div><dt>世界种子</dt><dd>{summary.seed}</dd></div>}
+    </dl>
+    <p className="card-note">使用副本进行游戏内测试，保留原始存档。</p>
+  </section>;
   return (
     <div className={`app-shell${summary ? ' has-world' : ''}`}>
       <header className="app-header">
-        <a className="brand" href={import.meta.env.BASE_URL}>
+        <a className="brand" href={import.meta.env.BASE_URL} aria-label="泰拉瑞亚地图编辑器">
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width="28" height="28" />
           <span>Terraria Editor</span>
         </a>
-        <span className="language">简体中文</span>
+        {summary && <nav className="app-menu-bar" aria-label="编辑器菜单">
+          <EditorMenu label="文件" disabled={Boolean(phase) || drafting}>
+            <button data-menu-command onClick={() => {
+              if (!unsaved || window.confirm('当前有尚未导出的修改，打开其他世界后会丢失。仍要继续吗？')) input.current.click();
+            }}><Icon name="open" />打开世界…</button>
+            <button data-menu-command onClick={() => run('export')}><Icon name="save" />导出世界副本</button>
+            <hr /><button data-menu-command onClick={close}><Icon name="close" />关闭世界</button>
+          </EditorMenu>
+          <span className="map-menu-host" ref={setMenuHost} />
+        </nav>}
+        {summary ? <><div className="document-title"><span title={filename}>{summary.name}</span><span className={unsaved ? 'save-state unsaved' : 'save-state'} role="status">{unsaved ? '修改未导出' : editState.revision === 0 ? '未修改' : '修改已导出'}</span></div>{fileActions}</> : <span className="language">简体中文 · 浏览器编辑器</span>}
       </header>
       <main className="welcome" aria-labelledby="page-title">
-        <p className="availability">世界文件 · 方块与墙壁编辑</p>
-        <h1 id="page-title">泰拉瑞亚地图编辑器</h1>
-        <p className="description">在浏览器中查看地图，搜索中文材料、绘制方块与墙壁，框选复制区域、旋转翻转或保存建筑模板，再导出世界副本。</p>
-        <div className="file-actions">
-          <input ref={input} className="file-input" type="file" accept=".wld" aria-label="选择世界文件" disabled={Boolean(phase) || drafting} onChange={event => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (file) run('open', file);
-          }} />
-          <button className="primary" disabled={Boolean(phase) || drafting} onClick={() => {
-            if (!unsaved || window.confirm('当前有尚未导出的修改，打开其他世界后会丢失。仍要继续吗？')) input.current.click();
-          }}>{summary ? '选择其他世界' : '打开世界文件'}</button>
-          {summary && !phase && <button disabled={drafting} onClick={() => run('export')}>{editState.revision === 0 ? '导出未修改副本' : '导出世界副本'}</button>}
-          {(summary || phase) && <button className="quiet" onClick={close}>{phase ? '取消操作' : '关闭世界'}</button>}
-        </div>
-        <p className="file-hint">选择 .wld 文件 · 存档仅在本机浏览器中处理，不会上传。</p>
-        {summary && <p className={unsaved ? 'save-state unsaved' : 'save-state'} role="status">{unsaved ? '有尚未导出的修改' : '当前没有待导出的修改'}</p>}
+        {!summary && <div className="welcome-intro">
+          <p className="availability">你的世界，在浏览器中编辑</p>
+          <h1 id="page-title">泰拉瑞亚<br />地图编辑器</h1>
+          <p className="description">打开世界，挑选材料，继续你的建造。支持方块、墙壁、区域编辑和建筑模板。</p>
+        </div>}
+        {summary && <h1 id="page-title" className="sr-only">泰拉瑞亚地图编辑器</h1>}
+        {!summary && fileActions}
+        {!summary && <p className="file-hint">选择 .wld 文件 · 在本机处理，存档不会上传。</p>}
         <div className="messages" aria-live="polite" aria-atomic="true">
           {phase && <div className="progress-state" role="status">
             <span>{phase === 'open' ? '正在读取世界' : phase === 'export' ? '正在生成并校验副本' : phase === 'pick' ? '正在读取图格' : phase === 'copy' ? '正在复制选区' : phase === 'transformClipboard' ? '正在变换复制内容' : phase === 'importTemplate' ? '正在检查模板' : phase === 'exportTemplate' ? '正在导出模板' : '正在应用编辑'}{['open', 'export'].includes(phase) ? ` · ${percent}%` : '…'}</span>
             {['open', 'export'].includes(phase) && <progress value={percent} max="100" aria-label={phase === 'open' ? '读取进度' : '导出进度'} />}
           </div>}
-          {error && <p className="error" role="alert">{error}</p>}
-          {notice && <p className="notice" role="status">{notice}</p>}
+          {error && <div className="message error" role="alert"><span>{error}</span><button aria-label="关闭错误提示" onClick={() => setError('')}><Icon name="close" size={14} /></button></div>}
+          {notice && <div className="message notice" role="status"><span>{notice}</span><button aria-label="关闭操作提示" onClick={() => setNotice('')}><Icon name="close" size={14} /></button></div>}
         </div>
-        {summary && <MapView session={session.current} world={summary} disabled={Boolean(phase)} onError={handleMapError} editState={editState} onEdit={run} onDraftChange={setDrafting} clipboard={clipboard} />}
-        {summary && <section className="world-card" aria-labelledby="world-name" aria-busy={Boolean(phase)}>
-          <p className="filename">{filename}</p>
-          <h2 id="world-name">{summary.name}</h2>
-          <dl className="world-details">
-            <div><dt>世界尺寸</dt><dd>{summary.width} × {summary.height} 格</dd></div>
-            <div><dt>难度</dt><dd>{modes[summary.gameMode] ?? '未知'}</dd></div>
-            <div><dt>出生点</dt><dd>X {summary.spawn.x} · Y {summary.spawn.y}</dd></div>
-            <div><dt>文件格式版本</dt><dd>{summary.formatVersion}</dd></div>
-            <div><dt>世界 ID</dt><dd>{summary.worldId}</dd></div>
-            <div><dt>箱子 / 告示牌</dt><dd>{summary.counts.chests} / {summary.counts.signs}</dd></div>
-            <div><dt>城镇 NPC / 图格实体</dt><dd>{summary.counts.npcs} / {summary.counts.tileEntities}</dd></div>
-            {summary.seed && <div className="wide"><dt>世界种子</dt><dd>{summary.seed}</dd></div>}
-          </dl>
-          <p className="card-note">请保留原始存档。首次编辑前检查读写保真，修改后导出时核对未编辑的存档区段。请使用副本进行游戏内测试。</p>
-        </section>}
+        {summary && <MapView session={session.current} world={summary} disabled={Boolean(phase)} onError={handleMapError} editState={editState} onEdit={run} onDraftChange={setDrafting} clipboard={clipboard} worldDetails={worldDetails} menuHost={menuHost} />}
       </main>
       <footer className="app-footer">
         <a href="https://github.com/woshimaxfive/terraria-editor-zh" target="_blank" rel="noreferrer">项目源码</a>

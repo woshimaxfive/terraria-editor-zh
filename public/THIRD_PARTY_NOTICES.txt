@@ -131,3 +131,18 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+Desktop TEdit blend rules
+TEdit contributors, MS-PL.
+Source: https://github.com/TEdit/Terraria-Map-Editor/tree/84e3fc3466d405675a09da763169774b82c22d4d
+Adapted selector and browser region adapter: vendor/tedit-blend-rules/blendRules.js and src/rendering/desktopTerrain.js (MS-PL).
+Full license and distributed module source: vendor/tedit-blend-rules/.
+
+xnb, Lybell and contributors, LGPL-3.0-or-later.
+Source: https://github.com/lybell-art/xnb-js/tree/3249d8059364d830f91031280b3c8fc8ae4cc5bb
+Unmodified, separately replaceable browser module: vendor/xnb/xnb.module.js.
+Corresponding source and build scripts: vendor/xnb/source.zip.
+Licenses: vendor/xnb/COPYING.LESSER and vendor/xnb/COPYING.
+Modifications to LGPL portions and reverse engineering for debugging those modifications are permitted under the applicable license.
+The project MIT license does not replace these module licenses.

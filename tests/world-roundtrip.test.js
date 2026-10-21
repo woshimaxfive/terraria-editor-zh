@@ -27,6 +27,15 @@ for (const fixture of fixtures) {
     assert.equal(image.imageWidth, 65);
     assert.equal(image.imageHeight, 33);
     assert.equal(image.buffer.byteLength, 65 * 33 * 4);
+    const atlases = { 0: { width: 288, height: 270 }, 1: { width: 288, height: 270 }, 2: { width: 288, height: 1980 }, 3: { width: 792, height: 22 } };
+    const detail = document.render({ x: document.summary.spawn.x - 40, y: document.summary.spawn.y - 25, width: 80, height: 56, step: 1, atlases });
+    assert.ok(detail.textureStats.drawn > 0);
+    const sprites = new Int32Array(detail.sprites);
+    for (let i = 0; i < sprites.length; i += 8) {
+      const atlas = atlases[sprites[i]];
+      assert.ok(sprites[i + 1] >= 0 && sprites[i + 1] + sprites[i + 3] <= atlas.width);
+      assert.ok(sprites[i + 2] >= 0 && sprites[i + 2] + sprites[i + 4] <= atlas.height);
+    }
     const output = document.serialize();
     assert.notEqual(output, bytes, 'must use the serializer, not return the original buffer');
     assert.deepEqual(new Uint8Array(output), new Uint8Array(bytes));

@@ -1,15 +1,25 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { constrainCamera, fitCamera, screenToWorld, visibleRegion, zoomCamera } from '../rendering/viewport.js';
 import { BRUSH_SIZES, BrushStroke } from '../editing/brush.js';
 import { selectionFromPoints } from '../editing/selection.js';
 import MaterialPicker from './MaterialPicker.jsx';
 import { pasteFits } from '../editing/clipboard.js';
+import Icon from '../app/Icon.jsx';
+import TextureControls from './TextureControls.jsx';
+import { TextureResources } from '../platform/files/TextureResources.js';
+import EditorMenu from '../app/EditorMenu.jsx';
 
 const MAX_CANVAS_PIXELS = 4 * 1024 * 1024;
 
-export default function MapView({ session, world, disabled, onError, editState, onEdit, onDraftChange, clipboard }) {
+export default function MapView({ session, world, disabled, onError, editState, onEdit, onDraftChange, clipboard, worldDetails, menuHost }) {
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
+  const resourcesRef = useRef(null);
+  if (!resourcesRef.current) resourcesRef.current = new TextureResources();
+  const [displayMode, setDisplayMode] = useState('color');
+  const [resourceRevision, setResourceRevision] = useState(0);
+  const [textureStats, setTextureStats] = useState(null);
   const pointers = useRef(new Map());
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [camera, setCamera] = useState(null);
@@ -33,6 +43,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const pasteDragRef = useRef(null);
   const clipboardImageRef = useRef(null);
   const templateInputRef = useRef(null);
+  const thumbnailRef = useRef(null);
+  const [panel, setPanel] = useState('materials');
+  const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 900);
+  const panelToggleRef = useRef(null);
   pasteRef.current = tool === 'paste' ? pastePosition : null;
   const strokeRef = useRef(null);
   const pickRef = useRef(null);
@@ -45,6 +59,13 @@ export default function MapView({ session, world, disabled, onError, editState, 
   brush.current = { tool, blockId, brushSize };
   const current = useRef({ size, camera });
   current.current = { size, camera };
+
+  useEffect(() => {
+    const narrow = window.matchMedia('(max-width: 900px)');
+    const collapse = event => { if (event.matches) setPanelOpen(false); };
+    narrow.addEventListener('change', collapse);
+    return () => narrow.removeEventListener('change', collapse);
+  }, []);
 
   const changeCamera = useCallback(next => {
     current.current.camera = next;
@@ -94,6 +115,16 @@ export default function MapView({ session, world, disabled, onError, editState, 
       context.rect(x, y, image.width * camera.zoom, image.height * camera.zoom);
       context.clip();
       context.drawImage(image.canvas, x, y, image.imageWidth * image.step * camera.zoom, image.imageHeight * image.step * camera.zoom);
+      if (image.sprites) {
+        const commands = image.sprites;
+        for (let i = 0; i < commands.length; i += 8) {
+          const atlas = resourcesRef.current.images.get(commands[i]);
+          if (!atlas) continue;
+          context.drawImage(atlas, commands[i + 1], commands[i + 2], commands[i + 3], commands[i + 4],
+            x + commands[i + 5] * camera.zoom, y + (commands[i + 6] + commands[i + 7] / 16) * camera.zoom,
+            commands[i + 3] / 16 * camera.zoom, commands[i + 4] / 16 * camera.zoom);
+        }
+      }
       context.restore();
     }
     const spawnX = (world.spawn.x + .5 - camera.x) * camera.zoom + size.width / 2;
@@ -163,6 +194,11 @@ export default function MapView({ session, world, disabled, onError, editState, 
     canvas.width = image.imageWidth; canvas.height = image.imageHeight;
     canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(image.buffer), image.imageWidth, image.imageHeight), 0, 0);
     clipboardImageRef.current = canvas;
+    if (thumbnailRef.current) {
+      thumbnailRef.current.width = canvas.width;
+      thumbnailRef.current.height = canvas.height;
+      thumbnailRef.current.getContext('2d').drawImage(canvas, 0, 0);
+    }
     draw();
     return () => { canvas.width = 0; clipboardImageRef.current = null; };
   }, [clipboard, draw]);
@@ -173,14 +209,16 @@ export default function MapView({ session, world, disabled, onError, editState, 
     setDrawing(true);
     const timer = setTimeout(async () => {
       try {
-        const { image } = await session.render({ ...visibleRegion(camera, size, world), layers });
+        const { image } = await session.render({ ...visibleRegion(camera, size, world), layers,
+          ...(displayMode === 'texture' && camera.zoom >= 4 ? { atlases: resourcesRef.current.atlases } : {}) });
         if (!active) return;
         const canvas = document.createElement('canvas');
         canvas.width = image.imageWidth;
         canvas.height = image.imageHeight;
         canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(image.buffer), image.imageWidth, image.imageHeight), 0, 0);
         const previous = imageRef.current;
-        imageRef.current = { ...image, buffer: undefined, canvas };
+        imageRef.current = { ...image, buffer: undefined, sprites: image.sprites ? new Int32Array(image.sprites) : null, canvas };
+        setTextureStats(image.textureStats ?? null);
         if (previous) previous.canvas.width = 0;
         draw();
         setDrawing(false);
@@ -189,7 +227,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       }
     }, 50);
     return () => { active = false; clearTimeout(timer); };
-  }, [camera, size, disabled, session, world, draw, onError, editState.revision, layers]);
+  }, [camera, size, disabled, session, world, draw, onError, editState.revision, layers, displayMode, resourceRevision]);
 
   useEffect(() => { setSample(null); }, [editState.revision]);
 
@@ -197,6 +235,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      resourcesRef.current.clear();
       if (imageRef.current) imageRef.current.canvas.width = 0;
       imageRef.current = null;
       pointers.current.clear();
@@ -248,7 +287,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
     pasteRef.current = position;
     setPastePosition(position);
     setTool('paste');
+    setPanel('templates');
     setHint('');
+    if (window.matchMedia('(max-width: 900px)').matches) setPanelOpen(false);
   };
   const confirmPaste = async () => {
     if (disabled || placing || tool !== 'paste' || !pasteFits(clipboard?.data, pastePosition, world) || !Object.values(layers).every(Boolean)) return;
@@ -411,10 +452,44 @@ export default function MapView({ session, world, disabled, onError, editState, 
   }
 
   const interacting = drafting || Boolean(selectionPreview) || placing;
+  const panelLocked = interacting || (tool === 'paste' && window.innerWidth > 900);
   const displayedSelection = selectionPreview || selection;
-  return <section className="map-view" aria-labelledby="map-title">
-    <div className="map-toolbar">
-      <h2 id="map-title">地图工作区</h2>
+  const showPanel = name => { setPanel(name); setPanelOpen(true); };
+  const closePanel = () => { setPanelOpen(false); panelToggleRef.current?.focus({ preventScroll: true }); };
+  const toolName = { pan: '平移', paint: '画笔', erase: '橡皮', pick: '吸管', select: '框选', paste: '粘贴' }[tool];
+  const usesBrush = tool === 'paint' || tool === 'erase';
+  const usesLayer = usesBrush || tool === 'pick' || tool === 'select' || (selection && tool !== 'paste');
+  return <section className={`map-view${panelOpen ? ' panel-open' : ''}`} aria-labelledby="map-title">
+    {menuHost && createPortal(<>
+      <EditorMenu label="编辑" disabled={disabled || interacting}>
+        <button data-menu-command disabled={!editState.undoCount} onClick={() => onEdit('undo')}><Icon name="undo" />撤销<kbd>Ctrl Z</kbd></button>
+        <button data-menu-command disabled={!editState.redoCount} onClick={() => onEdit('redo')}><Icon name="redo" />重做<kbd>Ctrl Y</kbd></button>
+        <hr />
+        <button data-menu-command disabled={!selection || tool === 'paste'} onClick={() => { onEdit('copy', { selection }); showPanel('templates'); }}><Icon name="copy" />复制选区<kbd>Ctrl C</kbd></button>
+        <button data-menu-command disabled={!clipboard || tool === 'paste' || clipboard.data.formatVersion !== world.formatVersion} onClick={startPaste}><Icon name="paste" />粘贴预览<kbd>Ctrl V</kbd></button>
+        <button data-menu-command disabled={!selection} onClick={clearSelection}>清除选区<kbd>Esc</kbd></button>
+      </EditorMenu>
+      <EditorMenu label="图层" disabled={disabled || interacting}>
+        {[['block', '方块'], ['wall', '墙壁'], ['liquid', '液体']].map(([id, name]) => <button key={id} aria-pressed={layers[id]} onClick={() => setLayers(previous => ({ ...previous, [id]: !previous[id] }))}><span className="menu-check" aria-hidden="true">{layers[id] ? '✓' : ''}</span>{name}</button>)}
+        <hr /><button data-menu-command onClick={() => showPanel('view')}><Icon name="layers" />贴图与显示设置…</button>
+      </EditorMenu>
+      <EditorMenu label="帮助" disabled={interacting || panelLocked}>
+        <button data-menu-command onClick={() => showPanel('help')}><Icon name="help" />操作与快捷键</button>
+        <a data-menu-command href={`${import.meta.env.BASE_URL}THIRD_PARTY_NOTICES.txt`} target="_blank" rel="noreferrer">开源许可</a>
+      </EditorMenu>
+    </>, menuHost)}
+    <h2 id="map-title" className="sr-only">地图工作区</h2>
+    <div className="action-bar" aria-label="编辑参数">
+      <div className="tool-context"><span className="current-tool">{toolName}</span>
+      <label hidden={!usesLayer}><span className="context-label">图层</span><select aria-label="编辑图层" value={layer} disabled={disabled || interacting} onChange={event => { setLayer(event.target.value); setHint(''); }}>
+        <option value="block">方块</option><option value="wall">墙壁</option>
+      </select></label>
+      <label hidden={!usesBrush}><span className="context-label">尺寸</span><select aria-label="画笔尺寸" value={brushSize} disabled={disabled || interacting} onChange={event => setBrushSize(Number(event.target.value))}>{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
+      {!usesLayer && <span className="context-description">{tool === 'paste' ? '定位后确认 · Esc 取消' : '拖动浏览 · 滚轮缩放'}</span>}</div>
+      <div className="tool-buttons" role="group" aria-label="编辑历史">
+        <button aria-label={`撤销 (${editState.undoCount})`} title="撤销 · Ctrl Z" disabled={disabled || interacting || !editState.undoCount} onClick={() => onEdit('undo')}><Icon name="undo" size={16} /><span className="history-label">撤销 </span><span className="history-count">({editState.undoCount})</span></button>
+        <button aria-label={`重做 (${editState.redoCount})`} title="重做 · Ctrl Y" disabled={disabled || interacting || !editState.redoCount} onClick={() => onEdit('redo')}><Icon name="redo" size={16} /><span className="history-label">重做 </span><span className="history-count">({editState.redoCount})</span></button>
+      </div>
       <div className="map-controls" role="group" aria-label="地图视图控制">
         <button disabled={disabled || interacting || !camera} aria-label="缩小地图" onClick={() => zoomAt(1 / 1.5)}>−</button>
         <output className="map-zoom" aria-label="地图缩放比例">{camera ? Math.round(camera.zoom * 100) : 0}%</output>
@@ -422,66 +497,33 @@ export default function MapView({ session, world, disabled, onError, editState, 
         <button disabled={disabled || interacting || !camera} onClick={() => { changeCamera(fitCamera(size, world)); hoverRef.current = null; setCoordinates(null); }}>全图</button>
         <button disabled={disabled || interacting || !camera} onClick={() => { changeCamera(constrainCamera({ x: world.spawn.x + .5, y: world.spawn.y + .5, zoom: Math.max(4, camera.zoom) }, size, world)); hoverRef.current = null; setCoordinates(null); }}>出生点</button>
       </div>
+      <button ref={panelToggleRef} className="panel-toggle" disabled={panelLocked} aria-label={panelOpen ? '收起侧边面板' : '展开侧边面板'} aria-expanded={panelOpen} aria-controls="editor-sidebar" onClick={() => setPanelOpen(value => !value)}><Icon name="panel" /><span>面板</span></button>
     </div>
-    <div className="editor-tools" aria-label="编辑工具">
-      <div className="tool-buttons" role="group" aria-label="工具模式">
-        <button disabled={disabled || interacting} aria-pressed={tool === 'pan'} onClick={() => { setTool('pan'); setHint(''); }}>平移</button>
-        <button disabled={disabled || interacting} aria-pressed={tool === 'paint'} onClick={() => { setTool('paint'); setHint(''); }}>画笔</button>
-        <button disabled={disabled || interacting} aria-pressed={tool === 'erase'} onClick={() => { setTool('erase'); setHint(''); }}>橡皮</button>
-        <button disabled={disabled || interacting} aria-pressed={tool === 'pick'} onClick={() => { setTool('pick'); setHint(''); }}>吸管</button>
-        <button disabled={disabled || interacting} aria-pressed={tool === 'select'} onClick={() => { setTool('select'); setHint(''); }}>框选</button>
-      </div>
-      <label>编辑图层<select aria-label="编辑图层" value={layer} disabled={disabled || interacting} onChange={event => { setLayer(event.target.value); setHint(''); }}>
-        <option value="block">方块</option><option value="wall">墙壁</option>
-      </select></label>
-      <label>尺寸<select aria-label="画笔尺寸" value={brushSize} disabled={disabled || interacting} onChange={event => setBrushSize(Number(event.target.value))}>{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
-      <div className="tool-buttons" role="group" aria-label="编辑历史">
-        <button disabled={disabled || interacting || !editState.undoCount} onClick={() => onEdit('undo')}>撤销 ({editState.undoCount})</button>
-        <button disabled={disabled || interacting || !editState.redoCount} onClick={() => onEdit('redo')}>重做 ({editState.redoCount})</button>
-      </div>
+    <div className="tool-rail" role="group" aria-label="工具模式">
+      <button disabled={disabled || interacting || !clipboard || tool === 'paste' || clipboard.data.formatVersion !== world.formatVersion} aria-label="粘贴工具" aria-pressed={tool === 'paste'} title="粘贴预览 · Ctrl V" onClick={startPaste}><Icon name="paste" size={21} /><span>粘贴</span></button>
+      {[['pan', '平移'], ['select', '框选'], ['pick', '吸管'], ['paint', '画笔'], ['erase', '橡皮']].map(([id, label]) =>
+        <button key={id} disabled={disabled || interacting} aria-label={label} title={label} aria-pressed={tool === id} onClick={() => { setTool(id); setHint(''); if (window.innerWidth <= 900) setPanelOpen(false); }}><Icon name={id} size={21} /><span>{label}</span></button>)}
+      <div className="rail-divider" />
+      <button disabled={interacting || (!panelOpen && panelLocked)} aria-label="建筑模板面板" title="建筑模板" onClick={() => showPanel('templates')}><Icon name="template" size={21} /><span>建筑</span></button>
+      <button disabled={interacting || (!panelOpen && panelLocked)} aria-label="世界信息面板" title="世界信息" onClick={() => showPanel('world')}><Icon name="world" size={21} /><span>世界</span></button>
+      <button className="help-button" disabled={interacting || (!panelOpen && panelLocked)} aria-label="操作帮助面板" title="操作帮助" onClick={() => showPanel('help')}><Icon name="help" size={21} /><span>帮助</span></button>
     </div>
-    <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />
-    <div className="layer-controls" role="group" aria-label="图层显示">
-      <span>显示</span>{[['block', '方块'], ['wall', '墙壁'], ['liquid', '液体']].map(([key, name]) => <label key={key}>
-        <input type="checkbox" aria-label={`显示${name}`} checked={layers[key]} disabled={disabled || interacting} onChange={event => setLayers(previous => ({ ...previous, [key]: event.target.checked }))} />{name}
-      </label>)}<span>隐藏图层不参与绘制或擦除</span>
-    </div>
-    <div className="selection-controls" role="group" aria-label="选区操作">
+    <div className="canvas-stage">
+      <div className="selection-strip" aria-label="选区与区域编辑" hidden={!displayedSelection && tool !== 'select' && tool !== 'paste'}>
+    <div className="selection-controls" role="group" aria-label="选区操作" hidden={tool === 'paste'}>
       <output aria-label="选区范围">{displayedSelection ? `X ${displayedSelection.x} · Y ${displayedSelection.y} · ${displayedSelection.width} × ${displayedSelection.height}（${displayedSelection.width * displayedSelection.height} 格）` : '未选择区域'}</output>
       <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('fillSelection', { selection, blockId, wallId, layer })}>填充选区</button>
       <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('eraseSelection', { selection, layer })}>擦除选区</button>
       <button disabled={disabled || interacting || !selection} onClick={clearSelection}>清除选区</button>
+      <button disabled={disabled || interacting || !selection || tool === 'paste'} onClick={() => { onEdit('copy', { selection }); setPanel('templates'); setPanelOpen(true); }}>复制选区</button>
     </div>
-    <div className="clipboard-controls" role="group" aria-label="复制粘贴">
-      <output aria-label="复制内容">{clipboard ? `${clipboard.data.width} × ${clipboard.data.height} 格 · ${clipboard.source} · 格式 ${clipboard.data.formatVersion}${clipboard.data.formatVersion !== world.formatVersion ? '（与当前世界不同，不能粘贴）' : ''}` : '尚未复制；先框选普通图格区域'}</output>
-      <button disabled={disabled || interacting || !selection || tool === 'paste'} onClick={() => onEdit('copy', { selection })}>复制选区</button>
-      <button disabled={disabled || interacting || !clipboard || tool === 'paste' || clipboard.data.formatVersion !== world.formatVersion} onClick={startPaste}>粘贴预览</button>
-      <label>X<input type="number" aria-label="粘贴 X" value={Number.isFinite(pastePosition?.x) ? pastePosition.x : ''} disabled={disabled || interacting || tool !== 'paste'} onChange={event => setPastePosition(previous => ({ ...previous, x: event.target.valueAsNumber }))} /></label>
-      <label>Y<input type="number" aria-label="粘贴 Y" value={Number.isFinite(pastePosition?.y) ? pastePosition.y : ''} disabled={disabled || interacting || tool !== 'paste'} onChange={event => setPastePosition(previous => ({ ...previous, y: event.target.valueAsNumber }))} /></label>
-      <button disabled={disabled || interacting || tool !== 'paste' || !pasteFits(clipboard?.data, pastePosition, world) || !Object.values(layers).every(Boolean)} onClick={confirmPaste}>确认粘贴</button>
-      <button disabled={disabled || interacting || tool !== 'paste'} onClick={cancelPaste}>取消粘贴</button>
-      <div className="clipboard-actions">
-        {[['counterclockwise', '左转 90°'], ['clockwise', '右转 90°'], ['horizontal', '左右翻转'], ['vertical', '上下翻转']].map(([operation, label]) =>
-          <button key={operation} disabled={disabled || interacting || !clipboard || clipboard.data.formatVersion !== world.formatVersion} onClick={() => onEdit('transformClipboard', operation)}>{label}</button>)}
-        <input ref={templateInputRef} className="file-input" type="file" accept=".tedit-template.json,.json" aria-label="选择建筑模板文件" disabled={disabled || interacting} onChange={event => {
-          const file = event.target.files?.[0]; event.target.value = '';
-          if (file) onEdit('importTemplate', file);
-        }} />
-        <button disabled={disabled || interacting} onClick={() => templateInputRef.current.click()}>导入模板</button>
-        <button disabled={disabled || interacting || !clipboard} onClick={() => onEdit('exportTemplate')}>导出模板</button>
+        <div className="paste-confirmation" hidden={tool !== 'paste'}>
+          <span>{clipboard?.data.width} × {clipboard?.data.height} 格 · 粘贴预览</span>
+          <button disabled={disabled || interacting || !pasteFits(clipboard?.data, pastePosition, world) || !Object.values(layers).every(Boolean)} onClick={confirmPaste}>确认粘贴</button>
+          <button disabled={disabled || interacting} onClick={cancelPaste}>取消粘贴</button>
+        </div>
       </div>
-      <p>完整替换目标矩形的所有图层，含空格；不受旧选区限制。确认前仅预览，最多 10000 格。</p>
-      <p>半砖仅支持左右翻转。模板为本项目的 JSON 格式（最多 2 MiB），导入需与当前世界格式相同，不支持桌面 .TEditSch。</p>
-      <output className="paste-state" aria-label="粘贴目标状态">{tool !== 'paste' ? '未开始粘贴' : !pasteFits(clipboard?.data, pastePosition, world) ? '目标超出地图或坐标无效。' : !Object.values(layers).every(Boolean) ? '请显示方块、墙壁和液体后确认。' : '预览中，确认后写入世界；家具及实体检查在确认时执行。'}</output>
-    </div>
-    <p className="tool-hint" role="status">{hint || {
-      paint: `画笔模式：放大到 200% 以上绘制${layer === 'wall' ? '墙壁' : '方块'}。每次拖动为一步，双指可平移缩放。`,
-      erase: `橡皮模式：放大到 200% 以上擦除${layer === 'wall' ? '墙壁' : '方块'}，跳过特殊图格及紧邻支撑；保留其他图层。`,
-      pick: `吸管模式：放大到 200% 以上点击，读取${layer === 'wall' ? '墙壁' : '方块'}材料和图格属性。目录以外的材料仅显示 ID。`,
-      select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
-      paste: '粘贴预览：点击或拖动定位左上角，也可输入 X/Y；方向键微调，Enter 确认，Esc 取消。家具与实体暂不支持。',
-      pan: '平移模式：拖动浏览地图。选择画笔后可绘制基础方块。',
-    }[tool]}</p>
+      <div className="canvas-surface">
     <canvas ref={canvasRef} className={`map-canvas${dragging ? ' dragging' : ''}${tool !== 'pan' ? ' painting' : ''}`} tabIndex="0" role="img" aria-label={`${world.name}的世界地图`} aria-describedby="map-help" aria-busy={drawing}
       onPointerDown={event => {
         if (disabled || !camera || pointers.current.size >= 2 || (event.pointerType === 'mouse' && event.button !== 0)) return;
@@ -563,17 +605,103 @@ export default function MapView({ session, world, disabled, onError, editState, 
           setCoordinates(null);
         }
       }}>此地图需要浏览器支持 Canvas。</canvas>
-    <div className="map-status">
-      <span>{drawing ? '正在绘制地图…' : '色块地图'} · 黄色十字为出生点</span>
-      <output className="map-coordinates">{coordinates ? `X ${coordinates.x} · Y ${coordinates.y}` : '移到地图上查看坐标'}</output>
+
+      </div>
+    <p className={`tool-hint${hint ? ' has-hint' : ''}`} role="status">{hint || {
+      paint: `画笔模式：放大到 200% 以上绘制${layer === 'wall' ? '墙壁' : '方块'}。每次拖动为一步，双指可平移缩放。`,
+      erase: `橡皮模式：放大到 200% 以上擦除${layer === 'wall' ? '墙壁' : '方块'}，跳过特殊图格及紧邻支撑；保留其他图层。`,
+      pick: `吸管模式：放大到 200% 以上点击，读取${layer === 'wall' ? '墙壁' : '方块'}材料和图格属性。目录以外的材料仅显示 ID。`,
+      select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
+      paste: '粘贴预览：点击或拖动定位左上角，也可输入 X/Y；方向键微调，Enter 确认，Esc 取消。家具与实体暂不支持。',
+      pan: '平移模式：拖动浏览地图。选择画笔后可绘制基础方块。',
+    }[tool]}</p>
+
     </div>
-    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y、Ctrl+C / Ctrl+V。Esc 取消草稿或粘贴预览，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内，且只修改选中的编辑图层；粘贴完整替换所有图层，含空格。区域操作最多 10000 格。特殊图格受保护。当前为色块显示。</p>
+    <aside id="editor-sidebar" className="editor-sidebar" aria-label="编辑面板" hidden={!panelOpen} onKeyDown={event => {
+      if (event.key === 'Escape' && !panelLocked) { event.stopPropagation(); closePanel(); }
+    }}>
+      <div className="sidebar-heading"><strong>{ { materials: '材料与属性', templates: '建筑与模板', world: '世界信息', view: '图层与贴图', help: '操作帮助' }[panel]}</strong><button disabled={panelLocked} aria-label="关闭侧边面板" onClick={closePanel}><Icon name="close" size={16} /></button></div>
+      <div className="panel-nav" role="group" aria-label="面板分类">
+        {[['materials', '材料'], ['templates', '建筑'], ['world', '世界'], ['view', '显示'], ['help', '帮助']].map(([id, label]) => <button key={id} title={label} aria-label={label} aria-pressed={panel === id} aria-controls={`panel-${id}`} disabled={interacting} onClick={() => setPanel(id)}><Icon name={{ materials: 'paint', templates: 'template', world: 'world', view: 'layers', help: 'help' }[id]} /><span>{label}</span></button>)}
+      </div>
+      <div className="panel-scroll">
+        <section id="panel-materials" hidden={panel !== 'materials'}>
+          <div className="material-layers" role="group" aria-label="材料图层">
+            {[['block', '方块'], ['wall', '墙壁']].map(([id, name]) => <button key={id} aria-label={`${name}材料`} aria-pressed={layer === id} disabled={disabled || interacting} onClick={() => { setLayer(id); setHint(''); }}>{name}</button>)}
+          </div>
+    <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />
+          <details className="inspector-details" open={sample ? true : undefined}><summary>图格属性</summary>
     <div className="tile-inspector" aria-label="图格属性" aria-live="polite">
       <strong>取样属性</strong>{sample ? <>
-        <p>X {sample.x} · Y {sample.y} · 方块 ID {sample.blockId ?? '无'} · 墙壁 ID {sample.wallId ?? '无'}</p>
-        <p>方块涂料 {sample.properties.blockColor} · 墙壁涂料 {sample.properties.wallColor} · 坡面 {sample.properties.slope} · 制动器 {sample.properties.actuator ? '有' : '无'}{sample.properties.actuated ? '（已虚化）' : ''}</p>
-        <p>液体 {sample.properties.liquidAmount ? `${['无', '水', '熔岩', '蜂蜜', '微光'][sample.properties.liquidType] ?? sample.properties.liquidType} ${sample.properties.liquidAmount}/255` : '无'} · 电线 {sample.properties.wires.map(color => ({ Red: '红', Blue: '蓝', Green: '绿', Yellow: '黄' })[color]).join('、') || '无'}</p>
-        <p>方块隐形 / 全亮：{sample.properties.invisibleBlock ? '是' : '否'} / {sample.properties.fullBrightBlock ? '是' : '否'} · 墙壁隐形 / 全亮：{sample.properties.invisibleWall ? '是' : '否'} / {sample.properties.fullBrightWall ? '是' : '否'}</p>
+        <dl className="inspector-properties">
+          <div><dt>坐标</dt><dd>X {sample.x} · Y {sample.y}</dd></div>
+          <div><dt>材料</dt><dd>方块 ID {sample.blockId ?? '无'} · 墙壁 ID {sample.wallId ?? '无'}</dd></div>
+          <div><dt>方块 / 墙壁涂料</dt><dd>{sample.properties.blockColor} / {sample.properties.wallColor}</dd></div>
+          <div><dt>坡面</dt><dd>{sample.properties.slope}</dd></div>
+          <div><dt>制动器</dt><dd>{sample.properties.actuator ? '有' : '无'}{sample.properties.actuated ? '（已虚化）' : ''}</dd></div>
+          <div><dt>液体</dt><dd>{sample.properties.liquidAmount ? `${['无', '水', '熔岩', '蜂蜜', '微光'][sample.properties.liquidType] ?? sample.properties.liquidType} ${sample.properties.liquidAmount}/255` : '无'}</dd></div>
+          <div><dt>电线</dt><dd>{sample.properties.wires.map(color => ({ Red: '红', Blue: '蓝', Green: '绿', Yellow: '黄' })[color]).join('、') || '无'}</dd></div>
+          <div><dt>方块隐形 / 全亮</dt><dd>{sample.properties.invisibleBlock ? '是' : '否'} / {sample.properties.fullBrightBlock ? '是' : '否'}</dd></div>
+          <div><dt>墙壁隐形 / 全亮</dt><dd>{sample.properties.invisibleWall ? '是' : '否'} / {sample.properties.fullBrightWall ? '是' : '否'}</dd></div>
+        </dl>
       </> : <p>使用吸管点击图格后查看；编辑后需重新取样。</p>}</div>
+
+          </details>
+        </section>
+        <section id="panel-view" hidden={panel !== 'view'}>
+          <h3>地图显示</h3>
+          <div className="layer-controls" role="group" aria-label="图层显示">
+            <span>可见图层</span>{[['block', '方块'], ['wall', '墙壁'], ['liquid', '液体']].map(([key, name]) => <label key={key}>
+              <input type="checkbox" aria-label={`显示${name}`} checked={layers[key]} disabled={disabled || interacting} onChange={event => setLayers(previous => ({ ...previous, [key]: event.target.checked }))} />{name}
+            </label>)}<span>隐藏图层不参与绘制或擦除</span>
+          </div>
+          <h3 className="resource-heading">本地贴图</h3>
+          <TextureControls resources={resourcesRef.current} mode={displayMode} onModeChange={setDisplayMode} disabled={disabled || interacting} onResourcesChange={() => {
+            if (imageRef.current) imageRef.current.canvas.width = 0;
+            imageRef.current = null;
+            setDrawing(true);
+            setResourceRevision(value => value + 1);
+          }} />
+        </section>
+        <section id="panel-templates" hidden={panel !== 'templates'}>
+          <p className="panel-description">框选区域后复制，或导入已有的建筑模板。</p>
+    <div className="clipboard-controls" role="group" aria-label="复制粘贴">
+      <canvas ref={thumbnailRef} className="clipboard-thumbnail" role="img" aria-label="建筑模板色块预览" hidden={!clipboard} />
+      <output aria-label="复制内容">{clipboard ? `${clipboard.data.width} × ${clipboard.data.height} 格 · ${clipboard.source} · 格式 ${clipboard.data.formatVersion}${clipboard.data.formatVersion !== world.formatVersion ? '（与当前世界不同，不能粘贴）' : ''}` : '尚未复制；先框选普通图格区域'}</output>
+      <button disabled={disabled || interacting || !clipboard || tool === 'paste' || clipboard.data.formatVersion !== world.formatVersion} onClick={startPaste}>粘贴预览</button>
+      <label>X<input type="number" aria-label="粘贴 X" value={Number.isFinite(pastePosition?.x) ? pastePosition.x : ''} disabled={disabled || interacting || tool !== 'paste'} onChange={event => setPastePosition(previous => ({ ...previous, x: event.target.valueAsNumber }))} /></label>
+      <label>Y<input type="number" aria-label="粘贴 Y" value={Number.isFinite(pastePosition?.y) ? pastePosition.y : ''} disabled={disabled || interacting || tool !== 'paste'} onChange={event => setPastePosition(previous => ({ ...previous, y: event.target.valueAsNumber }))} /></label>
+      <div className="clipboard-actions">
+        {[['counterclockwise', '左转 90°'], ['clockwise', '右转 90°'], ['horizontal', '左右翻转'], ['vertical', '上下翻转']].map(([operation, label]) =>
+          <button key={operation} disabled={disabled || interacting || !clipboard || clipboard.data.formatVersion !== world.formatVersion} onClick={() => onEdit('transformClipboard', operation)}>{label}</button>)}
+        <input ref={templateInputRef} className="file-input" type="file" accept=".tedit-template.json,.json" aria-label="选择建筑模板文件" disabled={disabled || interacting} onChange={event => {
+          const file = event.target.files?.[0]; event.target.value = '';
+          if (file) onEdit('importTemplate', file);
+        }} />
+        <button disabled={disabled || interacting} onClick={() => templateInputRef.current.click()}>导入模板</button>
+        <button disabled={disabled || interacting || !clipboard} onClick={() => onEdit('exportTemplate')}>导出模板</button>
+      </div>
+      <details className="panel-help"><summary>模板格式与粘贴规则</summary><p>完整替换目标矩形的所有图层，含空格；不受旧选区限制。确认前仅预览，最多 10000 格。</p>
+      <p>半砖仅支持左右翻转。模板为本项目的 JSON 格式（最多 2 MiB），导入需与当前世界格式相同，不支持桌面 .TEditSch。</p></details>
+      <output className="paste-state" aria-label="粘贴目标状态">{tool !== 'paste' ? '未开始粘贴' : !pasteFits(clipboard?.data, pastePosition, world) ? '目标超出地图或坐标无效。' : !Object.values(layers).every(Boolean) ? '请显示方块、墙壁和液体后确认。' : '预览中，确认后写入世界；家具及实体检查在确认时执行。'}</output>
+    </div>
+
+        </section>
+        <section id="panel-world" hidden={panel !== 'world'}>{worldDetails}</section>
+        <section id="panel-help" hidden={panel !== 'help'}>
+          <h3>地图操作</h3><dl className="shortcut-list"><div><dt>平移地图</dt><dd>拖动 / 方向键</dd></div><div><dt>缩放地图</dt><dd>滚轮 / 双指 / ＋ −</dd></div><div><dt>撤销 / 重做</dt><dd>Ctrl Z / Ctrl Y</dd></div><div><dt>复制 / 粘贴</dt><dd>Ctrl C / Ctrl V</dd></div><div><dt>确认 / 取消粘贴</dt><dd>Enter / Esc</dd></div></dl>
+    <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y、Ctrl+C / Ctrl+V。Esc 取消草稿或粘贴预览，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内，且只修改选中的编辑图层；粘贴完整替换所有图层，含空格。区域操作最多 10000 格。特殊图格受保护。显示面板可选择本机资源并切换贴图，未支持的外观使用色块。</p>
+
+          <p className="panel-description">存档仅在本机处理。导出世界副本后，保留原文件并在游戏中测试。建筑模板下载不会保存世界修改。</p>
+          <a href="https://github.com/woshimaxfive/terraria-editor-zh" target="_blank" rel="noreferrer">项目源码</a> · <a href={`${import.meta.env.BASE_URL}THIRD_PARTY_NOTICES.txt`} target="_blank" rel="noreferrer">开源许可</a>
+        </section>
+      </div>
+    </aside>
+    <div className="map-status">
+      <span className="render-status" aria-label="地图渲染状态"><span className="status-dot" />{drawing ? '正在绘制地图…' : displayMode === 'texture' ? textureStats?.detailed ? `贴图 ${textureStats.drawn} 格 · 色块 ${textureStats.fallback} 格` : '色块概览 · 放大查看贴图' : '色块地图'}<span className="status-detail"> · 黄色十字为出生点</span></span>
+      <output className="map-coordinates">{coordinates ? `X ${coordinates.x} · Y ${coordinates.y}` : '移到地图上查看坐标'}</output>
+      <span className="world-size">{world.width} × {world.height}</span>
+      <span className="selection-size" aria-label="状态栏选区">{displayedSelection ? `选区 ${displayedSelection.width} × ${displayedSelection.height}` : '无选区'}</span>
+    </div>
   </section>;
 }

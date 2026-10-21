@@ -1,0 +1,9 @@
+xnb 1.3.0a, Lybell and contributors.
+LGPL-3.0-or-later; see COPYING.LESSER and COPYING.
+Unmodified dist/xnb.module.js from upstream commit 3249d8059364d830f91031280b3c8fc8ae4cc5bb.
+Equivalent to npm xnb@1.3.0-a after line-ending normalization.
+Corresponding source and build scripts: source.zip in this directory.
+https://github.com/lybell-art/xnb-js
+Separately distributed and replaceable at this URL; the application uses a Worker adapter.
+Module SHA-256: 417923cf11dc4b19f30e34127d4787f59cdf85d075f39937e7ccdaa07009dd71
+The documentation website directory docs/ (including its image assets) is omitted from source.zip; all library sources, dependency manifests, licenses and build scripts are retained.

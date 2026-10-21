@@ -1,4 +1,5 @@
 import palette from '../../vendor/tedit-map-colors/palette.json' with { type: 'json' };
+import { atlasSupports, createDesktopFrames, MAX_DETAIL_TILES } from './desktopTerrain.js';
 
 export const MAX_RASTER_PIXELS = 1024 * 1024;
 const UNKNOWN = [255, 0, 255];
@@ -25,6 +26,10 @@ export function rasterizeRegion(source, region) {
   const imageHeight = Math.ceil(height / step);
   if (imageWidth * imageHeight > MAX_RASTER_PIXELS) throw new Error('Map region exceeds pixel budget');
   const pixels = new Uint8ClampedArray(imageWidth * imageHeight * 4);
+  const detailed = Boolean(region.atlases) && step === 1 && width * height <= MAX_DETAIL_TILES;
+  const frameAt = detailed && layers.block && Object.keys(region.atlases).length ? createDesktopFrames(source, region) : null;
+  const sprites = [], plants = [];
+  let fallbackCount = 0;
   for (let row = 0; row < imageHeight; row++) {
     const tileY = y + row * step;
     const base = background(tileY, source);
@@ -33,6 +38,14 @@ export function rasterizeRegion(source, region) {
       let color = layers.wall && tile.wallId ? palette.walls[tile.wallId] ?? UNKNOWN : base;
       if (layers.block && tile.blockId !== undefined) color = palette.blocks[tile.blockId] ?? UNKNOWN;
       const liquid = layers.liquid && tile.liquidAmount > 0 && palette.liquids[tile.liquidType];
+      if (detailed && layers.block && tile.blockId !== undefined) {
+        const atlas = region.atlases[tile.blockId];
+        const frame = atlas ? frameAt(x + column, tileY, tile) : null;
+        if (frame && atlasSupports(atlas, frame)) {
+          color = layers.wall && tile.wallId ? palette.walls[tile.wallId] ?? UNKNOWN : base;
+          (tile.blockId === 3 ? plants : sprites).push(tile.blockId, frame.sourceX, frame.sourceY, frame.width, frame.height, column, row, frame.offsetY);
+        } else fallbackCount++;
+      }
       const offset = (row * imageWidth + column) * 4;
       for (let channel = 0; channel < 3; channel++) {
         pixels[offset + channel] = liquid ? Math.round(color[channel] * .35 + liquid[channel] * .65) : color[channel];
@@ -40,5 +53,11 @@ export function rasterizeRegion(source, region) {
       pixels[offset + 3] = 255;
     }
   }
-  return { x, y, width, height, step, imageWidth, imageHeight, buffer: pixels.buffer };
+  const result = { x, y, width, height, step, imageWidth, imageHeight, buffer: pixels.buffer };
+  if (region.atlases) {
+    const commands = new Int32Array([...sprites, ...plants]);
+    result.sprites = commands.buffer;
+    result.textureStats = { detailed, drawn: commands.length / 8, fallback: fallbackCount };
+  }
+  return result;
 }

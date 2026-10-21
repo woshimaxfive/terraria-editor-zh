@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/TEdit/Terraria-Map-Editor",
+  "commit": "84e3fc3466d405675a09da763169774b82c22d4d",
+  "files": [
+    "src/TEdit/Render/BlendRules.cs",
+    "src/TEdit.Terraria/Render/TileFraming.cs",
+    "src/TEdit/View/WorldRenderXna.xaml.cs",
+    "src/TEdit.Terraria/Objects/TileProperty.cs",
+    "src/TEdit.Terraria/Data/tiles.json"
+  ],
+  "license": "MS-PL"
+}
