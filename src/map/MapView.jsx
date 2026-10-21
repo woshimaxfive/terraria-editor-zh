@@ -54,6 +54,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [masksEnabled, setMasksEnabled] = useState(false);
   const [masks, setMasks] = useState([]);
   const [drafting, setDrafting] = useState(false);
+  const [fillState, setFillState] = useState(null);
+  const fillRef = useRef(null);
+  const fillJobRef = useRef(null);
   const [selection, setSelection] = useState(null);
   const [selectionPreview, setSelectionPreview] = useState(null);
   const [hint, setHint] = useState('');
@@ -88,6 +91,14 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const parameters = { blockId, wallId, liquidType, liquidAmount, wireMask, actuator, actuated, slope, appearance, layer, masks: activeMasks };
   const editVisible = layers[layer === 'paint' ? appearance.target : layer === 'slope' ? 'block' : layer];
   const layerName = EDIT_LAYERS.find(([id]) => id === layer)[1];
+  const cancelFill = useCallback(() => {
+    if (fillJobRef.current) fillJobRef.current.cancelled = true;
+    fillJobRef.current = null;
+    fillRef.current = null;
+    session.cancelPrepareFill();
+    setFillState(null);
+    onDraftChange(false);
+  }, [session, onDraftChange]);
 
   useEffect(() => {
     const narrow = window.matchMedia('(max-width: 900px)');
@@ -106,6 +117,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const observer = new ResizeObserver(([entry]) => {
       const next = { width: Math.round(entry.contentRect.width), height: Math.round(entry.contentRect.height) };
       if (next.width < 1 || next.height < 1) return;
+      if (fillJobRef.current || fillRef.current) cancelFill();
       pickRef.current = null;
       pasteDragRef.current = null;
       setPlacing(false);
@@ -122,7 +134,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     });
     observer.observe(canvasRef.current);
     return () => observer.disconnect();
-  }, [world, changeCamera, onDraftChange]);
+  }, [world, changeCamera, onDraftChange, cancelFill]);
 
   const draw = useCallback(() => {
     if (!camera || !size.width) return;
@@ -189,6 +201,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
         context.fillRect(toX(Math.floor(index / world.height)), toY(index % world.height), camera.zoom, camera.zoom);
       }
     }
+    if (fillRef.current) {
+      context.fillStyle = '#ffe19980';
+      for (const index of fillRef.current.cells) {
+        context.fillRect(toX(Math.floor(index / world.height)), toY(index % world.height), camera.zoom, camera.zoom);
+      }
+    }
     const position = pasteRef.current;
     if (position && Number.isFinite(position.x) && Number.isFinite(position.y) && clipboardImageRef.current) {
       const preview = clipboardImageRef.current;
@@ -203,7 +221,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       context.setLineDash([]);
     }
     if (hoverRef.current && !['pan', 'paste'].includes(brush.current.tool) && camera.zoom >= 2) {
-      const size = ['pick', 'select'].includes(brush.current.tool) ? 1 : brush.current.brushSize;
+      const size = ['pick', 'select', 'fill'].includes(brush.current.tool) ? 1 : brush.current.brushSize;
       const radius = (size - 1) / 2;
       context.strokeStyle = '#ffffff';
       context.lineWidth = 1;
@@ -218,6 +236,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
 
   useEffect(() => { draw(); }, [tool, brushSize, draw]);
   useEffect(() => { draw(); }, [pastePosition, draw]);
+  useEffect(() => { draw(); }, [fillState, draw]);
 
   useEffect(() => {
     if (!clipboard) return;
@@ -266,6 +285,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      if (fillJobRef.current) fillJobRef.current.cancelled = true;
+      session.cancelPrepareFill();
       resourcesRef.current.clear();
       if (imageRef.current) imageRef.current.canvas.width = 0;
       imageRef.current = null;
@@ -327,6 +348,33 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const result = await onEdit('paste', { clipboard: clipboard.data, position: pastePosition });
     if (result && mountedRef.current) cancelPaste();
   };
+  const startFill = async point => {
+    const job = { cancelled: false };
+    fillJobRef.current = job;
+    setHint('');
+    setFillState({ preparing: true, count: 0 });
+    onDraftChange(true);
+    try {
+      const result = await session.prepareFill({ ...parameters, point, selection: selectionRef.current }, percent => {
+        if (!job.cancelled && mountedRef.current) setFillState({ preparing: true, count: Math.round(percent * 100) });
+      });
+      if (job.cancelled || !mountedRef.current) return;
+      fillRef.current = result.fill;
+      setFillState({ preparing: false, count: result.fill.cells.length });
+    } catch (error) {
+      if (job.cancelled || !mountedRef.current) return;
+      cancelFill();
+      if (error.name !== 'AbortError') {
+        if (!session.loaded) onError(error);
+        else setHint(error.message);
+      }
+    }
+  };
+  const confirmFill = async () => {
+    if (disabled || !fillRef.current) return;
+    await onEdit('commitFill', { token: fillRef.current.token });
+    if (mountedRef.current) cancelFill();
+  };
   const clearSelection = () => {
     selectionRef.current = null;
     setSelection(null);
@@ -381,7 +429,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const wheel = event => {
       if (disabled) return;
       event.preventDefault();
-      if (strokeRef.current || selectionDraftRef.current) return;
+      if (strokeRef.current || selectionDraftRef.current || fillJobRef.current || fillRef.current) return;
       pickRef.current = null;
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? current.current.size.height : 1);
       const rect = canvas.getBoundingClientRect();
@@ -406,6 +454,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const previous = pointers.current.get(event.pointerId);
     const { camera: view, size: dimensions } = current.current;
     if (!view) return;
+    if (fillState) { showCoordinates(point); return; }
     if (pasteDragRef.current?.pointerId === event.pointerId && !disabled) {
       pointers.current.set(event.pointerId, point);
       const position = screenToWorld(point, view, dimensions);
@@ -471,7 +520,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
     pickRef.current = null;
     if (pick?.pointerId === event.pointerId && event.type === 'pointerup' && !disabled) {
       const point = pointOf(event);
-      if (Math.hypot(point.x - pick.start.x, point.y - pick.start.y) <= 6) pickBlock({ ...pick.cell, layer: pick.layer, ...pick.appearance });
+      if (Math.hypot(point.x - pick.start.x, point.y - pick.start.y) <= 6) {
+        if (pick.tool === 'fill') startFill(pick.cell);
+        else pickBlock({ ...pick.cell, layer: pick.layer, ...pick.appearance });
+      }
     }
     const draft = strokeRef.current;
     if (draft?.pointerId === event.pointerId) {
@@ -488,15 +540,17 @@ export default function MapView({ session, world, disabled, onError, editState, 
     if (canvasRef.current.hasPointerCapture(event.pointerId)) canvasRef.current.releasePointerCapture(event.pointerId);
   }
 
-  const interacting = drafting || Boolean(selectionPreview) || placing;
+  const interacting = drafting || Boolean(selectionPreview) || placing || Boolean(fillState);
   const panelLocked = interacting || (tool === 'paste' && window.innerWidth > 900);
   const displayedSelection = selectionPreview || selection;
   const showPanel = name => { setPanel(name); setPanelOpen(true); };
   const closePanel = () => { setPanelOpen(false); panelToggleRef.current?.focus({ preventScroll: true }); };
-  const toolName = { pan: '平移', paint: strokeMode === 'line' ? '直线画笔' : '画笔', erase: strokeMode === 'line' ? '直线橡皮' : '橡皮', pick: '吸管', select: '框选', paste: '粘贴' }[tool];
+  const toolName = { pan: '平移', paint: strokeMode === 'line' ? '直线画笔' : '画笔', erase: strokeMode === 'line' ? '直线橡皮' : '橡皮', pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
   const usesBrush = tool === 'paint' || tool === 'erase';
-  const usesLayer = usesBrush || tool === 'pick' || tool === 'select' || (selection && tool !== 'paste');
-  return <section className={`map-view${panelOpen ? ' panel-open' : ''}`} aria-labelledby="map-title">
+  const usesLayer = usesBrush || tool === 'fill' || tool === 'pick' || tool === 'select' || (selection && tool !== 'paste');
+  return <section className={`map-view${panelOpen ? ' panel-open' : ''}`} aria-labelledby="map-title" onKeyDownCapture={event => {
+    if (event.key === 'Escape' && fillState && !disabled) { event.stopPropagation(); cancelFill(); }
+  }}>
     {menuHost && createPortal(<>
       <EditorMenu label="编辑" disabled={disabled || interacting}>
         <button data-menu-command disabled={!editState.undoCount} onClick={() => onEdit('undo')}><Icon name="undo" />撤销<kbd>Ctrl Z</kbd></button>
@@ -538,16 +592,16 @@ export default function MapView({ session, world, disabled, onError, editState, 
     </div>
     <div className="tool-rail" role="group" aria-label="工具模式">
       <button disabled={disabled || interacting || !clipboard || tool === 'paste' || clipboard.data.formatVersion !== world.formatVersion} aria-label="粘贴工具" aria-pressed={tool === 'paste'} title="粘贴预览 · Ctrl V" onClick={startPaste}><Icon name="paste" size={21} /><span>粘贴</span></button>
-      {[['pan', '平移'], ['select', '框选'], ['pick', '吸管'], ['paint', '画笔'], ['erase', '橡皮']].map(([id, label]) =>
-        <button key={id} disabled={disabled || interacting} aria-label={label} title={label} aria-pressed={tool === id} onClick={() => { setTool(id); setHint(''); if (window.innerWidth <= 900) setPanelOpen(false); }}><Icon name={id} size={21} /><span>{label}</span></button>)}
+      {[['pan', '平移'], ['select', '框选'], ['pick', '吸管'], ['paint', '画笔'], ['erase', '橡皮'], ['fill', '连通填充']].map(([id, label]) =>
+        <button key={id} disabled={disabled || interacting || (id === 'fill' && layer === 'wire')} aria-label={label} title={label} aria-pressed={tool === id} onClick={() => { setTool(id); setHint(''); if (window.innerWidth <= 900) setPanelOpen(false); }}><Icon name={id} size={21} /><span>{id === 'fill' ? '填充' : label}</span></button>)}
       <div className="rail-divider" />
       <button disabled={interacting || (!panelOpen && panelLocked)} aria-label="建筑模板面板" title="建筑模板" onClick={() => showPanel('templates')}><Icon name="template" size={21} /><span>建筑</span></button>
       <button disabled={interacting || (!panelOpen && panelLocked)} aria-label="世界信息面板" title="世界信息" onClick={() => showPanel('world')}><Icon name="world" size={21} /><span>世界</span></button>
       <button className="help-button" disabled={interacting || (!panelOpen && panelLocked)} aria-label="操作帮助面板" title="操作帮助" onClick={() => showPanel('help')}><Icon name="help" size={21} /><span>帮助</span></button>
     </div>
     <div className="canvas-stage">
-      <div className="selection-strip" aria-label="选区与区域编辑" hidden={!displayedSelection && tool !== 'select' && tool !== 'paste'}>
-    <div className="selection-controls" role="group" aria-label="选区操作" hidden={tool === 'paste'}>
+      <div className="selection-strip" aria-label="选区与区域编辑" hidden={!displayedSelection && tool !== 'select' && tool !== 'paste' && !fillState}>
+    <div className="selection-controls" role="group" aria-label="选区操作" hidden={tool === 'paste' || Boolean(fillState)}>
       <output aria-label="选区范围">{displayedSelection ? `X ${displayedSelection.x} · Y ${displayedSelection.y} · ${displayedSelection.width} × ${displayedSelection.height}（${displayedSelection.width * displayedSelection.height} 格）` : '未选择区域'}</output>
       <button disabled={disabled || interacting || !selection || !editVisible || !masksValid} onClick={() => onEdit('fillSelection', { selection, ...parameters })}>填充选区</button>
       <button disabled={disabled || interacting || !selection || !editVisible || !masksValid} onClick={() => onEdit('eraseSelection', { selection, ...parameters })}>擦除选区</button>
@@ -559,6 +613,11 @@ export default function MapView({ session, world, disabled, onError, editState, 
           <button disabled={disabled || interacting || !pasteFits(clipboard?.data, pastePosition, world) || !['block', 'wall', 'liquid'].every(id => layers[id])} onClick={confirmPaste}>确认粘贴</button>
           <button disabled={disabled || interacting} onClick={cancelPaste}>取消粘贴</button>
         </div>
+        <div className="paste-confirmation" hidden={!fillState} aria-label="连通填充预览">
+          <output aria-label="连通填充状态">{fillState?.preparing ? `计算中 · 已找到 ${fillState.count} 格` : `${fillState?.count ?? 0} 格候选 · 确认后按条件过滤`}</output>
+          <button disabled={disabled || !fillState || fillState.preparing} onClick={confirmFill}>确认填充</button>
+          <button disabled={disabled} onClick={cancelFill}>取消填充</button>
+        </div>
       </div>
       <div className="canvas-surface">
     <canvas ref={canvasRef} className={`map-canvas${dragging ? ' dragging' : ''}${tool !== 'pan' ? ' painting' : ''}`} tabIndex="0" role="img" aria-label={`${world.name}的世界地图`} aria-describedby="map-help" aria-busy={drawing}
@@ -569,7 +628,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
         canvasRef.current.setPointerCapture(event.pointerId);
         setDragging(true);
         const cell = showCoordinates(pointOf(event));
-        if (pointers.current.size === 2) { cancelStroke(); if (tool === 'paste') cancelPaste(); return; }
+        if (pointers.current.size === 2) { cancelStroke(); if (fillState) cancelFill(); if (tool === 'paste') cancelPaste(); return; }
+        if (fillState) return;
         if (tool !== 'pan' && cell) {
           if (camera.zoom < 2) { setHint('请先放大到 200% 以上，或点击“出生点”后操作。'); return; }
           if (tool === 'paste') {
@@ -592,6 +652,11 @@ export default function MapView({ session, world, disabled, onError, editState, 
           }
           if (!editVisible) { setHint('当前编辑图层已隐藏，请先勾选对应的显示开关。'); return; }
           if (!masksValid) { setHint('匹配条件无效，请先修正条件数值。'); return; }
+          if (tool === 'fill') {
+            if (layer === 'wire') { setHint('原版连通填充不支持电线，请选择其他图层。'); return; }
+            pickRef.current = { tool, pointerId: event.pointerId, cell, start: pointOf(event) };
+            return;
+          }
           strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current, strokeMode) };
           strokeRef.current.stroke.add(cell);
           setDrafting(true);
@@ -604,11 +669,13 @@ export default function MapView({ session, world, disabled, onError, editState, 
       onKeyDown={event => {
         if (!camera || disabled) return;
         if (event.key === 'Escape') {
-          if (tool === 'paste') cancelPaste();
+          if (fillState) cancelFill();
+          else if (tool === 'paste') cancelPaste();
           else if (strokeRef.current || selectionDraftRef.current || pickRef.current) cancelStroke();
           else clearSelection();
           return;
         }
+        if (fillState) { if (!fillState.preparing && event.key === 'Enter') { event.preventDefault(); confirmFill(); } return; }
         if (strokeRef.current || selectionDraftRef.current || pasteDragRef.current) return;
         pickRef.current = null;
         if (tool === 'paste' && event.key === 'Enter') { event.preventDefault(); confirmPaste(); return; }
@@ -650,6 +717,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       erase: `橡皮${strokeMode === 'line' ? '直线' : ''}模式：放大到 200% 以上擦除${layerName}；只修改当前层，电线仅移除选中颜色。${masksEnabled ? '条件过滤已启用。' : ''}`,
       pick: `吸管模式：放大到 200% 以上点击，读取${layerName}和图格属性。`,
       select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
+      fill: '连通填充：点击起点，预览四方向连通区域后确认；Esc、双指或尺寸变化取消。最多 10000 格，可先框选限制范围。条件只过滤写入，不阻断连通路径；不支持电线。',
       paste: '粘贴预览：点击或拖动定位左上角，也可输入 X/Y；方向键微调，Enter 确认，Esc 取消。家具与实体暂不支持。',
       pan: '平移模式：拖动浏览地图。选择画笔后可绘制基础方块。',
     }[tool]}</p>

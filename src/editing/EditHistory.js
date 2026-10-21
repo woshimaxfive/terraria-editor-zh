@@ -27,7 +27,7 @@ export class EditHistory {
     };
   }
 
-  paint(stroke) {
+  validateStroke(stroke) {
     const { cells, layer = 'block', masks } = stroke || {};
     const version = this.source.version ?? 194;
     const materialId = layer === 'slope' ? stroke?.slope : layer === 'paint' ? stroke?.appearance :
@@ -46,6 +46,11 @@ export class EditHistory {
     const filters = (masks ?? []).filter(rule => rule.mode !== 'off');
     if (filters.length && !this.source.maskValues) throw new EditError('匹配条件无效，未修改世界。');
     this.source.validateMaterial?.(layer, materialId);
+    return { cells, layer, materialId, filters };
+  }
+
+  paint(stroke) {
+    const { cells, layer, materialId, filters } = this.validateStroke(stroke);
     const changes = [];
     let skipped = 0, filtered = 0;
     for (const index of new Set(cells)) {

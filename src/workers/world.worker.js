@@ -4,9 +4,18 @@ import { EditError } from '../editing/brush.js';
 let document = null;
 let filename = '';
 let busy = false;
+let fillPreparation = null;
 
 self.addEventListener('message', async ({ data }) => {
   const { id, action, file, region, stroke, point } = data;
+  // Cancellation must bypass the ordinary single-request queue while traversal yields.
+  if (action === 'cancelFill') {
+    if (fillPreparation?.id === data.targetId) {
+      fillPreparation.cancelled = true;
+      document?.cancelFill();
+    }
+    return;
+  }
   if (busy) return;
   busy = true;
   const progress = percent => self.postMessage({ id, type: 'progress', percent });
@@ -22,7 +31,13 @@ self.addEventListener('message', async ({ data }) => {
       filename = file.name;
       document = await openWorld(await file.arrayBuffer(), progress);
       self.postMessage({ id, type: 'result', summary: document.summary, editState: document.editState });
-    } else if (['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo'].includes(action)) {
+    } else if (action === 'prepareFill') {
+      if (!document) throw new WorldFileError('请先打开一个世界。');
+      const preparation = { id, cancelled: false };
+      fillPreparation = preparation;
+      const fill = await document.prepareFill(stroke, { cancelled: () => preparation.cancelled, progress });
+      self.postMessage({ id, type: 'result', fill });
+    } else if (['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo', 'commitFill'].includes(action)) {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const editState = document[action](stroke);
       self.postMessage({ id, type: 'result', editState });
@@ -45,9 +60,10 @@ self.addEventListener('message', async ({ data }) => {
       throw new WorldFileError('无法识别这项操作。');
     }
   } catch (error) {
-    const recoverable = Boolean(document) && (error instanceof EditError || (action === 'export' && error instanceof WorldFileError));
+    const cancelled = action === 'prepareFill' && error.name === 'AbortError';
+    const recoverable = Boolean(document) && (cancelled || error instanceof EditError || (action === 'export' && error instanceof WorldFileError));
     if (!recoverable) document = null;
-    self.postMessage({ id, type: 'error', recoverable, message: error instanceof WorldFileError || error instanceof EditError ? error.message : '文件处理失败，请重新打开世界。' });
+    self.postMessage({ id, type: 'error', recoverable, cancelled, message: cancelled || error instanceof WorldFileError || error instanceof EditError ? error.message : '文件处理失败，请重新打开世界。' });
   } finally {
     busy = false;
   }

@@ -25,7 +25,7 @@ export class WorldSession {
             const request = this.pending;
             clearTimeout(request.timer);
             this.pending = null;
-            request.reject(new Error(data.message));
+            request.reject(data.cancelled ? new DOMException(data.message, 'AbortError') : new Error(data.message));
             this.dispatch();
           } else this.close(new Error(data.message));
         } else if (data.type === 'result') {
@@ -33,7 +33,8 @@ export class WorldSession {
           clearTimeout(request.timer);
           this.pending = null;
           if (request.action === 'open') this.loaded = true;
-          request.resolve(data);
+          if (request.cancelled) request.reject(new DOMException('连通填充已取消，世界未修改。', 'AbortError'));
+          else request.resolve(data);
           this.dispatch();
         }
       };
@@ -71,7 +72,7 @@ export class WorldSession {
 
   edit(action, stroke) {
     if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
-    if (!['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo'].includes(action)) return Promise.reject(new Error('无法识别这项编辑操作。'));
+    if (!['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo', 'commitFill'].includes(action)) return Promise.reject(new Error('无法识别这项编辑操作。'));
     return this.request(action, { stroke });
   }
 
@@ -88,6 +89,23 @@ export class WorldSession {
   prepareClipboard(clipboard) {
     if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
     return this.request('prepareClipboard', { stroke: { clipboard } });
+  }
+
+  prepareFill(stroke, onProgress) {
+    if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
+    return this.request('prepareFill', { stroke }, onProgress);
+  }
+
+  cancelPrepareFill() {
+    const reason = () => new DOMException('连通填充已取消，世界未修改。', 'AbortError');
+    this.queue = this.queue.filter(request => {
+      if (request.action !== 'prepareFill') return true;
+      request.reject(reason()); return false;
+    });
+    if (this.pending?.action === 'prepareFill' && !this.pending.cancelled) {
+      this.pending.cancelled = true;
+      this.worker.postMessage({ action: 'cancelFill', targetId: this.pending.id });
+    }
   }
 
   request(action, payload, onProgress) {

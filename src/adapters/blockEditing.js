@@ -4,6 +4,10 @@ import { EditError, selectionCells } from '../editing/brush.js';
 import { pasteFits, validateClipboard } from '../editing/clipboard.js';
 import { supportsSlope } from '../editing/appearance.js';
 import { tileMaskValues } from './tileMaskValues.js';
+import { floodCells } from '../editing/floodFill.js';
+import fillMetadata from '../../vendor/tedit-editing-rules/fill-metadata.json' with { type: 'json' };
+
+const solidIds = new Set(fillMetadata.solidIds), framedIds = new Set(fillMetadata.framedIds), wallStopIds = new Set(fillMetadata.wallStopIds);
 
 // Read and restore every stored field, including dormant flags hidden by getTile.
 export const TILE_FIELDS = ['blockId', 'frameX', 'frameY', 'blockColor', 'wallId', 'wallColor', 'liquidAmount', 'liquidType', 'flags'];
@@ -113,6 +117,37 @@ export function createBlockEditing(world, ensureWritable) {
       return after;
     },
   });
+  let fillDraft = null, nextFillToken = 0;
+  editing.prepareFill = async (payload, control) => {
+    fillDraft = null;
+    const token = ++nextFillToken, revision = editing.revision;
+    const options = structuredClone(payload);
+    const { point } = options || {};
+    // Validate mutation parameters before reading any candidate tiles.
+    editing.validateStroke({ ...options, cells: [0] });
+    const cells = await floodCells({ width: tiles.width, height: tiles.height, read(index) {
+      const type = tiles.blockId[index], flags = tiles.flags[index];
+      return { type, active: Boolean(flags & TileFlag.IS_BLOCK_ACTIVE), wall: tiles.wallId[index],
+        slope: (flags & TileFlag.SLOPE_MASK) >> TileFlag.SLOPE_SHIFT,
+        actuator: Boolean(flags & TileFlag.ACTUATOR), actuated: Boolean(flags & TileFlag.ACTUATED),
+        amount: tiles.liquidAmount[index], liquid: tiles.liquidType[index],
+        solid: solidIds.has(type), framed: framedIds.has(type), stopsWalls: wallStopIds.has(type) };
+    } }, options, control);
+    if (token !== nextFillToken) throw new DOMException('连通填充已取消，世界未修改。', 'AbortError');
+    if (revision !== editing.revision) throw new EditError('世界已变化，请重新计算连通区域。');
+    fillDraft = { token, revision, options: { ...options, cells } };
+    return { token, revision, cells: [...cells], point };
+  };
+  editing.cancelFill = () => { fillDraft = null; nextFillToken++; };
+  editing.commitFill = payload => {
+    if (!fillDraft || payload?.token !== fillDraft.token || editing.revision !== fillDraft.revision) {
+      fillDraft = null;
+      throw new EditError('连通填充预览已失效，请重新选择起点；世界未修改。');
+    }
+    const options = fillDraft.options;
+    fillDraft = null;
+    return editing.paint(options);
+  };
   editing.copy = selection => {
     const cells = selectionCells(selection, tiles);
     const snapshots = cells.map(index => {

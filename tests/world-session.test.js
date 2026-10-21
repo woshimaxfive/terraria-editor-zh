@@ -236,3 +236,30 @@ test('template preparation queues before export, preserves recoverable sessions 
   const pending = session.prepareClipboard(clipboard), cancelled = assert.rejects(pending, error => error.name === 'AbortError');
   session.close(); await cancelled;
 });
+
+test('fill cancellation bypasses a busy queue, rejects with AbortError and keeps world loaded for export', async () => {
+  const { session, workers } = setup();
+  const opening = session.open({ name: 'world.wld' }); workers[0].reply({ type: 'result', summary: {} }); await opening;
+  const preparing = session.prepareFill({ point: { x: 0, y: 0 }, layer: 'block', blockId: 1 });
+  const id = workers[0].message.id, exporting = session.export();
+  const rejected = assert.rejects(preparing, { name: 'AbortError' });
+  session.cancelPrepareFill(); assert.deepEqual(workers[0].message, { action: 'cancelFill', targetId: id });
+  workers[0].onmessage({ data: { id, type: 'error', recoverable: true, cancelled: true, message: '已取消' } }); await rejected;
+  assert.equal(session.loaded, true); assert.equal(workers[0].terminated, undefined); assert.equal(workers[0].message.action, 'export');
+  workers[0].reply({ type: 'result', buffer: new ArrayBuffer(1) }); await exporting; session.close();
+});
+
+test('queued fill cancellation leaves active render and other requests intact; late successful fill cannot revive cancelled preview', async () => {
+  const { session, workers } = setup();
+  const opening = session.open({ name: 'world.wld' }); workers[0].reply({ type: 'result', summary: {} }); await opening;
+  const render = session.render({ x: 0 });
+  const queued = session.prepareFill({}), queuedRejection = assert.rejects(queued, { name: 'AbortError' });
+  session.cancelPrepareFill(); await queuedRejection; assert.equal(workers[0].message.action, 'render');
+  workers[0].reply({ type: 'result', image: {} }); await render;
+  const preparing = session.prepareFill({}), id = workers[0].message.id;
+  const cancelled = assert.rejects(preparing, { name: 'AbortError' }); session.cancelPrepareFill();
+  workers[0].onmessage({ data: { id, type: 'result', fill: { token: 1 } } }); await cancelled;
+  const commit = session.edit('commitFill', { token: 2 }); assert.equal(workers[0].message.action, 'commitFill');
+  const rejected = assert.rejects(commit, /失效/); workers[0].reply({ type: 'error', recoverable: true, message: '预览失效' }); await rejected;
+  assert.equal(session.loaded, true); session.close();
+});

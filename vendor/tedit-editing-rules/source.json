@@ -6,8 +6,11 @@
     "src/TEdit/Editor/Tools/BrushTool.cs",
     "src/TEdit.Editor/TileMaskSettings.cs",
     "src/TEdit.Editor/MaskMode.cs",
-    "src/TEdit.Editor/LiquidLevelMaskMode.cs"
+    "src/TEdit.Editor/LiquidLevelMaskMode.cs",
+    "src/TEdit/Editor/Tools/FillTool.cs",
+    "src/TEdit.Terraria/TileType.cs",
+    "src/TEdit.Terraria/Data/tiles.json"
   ],
   "license": "MS-PL",
-  "changes": "Adapt integer line rasterization and mask evaluation to bounded browser editing."
+  "changes": "Adapt integer line rasterization, mask evaluation and bounded, cancellable flood-fill matching to browser editing. Extract solid/framed/wall-stop IDs for connectivity."
 }
