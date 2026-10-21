@@ -1,7 +1,7 @@
 import React from 'react';
 import { BRUSH_SHAPES, MAX_BRUSH_DIMENSION, isLineBrush, maxLineThickness } from '../editing/brushShape.js';
 
-export default function BrushShapeControls({ value, onChange, disabled }) {
+export default function BrushShapeControls({ value, geometry, onChange, disabled }) {
   const change = next => onChange({ ...next, thickness: Math.min(next.thickness ?? 1, maxLineThickness(next)) });
   const resize = (axis, input) => {
     const size = Math.max(1, Math.min(MAX_BRUSH_DIMENSION, Math.trunc(Number(input) || 1)));
@@ -28,6 +28,9 @@ export default function BrushShapeControls({ value, onChange, disabled }) {
         onChange={event => change({ ...value, thickness: Math.max(1, Math.trunc(Number(event.target.value) || 1)) })} /></label>
       <p className="card-note">1 为细线；大于 1 时按原版作为圆形扩展半径，最多为短边的一半。</p>
     </>}
-    <p className="card-note">宽高 1–400 格，偶数尺寸按原版向左上定位。每笔最多 10000 格，超限整笔取消。</p>
+    {geometry.issue && <p className="card-note" role="status" aria-label="画笔形状提示">{geometry.issue}</p>}
+    {value.shape === 'crescent' && <p className="card-note">月牙：高决定外径，宽控制丰满程度，宽越大越饱满。</p>}
+    {value.shape === 'donut' && <p className="card-note">圆环：高决定外径，宽控制环厚，按原版半径取整，保留中心空格。</p>}
+    <p className="card-note">尺寸参数 1–400 格，按原版定位，实际落笔范围以光标为准。每笔最多 10000 格，超限整笔取消。</p>
   </>;
 }

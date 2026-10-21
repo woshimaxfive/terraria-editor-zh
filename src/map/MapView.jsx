@@ -72,6 +72,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [selection, setSelection] = useState(null);
   const [selectionPreview, setSelectionPreview] = useState(null);
   const [hint, setHint] = useState('');
+  useEffect(() => { setHint(''); }, [brushSettings]);
   const [pastePosition, setPastePosition] = useState(null);
   const [placing, setPlacing] = useState(false);
   const pasteRef = useRef(null);
@@ -700,6 +701,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
           }
           if (!editVisible) { setHint('当前编辑图层已隐藏，请先勾选对应的显示开关。'); return; }
           if (!masksValid) { setHint('匹配条件无效，请先修正条件数值。'); return; }
+          if (['paint', 'erase'].includes(tool) && footprint.issue) { setHint(footprint.issue); return; }
           if (tool === 'fill') {
             if (layer === 'wire') { setHint('原版连通填充不支持电线，请选择其他图层。'); return; }
             pickRef.current = { tool, pointerId: event.pointerId, cell, start: pointOf(event) };
@@ -787,7 +789,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
           </div>
     {['slope', 'paint'].includes(layer) ? <AppearancePicker layer={layer} version={world.formatVersion} slope={slope} onSlope={setSlope} value={appearance} onChange={setAppearance} disabled={disabled || interacting} /> : ['wire', 'actuator'].includes(layer) ? <CircuitPicker layer={layer} mask={wireMask} onMask={setWireMask} actuator={actuator} actuated={actuated} onActuator={setActuator} onActuated={setActuated} disabled={disabled || interacting} /> : layer === 'liquid' ? <LiquidPicker version={world.formatVersion} type={liquidType} amount={liquidAmount} onType={setLiquidType} onAmount={setLiquidAmount} disabled={disabled || interacting} /> : <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />}
           <div className="stroke-options"><label>画笔轨迹<select aria-label="画笔轨迹" value={strokeMode} disabled={disabled || interacting} onChange={event => setStrokeMode(event.target.value)}><option value="freehand">自由绘制</option><option value="line">起终点直线</option><option value="polyline">连续折线</option><option value="constrain">方向约束</option></select></label>
-          <BrushShapeControls value={brushSettings} onChange={setBrushSettings} disabled={disabled || interacting} />
+          <BrushShapeControls value={brushSettings} geometry={footprint} onChange={setBrushSettings} disabled={disabled || interacting} />
           {strokeMode === 'polyline' && <p className="card-note">点击续接上一端点，每段一步历史；拖动超过 2 格后结束续接。Esc、双指、尺寸或参数变化清除锚点。</p>}
           {strokeMode === 'constrain' && <p className="card-note">开始移动后锁定水平、竖直或 45° 方向，按原版整数规则吸附。每次拖动为一步，Esc 取消。</p>}</div>
           <MaskControls enabled={masksEnabled} onEnabled={setMasksEnabled} rules={masks} onRules={setMasks} sample={sample} disabled={disabled || interacting} />

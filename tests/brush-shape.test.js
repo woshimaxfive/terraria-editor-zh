@@ -11,7 +11,7 @@ test('brush dimensions reject invalid input and retain the desktop 400 tile maxi
     assert.throws(() => createBrushShape({ width, height: 4 }), /1–400/);
     assert.throws(() => createBrushShape({ width: 4, height: width }), /1–400/);
   }
-  assert.throws(() => createBrushShape({ width: 4, height: 4, shape: 'triangle' }), /形状/);
+  assert.throws(() => createBrushShape({ width: 4, height: 4, shape: 'unknown' }), /形状/);
   assert.equal(createBrushShape({ width: 400, height: 400 }).rows.length, 400);
 });
 

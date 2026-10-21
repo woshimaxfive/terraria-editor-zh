@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MS-PL
 // TEdit contributors. Adapted from Fill/Shape/BrushSettings; see vendor/tedit-editing-rules/.
+import { addBrushSpan, brushFromSpans, subtractBrushRow } from './brushSpans.js';
+import { complexBrushShape } from './complexBrushShape.js';
 export const MAX_BRUSH_DIMENSION = 400;
 export const BRUSH_SHAPES = [['rectangle', '矩形'], ['ellipse', '椭圆'],
-  ['diagonalRight', '右斜线 ／'], ['diagonalLeft', '左斜线 ＼'], ['cross', 'X 形']];
+  ['diagonalRight', '右斜线 ／'], ['diagonalLeft', '左斜线 ＼'], ['cross', 'X 形'],
+  ['star', '星形'], ['triangle', '三角'], ['crescent', '月牙'], ['donut', '圆环']];
 export const isLineBrush = shape => ['diagonalRight', 'diagonalLeft', 'cross'].includes(shape);
 export const maxLineThickness = ({ width, height }) => Math.max(1, Math.floor(Math.min(width, height) / 2));
 const cache = new WeakMap();
@@ -16,8 +19,10 @@ export function createBrushShape(settings) {
   }
   const saved = cache.get(settings);
   if (saved && saved.width === width && saved.height === height && saved.shape === shape && saved.thickness === thickness) return saved.value;
-  const value = isLineBrush(shape) && width > 1 && height > 1
-    ? lineBrush(width, height, shape, thickness) : filledBrush(width, height, shape);
+  const value = width <= 1 || height <= 1 || ['rectangle', 'ellipse'].includes(shape)
+    ? filledBrush(width, height, shape) : isLineBrush(shape)
+      ? lineBrush(width, height, shape, thickness) : complexBrushShape(width, height, shape);
+  if (!value.rows.length && !value.issue) value.issue = '此尺寸下原版笔形不产生图格，请增大宽高；当前世界未修改。';
   cache.set(settings, { width, height, shape, thickness, value });
   return value;
 }
@@ -62,23 +67,9 @@ function lineBrush(width, height, shape, thickness) {
   else for (let y = -thickness; y <= thickness; y++) kernel.push([y, Math.floor(Math.sqrt(thickness * thickness - y * y))]);
   const spans = new Map();
   for (const [start, end] of segments) for (const [x, y] of linePoints(start, end)) for (const [dy, radius] of kernel) {
-    const row = spans.get(y + dy) ?? [];
-    let from = x - radius, to = x + radius, i = 0;
-    while (i < row.length && row[i + 1] < from - 1) i += 2;
-    const begin = i;
-    while (i < row.length && row[i] <= to + 1) {
-      from = Math.min(from, row[i]); to = Math.max(to, row[i + 1]); i += 2;
-    }
-    row.splice(begin, i - begin, from, to); spans.set(y + dy, row);
+    addBrushSpan(spans, y + dy, x - radius, x + radius);
   }
-  const minY = Math.min(...spans.keys()), maxY = Math.max(...spans.keys());
-  let minX = Infinity, maxX = -Infinity;
-  const rows = Array.from({ length: maxY - minY + 1 }, (_, i) => {
-    const row = spans.get(minY + i) ?? null;
-    if (row) { minX = Math.min(minX, row[0]); maxX = Math.max(maxX, row.at(-1)); }
-    return row;
-  });
-  return { shape, left: minX, top: minY, width: maxX - minX + 1, height: rows.length, rows };
+  return brushFromSpans(shape, spans);
 }
 
 export function containsBrushCell({ rows, top }, x, y) {
@@ -91,16 +82,8 @@ export function containsBrushCell({ rows, top }, x, y) {
 export function brushOutline({ rows, top }) {
   const edges = [];
   const horizontal = (row, neighbor, y) => {
-    for (let i = 0; i < row.length; i += 2) {
-      let cursor = row[i]; const to = row[i + 1];
-      for (let j = 0; neighbor && j < neighbor.length && cursor <= to; j += 2) {
-        if (neighbor[j + 1] < cursor) continue;
-        if (neighbor[j] > to) break;
-        if (neighbor[j] > cursor) edges.push([cursor, y, neighbor[j], y]);
-        cursor = Math.max(cursor, neighbor[j + 1] + 1);
-      }
-      if (cursor <= to) edges.push([cursor, y, to + 1, y]);
-    }
+    const exposed = subtractBrushRow(row, neighbor);
+    for (let i = 0; i < exposed.length; i += 2) edges.push([exposed[i], y, exposed[i + 1] + 1, y]);
   };
   rows.forEach((row, i) => {
     if (!row) return;

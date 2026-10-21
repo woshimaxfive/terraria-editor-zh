@@ -158,7 +158,13 @@ Desktop TEdit brush, line, direction, mask and flood-fill rules
 TEdit contributors, MS-PL.
 Source: https://github.com/TEdit/Terraria-Map-Editor/tree/84e3fc3466d405675a09da763169774b82c22d4d
 Browser adaptations: src/editing/masks.js, src/editing/floodFill.js,
-src/editing/constraints.js, src/editing/brushShape.js and line/polyline/stamp
+src/editing/constraints.js, src/editing/brushShape.js, src/editing/complexBrushShape.js,
+src/editing/brushSpans.js and line/polyline/stamp
 geometry in src/editing/brush.js.
 Connectivity metadata: vendor/tedit-editing-rules/fill-metadata.json.
 Pinned source references and full license: vendor/tedit-editing-rules/source.json and LICENSE.
+
+WriteableBitmapEx-derived midpoint fill
+Copyright (c) 2009-2010 Rene Schulte and WriteableBitmapEx Contributors, MS-PL.
+Adapted through TEdit.Common/Geometry/Fill.cs; source and full license references
+are retained in vendor/tedit-editing-rules/source.json and LICENSE.
