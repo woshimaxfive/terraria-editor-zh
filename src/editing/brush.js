@@ -1,5 +1,6 @@
 import { containsCell, validSelection } from './selection.js';
 import { detectDirection, snapDirection } from './constraints.js';
+import { createBrushShape } from './brushShape.js';
 
 export { MATERIALS } from './materials.js';
 export const BRUSH_SIZES = [1, 3, 5, 9];
@@ -21,7 +22,7 @@ export function selectionCells(selection, world) {
 export class BrushStroke {
   constructor(world, size, selection = null, mode = 'freehand', anchor = null) {
     this.world = world;
-    this.size = size;
+    this.shape = createBrushShape(typeof size === 'number' ? { width: size, height: size } : size);
     this.selection = selection;
     this.cells = new Set();
     this.previous = null;
@@ -54,10 +55,16 @@ export class BrushStroke {
     const dx = Math.abs(point.x - x), dy = -Math.abs(point.y - y);
     const sx = x < point.x ? 1 : -1, sy = y < point.y ? 1 : -1;
     let error = dx + dy;
-    const radius = (this.size - 1) / 2;
+    const { left, top, width, height, rows } = this.shape;
     while (true) {
-      for (let bx = Math.max(0, x - radius); bx <= Math.min(this.world.width - 1, x + radius); bx++) {
-        for (let by = Math.max(0, y - radius); by <= Math.min(this.world.height - 1, y + radius); by++) {
+      const minX = Math.max(0, x + left, this.selection?.x ?? 0);
+      const maxX = Math.min(this.world.width - 1, x + left + width - 1, this.selection ? this.selection.x + this.selection.width - 1 : this.world.width - 1);
+      const minY = Math.max(0, y + top, this.selection?.y ?? 0);
+      const maxY = Math.min(this.world.height - 1, y + top + height - 1, this.selection ? this.selection.y + this.selection.height - 1 : this.world.height - 1);
+      for (let bx = minX; bx <= maxX; bx++) {
+        for (let by = minY; by <= maxY; by++) {
+          const row = rows[by - y - top];
+          if (!row || bx - x < row[0] || bx - x > row[1]) continue;
           if (!containsCell(this.selection, bx, by)) continue;
           this.cells.add(bx * this.world.height + by);
           if (this.cells.size > MAX_STROKE_TILES) throw new EditError('单笔最多修改 10000 格，请分段绘制。');

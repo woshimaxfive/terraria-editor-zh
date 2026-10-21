@@ -134,6 +134,10 @@ select { max-width: 100%; }
 .stroke-options { padding: 12px 0; border-bottom: 1px solid var(--line); }
 .stroke-options label { display: flex; gap: 8px; align-items: center; font-size: 12px; }
 .stroke-options select { flex: 1; min-width: 0; }
+.stroke-options > label + label { margin-top: 8px; }
+.brush-dimensions { display: flex; gap: 12px; margin: 8px 0; }
+.brush-dimensions label { flex: 1; min-width: 0; }
+.brush-dimensions input { width: 100%; min-width: 0; }
 .mask-controls { margin-top: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font-size: 12px; }
 .mask-controls summary { cursor: pointer; padding-block: 8px; }
 .mask-switch { display: flex; align-items: center; gap: 6px; margin-block: 8px; }

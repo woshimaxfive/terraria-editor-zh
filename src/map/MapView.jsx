@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { constrainCamera, fitCamera, screenToWorld, visibleRegion, zoomCamera } from '../rendering/viewport.js';
 import { BRUSH_SIZES, BrushStroke, EditError } from '../editing/brush.js';
@@ -10,6 +10,8 @@ import AppearancePicker from './AppearancePicker.jsx';
 import MaskControls from './MaskControls.jsx';
 import { validMasks } from '../editing/masks.js';
 import { continuesLine } from '../editing/constraints.js';
+import { brushOutline, createBrushShape } from '../editing/brushShape.js';
+import BrushShapeControls from './BrushShapeControls.jsx';
 import { drawShapes } from '../rendering/appearance.js';
 import { drawCircuitOverlay } from '../rendering/circuitOverlay.js';
 import { sampledLiquidAmount } from '../editing/liquids.js';
@@ -50,7 +52,11 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [layer, setLayer] = useState('block');
   const [layers, setLayers] = useState({ block: true, wall: true, liquid: true, wire: false, actuator: false });
   const [sample, setSample] = useState(null);
-  const [brushSize, setBrushSize] = useState(1);
+  const [brushSettings, setBrushSettings] = useState({ shape: 'rectangle', width: 1, height: 1, locked: true });
+  const brushSize = brushSettings.width === brushSettings.height && BRUSH_SIZES.includes(brushSettings.width) ? brushSettings.width : 'custom';
+  const setBrushSize = size => setBrushSettings(previous => ({ ...previous, width: size, height: size }));
+  const footprint = useMemo(() => createBrushShape(brushSettings), [brushSettings]);
+  const outline = useMemo(() => brushOutline(footprint), [footprint]);
   const [strokeMode, setStrokeMode] = useState('freehand');
   const [chainAnchor, setChainAnchor] = useState(null);
   const chainRef = useRef(null);
@@ -83,8 +89,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const mountedRef = useRef(false);
   const hoverRef = useRef(null);
   const frameRef = useRef(0);
-  const brush = useRef({ tool, blockId, brushSize });
-  brush.current = { tool, blockId, brushSize, strokeMode };
+  const brush = useRef(null);
+  brush.current = { tool, blockId, settings: brushSettings, outline, strokeMode };
   const current = useRef({ size, camera });
   current.current = { size, camera };
   const selectLayer = id => {
@@ -99,7 +105,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const clearChain = useCallback(() => {
     chainRef.current = null; chainGeneration.current++; setChainAnchor(null);
   }, []);
-  useEffect(clearChain, [clearChain, tool, layer, strokeMode, brushSize, blockId, wallId, liquidType, liquidAmount,
+  useEffect(clearChain, [clearChain, tool, layer, strokeMode, brushSettings, blockId, wallId, liquidType, liquidAmount,
     wireMask, actuator, actuated, slope, appearance, masks, masksEnabled]);
   const cancelFill = useCallback(() => {
     if (fillJobRef.current) fillJobRef.current.cancelled = true;
@@ -215,7 +221,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     if (chainRef.current && brush.current.strokeMode === 'polyline' && ['paint', 'erase'].includes(brush.current.tool)) {
       const anchor = chainRef.current;
       if (hoverRef.current && !strokeRef.current) {
-        const preview = new BrushStroke(world, brush.current.brushSize, selectionRef.current, 'polyline', anchor);
+        const preview = new BrushStroke(world, brush.current.settings, selectionRef.current, 'polyline', anchor);
         try {
           preview.add(hoverRef.current);
           context.fillStyle = brush.current.tool === 'erase' ? '#ff927940' : '#ffe19940';
@@ -245,11 +251,18 @@ export default function MapView({ session, world, disabled, onError, editState, 
       context.setLineDash([]);
     }
     if (hoverRef.current && !['pan', 'paste'].includes(brush.current.tool) && camera.zoom >= 2) {
-      const size = ['pick', 'select', 'fill'].includes(brush.current.tool) ? 1 : brush.current.brushSize;
-      const radius = (size - 1) / 2;
       context.strokeStyle = '#ffffff';
       context.lineWidth = 1;
-      context.strokeRect(toX(hoverRef.current.x - radius), toY(hoverRef.current.y - radius), size * camera.zoom, size * camera.zoom);
+      if (['pick', 'select', 'fill'].includes(brush.current.tool)) {
+        context.strokeRect(toX(hoverRef.current.x), toY(hoverRef.current.y), camera.zoom, camera.zoom);
+      } else {
+        context.beginPath();
+        for (const [x1, y1, x2, y2] of brush.current.outline) {
+          context.moveTo(toX(hoverRef.current.x + x1), toY(hoverRef.current.y + y1));
+          context.lineTo(toX(hoverRef.current.x + x2), toY(hoverRef.current.y + y2));
+        }
+        context.stroke();
+      }
     }
   }, [camera, size, world]);
 
@@ -258,7 +271,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     return () => cancelAnimationFrame(frame);
   }, [draw]);
 
-  useEffect(() => { draw(); }, [tool, brushSize, chainAnchor, draw]);
+  useEffect(() => { draw(); }, [tool, brushSettings, chainAnchor, draw]);
   useEffect(() => { draw(); }, [pastePosition, draw]);
   useEffect(() => { draw(); }, [fillState, draw]);
 
@@ -609,7 +622,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <label hidden={!usesLayer}><span className="context-label">图层</span><select aria-label="编辑图层" value={layer} disabled={disabled || interacting} onChange={event => selectLayer(event.target.value)}>
         {EDIT_LAYERS.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
       </select></label>
-      <label hidden={!usesBrush}><span className="context-label">尺寸</span><select aria-label="画笔尺寸" value={brushSize} disabled={disabled || interacting} onChange={event => setBrushSize(Number(event.target.value))}>{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
+      <label hidden={!usesBrush}><span className="context-label">尺寸</span><select aria-label="画笔尺寸" value={brushSize} disabled={disabled || interacting} onChange={event => setBrushSize(Number(event.target.value))}>{brushSize === 'custom' && <option value="custom" disabled>{brushSettings.width} × {brushSettings.height}</option>}{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
       {!usesLayer && <span className="context-description">{tool === 'paste' ? '定位后确认 · Esc 取消' : '拖动浏览 · 滚轮缩放'}</span>}</div>
       <div className="tool-buttons" role="group" aria-label="编辑历史">
         <button aria-label={`撤销 (${editState.undoCount})`} title="撤销 · Ctrl Z" disabled={disabled || interacting || !editState.undoCount} onClick={() => onEdit('undo')}><Icon name="undo" size={16} /><span className="history-label">撤销 </span><span className="history-count">({editState.undoCount})</span></button>
@@ -691,7 +704,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
             pickRef.current = { tool, pointerId: event.pointerId, cell, start: pointOf(event) };
             return;
           }
-          strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current, strokeMode, strokeMode === 'polyline' ? chainRef.current : null) };
+          strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, stroke: new BrushStroke(world, brushSettings, selectionRef.current, strokeMode, strokeMode === 'polyline' ? chainRef.current : null) };
           if (strokeMode === 'constrain') strokeRef.current.stroke.direction = lastConstraintDirection.current;
           extendStroke(pointOf(event));
           if (!strokeRef.current) return;
@@ -773,6 +786,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
           </div>
     {['slope', 'paint'].includes(layer) ? <AppearancePicker layer={layer} version={world.formatVersion} slope={slope} onSlope={setSlope} value={appearance} onChange={setAppearance} disabled={disabled || interacting} /> : ['wire', 'actuator'].includes(layer) ? <CircuitPicker layer={layer} mask={wireMask} onMask={setWireMask} actuator={actuator} actuated={actuated} onActuator={setActuator} onActuated={setActuated} disabled={disabled || interacting} /> : layer === 'liquid' ? <LiquidPicker version={world.formatVersion} type={liquidType} amount={liquidAmount} onType={setLiquidType} onAmount={setLiquidAmount} disabled={disabled || interacting} /> : <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />}
           <div className="stroke-options"><label>画笔轨迹<select aria-label="画笔轨迹" value={strokeMode} disabled={disabled || interacting} onChange={event => setStrokeMode(event.target.value)}><option value="freehand">自由绘制</option><option value="line">起终点直线</option><option value="polyline">连续折线</option><option value="constrain">方向约束</option></select></label>
+          <BrushShapeControls value={brushSettings} onChange={setBrushSettings} disabled={disabled || interacting} />
           {strokeMode === 'polyline' && <p className="card-note">点击续接上一端点，每段一步历史；拖动超过 2 格后结束续接。Esc、双指、尺寸或参数变化清除锚点。</p>}
           {strokeMode === 'constrain' && <p className="card-note">开始移动后锁定水平、竖直或 45° 方向，按原版整数规则吸附。每次拖动为一步，Esc 取消。</p>}</div>
           <MaskControls enabled={masksEnabled} onEnabled={setMasksEnabled} rules={masks} onRules={setMasks} sample={sample} disabled={disabled || interacting} />
