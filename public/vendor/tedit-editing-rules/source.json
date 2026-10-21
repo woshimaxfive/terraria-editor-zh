@@ -9,8 +9,9 @@
     "src/TEdit.Editor/LiquidLevelMaskMode.cs",
     "src/TEdit/Editor/Tools/FillTool.cs",
     "src/TEdit.Terraria/TileType.cs",
-    "src/TEdit.Terraria/Data/tiles.json"
+    "src/TEdit.Terraria/Data/tiles.json",
+    "src/TEdit/Editor/Tools/ConstrainHelper.cs"
   ],
   "license": "MS-PL",
-  "changes": "Adapt integer line rasterization, mask evaluation and bounded, cancellable flood-fill matching to browser editing. Extract solid/framed/wall-stop IDs for connectivity."
+  "changes": "Adapt integer line rasterization, mask evaluation and bounded, cancellable flood-fill matching to browser editing. Extract solid/framed/wall-stop IDs for connectivity. Adapt integer direction snapping and click-based polyline continuation."
 }

@@ -1,4 +1,5 @@
 import { containsCell, validSelection } from './selection.js';
+import { detectDirection, snapDirection } from './constraints.js';
 
 export { MATERIALS } from './materials.js';
 export const BRUSH_SIZES = [1, 3, 5, 9];
@@ -18,18 +19,33 @@ export function selectionCells(selection, world) {
 
 // The preview and Worker use the same bounded, column-major cell indices.
 export class BrushStroke {
-  constructor(world, size, selection = null, mode = 'freehand') {
+  constructor(world, size, selection = null, mode = 'freehand', anchor = null) {
     this.world = world;
     this.size = size;
     this.selection = selection;
     this.cells = new Set();
     this.previous = null;
     this.mode = mode;
-    this.anchor = null;
+    this.anchor = anchor;
+    this.direction = 0;
+    this.directionLocked = false;
+    this.inputStart = null;
+    this.inputEnd = null;
   }
 
   add(point) {
-    if (this.mode === 'line') {
+    this.inputStart ??= point;
+    this.inputEnd = point;
+    if (this.mode === 'constrain') {
+      this.anchor ??= point;
+      const dx = Math.abs(point.x - this.anchor.x), dy = Math.abs(point.y - this.anchor.y);
+      if (!this.directionLocked && (dx > 1 || dy > 1)) {
+        this.direction = detectDirection(dx, dy);
+        this.directionLocked = true;
+      }
+      point = snapDirection(point, this.anchor, this.direction);
+    }
+    if (this.mode === 'line' || this.mode === 'polyline') {
       this.anchor ??= point;
       this.cells.clear();
       this.previous = this.anchor;

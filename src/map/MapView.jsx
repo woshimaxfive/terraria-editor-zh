@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { constrainCamera, fitCamera, screenToWorld, visibleRegion, zoomCamera } from '../rendering/viewport.js';
-import { BRUSH_SIZES, BrushStroke } from '../editing/brush.js';
+import { BRUSH_SIZES, BrushStroke, EditError } from '../editing/brush.js';
 import { selectionFromPoints } from '../editing/selection.js';
 import MaterialPicker from './MaterialPicker.jsx';
 import LiquidPicker from './LiquidPicker.jsx';
@@ -9,6 +9,7 @@ import CircuitPicker from './CircuitPicker.jsx';
 import AppearancePicker from './AppearancePicker.jsx';
 import MaskControls from './MaskControls.jsx';
 import { validMasks } from '../editing/masks.js';
+import { continuesLine } from '../editing/constraints.js';
 import { drawShapes } from '../rendering/appearance.js';
 import { drawCircuitOverlay } from '../rendering/circuitOverlay.js';
 import { sampledLiquidAmount } from '../editing/liquids.js';
@@ -51,6 +52,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [sample, setSample] = useState(null);
   const [brushSize, setBrushSize] = useState(1);
   const [strokeMode, setStrokeMode] = useState('freehand');
+  const [chainAnchor, setChainAnchor] = useState(null);
+  const chainRef = useRef(null);
+  const chainGeneration = useRef(0);
+  const lastConstraintDirection = useRef(0);
   const [masksEnabled, setMasksEnabled] = useState(false);
   const [masks, setMasks] = useState([]);
   const [drafting, setDrafting] = useState(false);
@@ -79,7 +84,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const hoverRef = useRef(null);
   const frameRef = useRef(0);
   const brush = useRef({ tool, blockId, brushSize });
-  brush.current = { tool, blockId, brushSize };
+  brush.current = { tool, blockId, brushSize, strokeMode };
   const current = useRef({ size, camera });
   current.current = { size, camera };
   const selectLayer = id => {
@@ -91,6 +96,11 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const parameters = { blockId, wallId, liquidType, liquidAmount, wireMask, actuator, actuated, slope, appearance, layer, masks: activeMasks };
   const editVisible = layers[layer === 'paint' ? appearance.target : layer === 'slope' ? 'block' : layer];
   const layerName = EDIT_LAYERS.find(([id]) => id === layer)[1];
+  const clearChain = useCallback(() => {
+    chainRef.current = null; chainGeneration.current++; setChainAnchor(null);
+  }, []);
+  useEffect(clearChain, [clearChain, tool, layer, strokeMode, brushSize, blockId, wallId, liquidType, liquidAmount,
+    wireMask, actuator, actuated, slope, appearance, masks, masksEnabled]);
   const cancelFill = useCallback(() => {
     if (fillJobRef.current) fillJobRef.current.cancelled = true;
     fillJobRef.current = null;
@@ -117,6 +127,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const observer = new ResizeObserver(([entry]) => {
       const next = { width: Math.round(entry.contentRect.width), height: Math.round(entry.contentRect.height) };
       if (next.width < 1 || next.height < 1) return;
+      clearChain();
       if (fillJobRef.current || fillRef.current) cancelFill();
       pickRef.current = null;
       pasteDragRef.current = null;
@@ -134,7 +145,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     });
     observer.observe(canvasRef.current);
     return () => observer.disconnect();
-  }, [world, changeCamera, onDraftChange, cancelFill]);
+  }, [world, changeCamera, onDraftChange, cancelFill, clearChain]);
 
   const draw = useCallback(() => {
     if (!camera || !size.width) return;
@@ -201,6 +212,19 @@ export default function MapView({ session, world, disabled, onError, editState, 
         context.fillRect(toX(Math.floor(index / world.height)), toY(index % world.height), camera.zoom, camera.zoom);
       }
     }
+    if (chainRef.current && brush.current.strokeMode === 'polyline' && ['paint', 'erase'].includes(brush.current.tool)) {
+      const anchor = chainRef.current;
+      if (hoverRef.current && !strokeRef.current) {
+        const preview = new BrushStroke(world, brush.current.brushSize, selectionRef.current, 'polyline', anchor);
+        try {
+          preview.add(hoverRef.current);
+          context.fillStyle = brush.current.tool === 'erase' ? '#ff927940' : '#ffe19940';
+          for (const index of preview.cells) context.fillRect(toX(Math.floor(index / world.height)), toY(index % world.height), camera.zoom, camera.zoom);
+        } catch (error) { if (!(error instanceof EditError)) throw error; }
+      }
+      context.strokeStyle = '#ffe199'; context.lineWidth = 2;
+      context.strokeRect(toX(anchor.x) - 2, toY(anchor.y) - 2, camera.zoom + 4, camera.zoom + 4);
+    }
     if (fillRef.current) {
       context.fillStyle = '#ffe19980';
       for (const index of fillRef.current.cells) {
@@ -234,7 +258,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     return () => cancelAnimationFrame(frame);
   }, [draw]);
 
-  useEffect(() => { draw(); }, [tool, brushSize, draw]);
+  useEffect(() => { draw(); }, [tool, brushSize, chainAnchor, draw]);
   useEffect(() => { draw(); }, [pastePosition, draw]);
   useEffect(() => { draw(); }, [fillState, draw]);
 
@@ -315,6 +339,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     return cell;
   };
   const cancelStroke = () => {
+    clearChain();
     strokeRef.current = null;
     pickRef.current = null;
     selectionDraftRef.current = null;
@@ -391,8 +416,11 @@ export default function MapView({ session, world, disabled, onError, editState, 
   };
   const extendStroke = point => {
     const cell = showCoordinates(point);
-    if (!cell) { if (strokeRef.current.stroke.mode !== 'line') strokeRef.current.stroke.previous = null; return; }
-    try { strokeRef.current.stroke.add(cell); }
+    if (!cell) { if (strokeRef.current.stroke.mode === 'freehand') strokeRef.current.stroke.previous = null; return; }
+    try {
+      strokeRef.current.stroke.add(cell);
+      if (strokeRef.current.stroke.mode === 'constrain') lastConstraintDirection.current = strokeRef.current.stroke.direction;
+    }
     catch (error) { setHint(error.message); cancelStroke(); }
     redraw();
   };
@@ -532,7 +560,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
       cancelStroke();
       if (event.type === 'pointerup' && commit?.stroke.cells.size && !disabled) {
         const { stroke, pointerId, tool: action, ...options } = commit;
-        onEdit(action, { ...options, cells: [...stroke.cells] });
+        const generation = chainGeneration.current;
+        onEdit(action, { ...options, cells: [...stroke.cells] }).then(result => {
+          if (result && mountedRef.current && generation === chainGeneration.current && stroke.mode === 'polyline' && continuesLine(stroke.inputStart, stroke.inputEnd)) {
+            chainRef.current = stroke.inputEnd; setChainAnchor(stroke.inputEnd);
+          }
+        });
       }
     }
     pointers.current.delete(event.pointerId);
@@ -545,7 +578,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const displayedSelection = selectionPreview || selection;
   const showPanel = name => { setPanel(name); setPanelOpen(true); };
   const closePanel = () => { setPanelOpen(false); panelToggleRef.current?.focus({ preventScroll: true }); };
-  const toolName = { pan: '平移', paint: strokeMode === 'line' ? '直线画笔' : '画笔', erase: strokeMode === 'line' ? '直线橡皮' : '橡皮', pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
+  const trajectoryName = { freehand: '', line: '直线', polyline: '折线', constrain: '约束' }[strokeMode];
+  const toolName = { pan: '平移', paint: trajectoryName + '画笔', erase: trajectoryName + '橡皮', pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
   const usesBrush = tool === 'paint' || tool === 'erase';
   const usesLayer = usesBrush || tool === 'fill' || tool === 'pick' || tool === 'select' || (selection && tool !== 'paste');
   return <section className={`map-view${panelOpen ? ' panel-open' : ''}`} aria-labelledby="map-title" onKeyDownCapture={event => {
@@ -657,8 +691,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
             pickRef.current = { tool, pointerId: event.pointerId, cell, start: pointOf(event) };
             return;
           }
-          strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current, strokeMode) };
-          strokeRef.current.stroke.add(cell);
+          strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current, strokeMode, strokeMode === 'polyline' ? chainRef.current : null) };
+          if (strokeMode === 'constrain') strokeRef.current.stroke.direction = lastConstraintDirection.current;
+          extendStroke(pointOf(event));
+          if (!strokeRef.current) return;
           setDrafting(true);
           onDraftChange(true);
           redraw();
@@ -671,7 +707,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         if (event.key === 'Escape') {
           if (fillState) cancelFill();
           else if (tool === 'paste') cancelPaste();
-          else if (strokeRef.current || selectionDraftRef.current || pickRef.current) cancelStroke();
+          else if (strokeRef.current || selectionDraftRef.current || pickRef.current || chainRef.current) cancelStroke();
           else clearSelection();
           return;
         }
@@ -713,8 +749,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
 
       </div>
     <p className={`tool-hint${hint ? ' has-hint' : ''}`} role="status">{hint || {
-      paint: `画笔${strokeMode === 'line' ? '直线' : ''}模式：放大到 200% 以上绘制${layerName}。${strokeMode === 'line' ? '拖动预览起终点直线，抬起提交，Esc 取消。' : '每次拖动为一步，双指可平移缩放。'}${masksEnabled ? '条件过滤已启用。' : ''}`,
-      erase: `橡皮${strokeMode === 'line' ? '直线' : ''}模式：放大到 200% 以上擦除${layerName}；只修改当前层，电线仅移除选中颜色。${masksEnabled ? '条件过滤已启用。' : ''}`,
+      paint: `画笔${trajectoryName}模式：放大到 200% 以上绘制${layerName}。${strokeMode === 'line' ? '拖动预览起终点直线，抬起提交，Esc 取消。' : strokeMode === 'polyline' ? '点击续接上一端点；拖动超过 2 格结束续接，Esc 清除锚点。' : strokeMode === 'constrain' ? '开始移动后锁定水平、竖直或45°方向；Esc 取消。' : '每次拖动为一步，双指可平移缩放。'}${masksEnabled ? '条件过滤已启用。' : ''}`,
+      erase: `橡皮${trajectoryName}模式：放大到 200% 以上擦除${layerName}；只修改当前层，电线仅移除选中颜色。${masksEnabled ? '条件过滤已启用。' : ''}`,
       pick: `吸管模式：放大到 200% 以上点击，读取${layerName}和图格属性。`,
       select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
       fill: '连通填充：点击起点，预览四方向连通区域后确认；Esc、双指或尺寸变化取消。最多 10000 格，可先框选限制范围。条件只过滤写入，不阻断连通路径；不支持电线。',
@@ -736,7 +772,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
             {EDIT_LAYERS.map(([id, name]) => <button key={id} aria-label={`${name}材料`} aria-pressed={layer === id} disabled={disabled || interacting} onClick={() => selectLayer(id)}>{name}</button>)}
           </div>
     {['slope', 'paint'].includes(layer) ? <AppearancePicker layer={layer} version={world.formatVersion} slope={slope} onSlope={setSlope} value={appearance} onChange={setAppearance} disabled={disabled || interacting} /> : ['wire', 'actuator'].includes(layer) ? <CircuitPicker layer={layer} mask={wireMask} onMask={setWireMask} actuator={actuator} actuated={actuated} onActuator={setActuator} onActuated={setActuated} disabled={disabled || interacting} /> : layer === 'liquid' ? <LiquidPicker version={world.formatVersion} type={liquidType} amount={liquidAmount} onType={setLiquidType} onAmount={setLiquidAmount} disabled={disabled || interacting} /> : <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />}
-          <div className="stroke-options"><label>画笔轨迹<select aria-label="画笔轨迹" value={strokeMode} disabled={disabled || interacting} onChange={event => setStrokeMode(event.target.value)}><option value="freehand">自由绘制</option><option value="line">起终点直线</option></select></label></div>
+          <div className="stroke-options"><label>画笔轨迹<select aria-label="画笔轨迹" value={strokeMode} disabled={disabled || interacting} onChange={event => setStrokeMode(event.target.value)}><option value="freehand">自由绘制</option><option value="line">起终点直线</option><option value="polyline">连续折线</option><option value="constrain">方向约束</option></select></label>
+          {strokeMode === 'polyline' && <p className="card-note">点击续接上一端点，每段一步历史；拖动超过 2 格后结束续接。Esc、双指、尺寸或参数变化清除锚点。</p>}
+          {strokeMode === 'constrain' && <p className="card-note">开始移动后锁定水平、竖直或 45° 方向，按原版整数规则吸附。每次拖动为一步，Esc 取消。</p>}</div>
           <MaskControls enabled={masksEnabled} onEnabled={setMasksEnabled} rules={masks} onRules={setMasks} sample={sample} disabled={disabled || interacting} />
           <details className="inspector-details" open={sample ? true : undefined}><summary>图格属性</summary>
     <div className="tile-inspector" aria-label="图格属性" aria-live="polite">
@@ -810,6 +848,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     <div className="map-status">
       <span className="render-status" aria-label="地图渲染状态"><span className="status-dot" />{drawing ? '正在绘制地图…' : displayMode === 'texture' ? textureStats?.detailed ? `贴图 ${textureStats.drawn} 格 · 色块 ${textureStats.fallback} 格` : '色块概览 · 放大查看贴图' : '色块地图'}<span className="status-detail"> · 黄色十字为出生点</span></span>
       {tool !== 'paste' && masksEnabled && masks.some(rule => rule.mode !== 'off') && <span className="filter-status" aria-label="当前过滤条件">{masksValid ? `筛选 ${masks.filter(rule => rule.mode !== 'off').length}` : '条件无效'}</span>}
+      {chainAnchor && <span className="filter-status" aria-label="折线锚点">续接 {chainAnchor.x}, {chainAnchor.y}</span>}
       <output className="map-coordinates">{coordinates ? `X ${coordinates.x} · Y ${coordinates.y}` : '移到地图上查看坐标'}</output>
       <span className="world-size">{world.width} × {world.height}</span>
       <span className="selection-size" aria-label="状态栏选区">{displayedSelection ? `选区 ${displayedSelection.width} × ${displayedSelection.height}` : '无选区'}</span>
