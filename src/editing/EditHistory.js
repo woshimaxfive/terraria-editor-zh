@@ -1,5 +1,6 @@
 import { EditError, MAX_STROKE_TILES } from './brush.js';
 import { findMaterial } from './materials.js';
+import { validLiquid } from './liquids.js';
 
 const MAX_HISTORY_STEPS = 100;
 const MAX_HISTORY_TILES = 50_000;
@@ -25,9 +26,11 @@ export class EditHistory {
 
   paint(stroke) {
     const { cells, layer = 'block' } = stroke || {};
-    const materialId = layer === 'wall' ? stroke?.wallId : stroke?.blockId;
-    if (!['block', 'wall'].includes(layer) ||
-        (materialId !== null && !findMaterial(layer, materialId, this.source.version ?? 194)) || !Array.isArray(cells) ||
+    const version = this.source.version ?? 194;
+    const materialId = layer === 'liquid' ? { type: stroke?.liquidType, amount: stroke?.liquidAmount } : layer === 'wall' ? stroke?.wallId : stroke?.blockId;
+    const validMaterial = layer === 'liquid' ? validLiquid(materialId.type, materialId.amount, version) :
+      materialId === null || Boolean(findMaterial(layer, materialId, version));
+    if (!['block', 'wall', 'liquid'].includes(layer) || !validMaterial || !Array.isArray(cells) ||
         cells.length < 1 || cells.length > MAX_STROKE_TILES ||
         !cells.every(index => Number.isSafeInteger(index) && index >= 0 && index < this.source.count)) {
       throw new EditError('画笔参数无效，未修改世界。');

@@ -4,6 +4,8 @@ import { constrainCamera, fitCamera, screenToWorld, visibleRegion, zoomCamera } 
 import { BRUSH_SIZES, BrushStroke } from '../editing/brush.js';
 import { selectionFromPoints } from '../editing/selection.js';
 import MaterialPicker from './MaterialPicker.jsx';
+import LiquidPicker from './LiquidPicker.jsx';
+import { sampledLiquidAmount } from '../editing/liquids.js';
 import { pasteFits } from '../editing/clipboard.js';
 import Icon from '../app/Icon.jsx';
 import TextureControls from './TextureControls.jsx';
@@ -29,6 +31,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [tool, setTool] = useState('pan');
   const [blockId, setBlockId] = useState(1);
   const [wallId, setWallId] = useState(1);
+  const [liquidType, setLiquidType] = useState(1);
+  const [liquidAmount, setLiquidAmount] = useState(255);
   const [layer, setLayer] = useState('block');
   const [layers, setLayers] = useState({ block: true, wall: true, liquid: true });
   const [sample, setSample] = useState(null);
@@ -329,11 +333,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const tile = await onEdit('pick', point);
     if (!tile || !mountedRef.current) return;
     setSample(tile);
-    const label = tile.layer === 'wall' ? '墙壁' : '方块';
+    const label = tile.layer === 'liquid' ? '液体' : tile.layer === 'wall' ? '墙壁' : '方块';
     if (tile.materialId === null) setHint(`此处没有${label}，未更改画笔材料。`);
     else if (!tile.paintable) setHint(`${tile.name}${tile.special ? ' 是特殊图格' : ''}，当前画笔暂不支持，未更改材料。`);
     else {
-      if (tile.layer === 'wall') setWallId(tile.materialId);
+      if (tile.layer === 'liquid') { setLiquidType(tile.materialId); setLiquidAmount(sampledLiquidAmount(tile.properties.liquidAmount)); }
+      else if (tile.layer === 'wall') setWallId(tile.materialId);
       else setBlockId(tile.materialId);
       setTool('paint');
       setHint(`已选取${tile.name}（ID ${tile.materialId}），已切换到画笔。`);
@@ -443,7 +448,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       const commit = strokeRef.current;
       cancelStroke();
       if (event.type === 'pointerup' && commit?.stroke.cells.size && !disabled) {
-        onEdit(commit.tool, { cells: [...commit.stroke.cells], blockId: commit.blockId, wallId: commit.wallId, layer: commit.layer });
+        onEdit(commit.tool, { cells: [...commit.stroke.cells], blockId: commit.blockId, wallId: commit.wallId, liquidType: commit.liquidType, liquidAmount: commit.liquidAmount, layer: commit.layer });
       }
     }
     pointers.current.delete(event.pointerId);
@@ -482,7 +487,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     <div className="action-bar" aria-label="编辑参数">
       <div className="tool-context"><span className="current-tool">{toolName}</span>
       <label hidden={!usesLayer}><span className="context-label">图层</span><select aria-label="编辑图层" value={layer} disabled={disabled || interacting} onChange={event => { setLayer(event.target.value); setHint(''); }}>
-        <option value="block">方块</option><option value="wall">墙壁</option>
+        <option value="block">方块</option><option value="wall">墙壁</option><option value="liquid">液体</option>
       </select></label>
       <label hidden={!usesBrush}><span className="context-label">尺寸</span><select aria-label="画笔尺寸" value={brushSize} disabled={disabled || interacting} onChange={event => setBrushSize(Number(event.target.value))}>{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
       {!usesLayer && <span className="context-description">{tool === 'paste' ? '定位后确认 · Esc 取消' : '拖动浏览 · 滚轮缩放'}</span>}</div>
@@ -512,7 +517,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <div className="selection-strip" aria-label="选区与区域编辑" hidden={!displayedSelection && tool !== 'select' && tool !== 'paste'}>
     <div className="selection-controls" role="group" aria-label="选区操作" hidden={tool === 'paste'}>
       <output aria-label="选区范围">{displayedSelection ? `X ${displayedSelection.x} · Y ${displayedSelection.y} · ${displayedSelection.width} × ${displayedSelection.height}（${displayedSelection.width * displayedSelection.height} 格）` : '未选择区域'}</output>
-      <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('fillSelection', { selection, blockId, wallId, layer })}>填充选区</button>
+      <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('fillSelection', { selection, blockId, wallId, liquidType, liquidAmount, layer })}>填充选区</button>
       <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('eraseSelection', { selection, layer })}>擦除选区</button>
       <button disabled={disabled || interacting || !selection} onClick={clearSelection}>清除选区</button>
       <button disabled={disabled || interacting || !selection || tool === 'paste'} onClick={() => { onEdit('copy', { selection }); setPanel('templates'); setPanelOpen(true); }}>复制选区</button>
@@ -554,7 +559,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
             return;
           }
           if (!layers[layer]) { setHint('当前编辑图层已隐藏，请先勾选对应的显示开关。'); return; }
-          strokeRef.current = { pointerId: event.pointerId, blockId, wallId, layer, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current) };
+          strokeRef.current = { pointerId: event.pointerId, blockId, wallId, liquidType, liquidAmount, layer, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current) };
           strokeRef.current.stroke.add(cell);
           setDrafting(true);
           onDraftChange(true);
@@ -608,9 +613,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
 
       </div>
     <p className={`tool-hint${hint ? ' has-hint' : ''}`} role="status">{hint || {
-      paint: `画笔模式：放大到 200% 以上绘制${layer === 'wall' ? '墙壁' : '方块'}。每次拖动为一步，双指可平移缩放。`,
-      erase: `橡皮模式：放大到 200% 以上擦除${layer === 'wall' ? '墙壁' : '方块'}，跳过特殊图格及紧邻支撑；保留其他图层。`,
-      pick: `吸管模式：放大到 200% 以上点击，读取${layer === 'wall' ? '墙壁' : '方块'}材料和图格属性。目录以外的材料仅显示 ID。`,
+      paint: `画笔模式：放大到 200% 以上绘制${layer === 'liquid' ? '液体' : layer === 'wall' ? '墙壁' : '方块'}。每次拖动为一步，双指可平移缩放。`,
+      erase: `橡皮模式：放大到 200% 以上擦除${layer === 'liquid' ? '液体' : layer === 'wall' ? '墙壁' : '方块'}，跳过受保护图格；保留其他图层。`,
+      pick: `吸管模式：放大到 200% 以上点击，读取${layer === 'liquid' ? '液体种类、液量' : layer === 'wall' ? '墙壁' : '方块'}和图格属性。`,
       select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
       paste: '粘贴预览：点击或拖动定位左上角，也可输入 X/Y；方向键微调，Enter 确认，Esc 取消。家具与实体暂不支持。',
       pan: '平移模式：拖动浏览地图。选择画笔后可绘制基础方块。',
@@ -627,9 +632,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <div className="panel-scroll">
         <section id="panel-materials" hidden={panel !== 'materials'}>
           <div className="material-layers" role="group" aria-label="材料图层">
-            {[['block', '方块'], ['wall', '墙壁']].map(([id, name]) => <button key={id} aria-label={`${name}材料`} aria-pressed={layer === id} disabled={disabled || interacting} onClick={() => { setLayer(id); setHint(''); }}>{name}</button>)}
+            {[['block', '方块'], ['wall', '墙壁'], ['liquid', '液体']].map(([id, name]) => <button key={id} aria-label={`${name}材料`} aria-pressed={layer === id} disabled={disabled || interacting} onClick={() => { setLayer(id); setHint(''); }}>{name}</button>)}
           </div>
-    <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />
+    {layer === 'liquid' ? <LiquidPicker version={world.formatVersion} type={liquidType} amount={liquidAmount} onType={setLiquidType} onAmount={setLiquidAmount} disabled={disabled || interacting} /> : <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />}
           <details className="inspector-details" open={sample ? true : undefined}><summary>图格属性</summary>
     <div className="tile-inspector" aria-label="图格属性" aria-live="polite">
       <strong>取样属性</strong>{sample ? <>
@@ -692,6 +697,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
           <h3>地图操作</h3><dl className="shortcut-list"><div><dt>平移地图</dt><dd>拖动 / 方向键</dd></div><div><dt>缩放地图</dt><dd>滚轮 / 双指 / ＋ −</dd></div><div><dt>撤销 / 重做</dt><dd>Ctrl Z / Ctrl Y</dd></div><div><dt>复制 / 粘贴</dt><dd>Ctrl C / Ctrl V</dd></div><div><dt>确认 / 取消粘贴</dt><dd>Enter / Esc</dd></div></dl>
     <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y、Ctrl+C / Ctrl+V。Esc 取消草稿或粘贴预览，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内，且只修改选中的编辑图层；粘贴完整替换所有图层，含空格。区域操作最多 10000 格。特殊图格受保护。显示面板可选择本机资源并切换贴图，未支持的外观使用色块。</p>
 
+          <p className="panel-description">液体在材料面板选择种类和液量；0% 或橡皮清除液体，旧格式不支持微光。液体显示为基础色彩，不模拟流动或反应。</p>
           <p className="panel-description">存档仅在本机处理。导出世界副本后，保留原文件并在游戏中测试。建筑模板下载不会保存世界修改。</p>
           <a href="https://github.com/woshimaxfive/terraria-editor-zh" target="_blank" rel="noreferrer">项目源码</a> · <a href={`${import.meta.env.BASE_URL}THIRD_PARTY_NOTICES.txt`} target="_blank" rel="noreferrer">开源许可</a>
         </section>

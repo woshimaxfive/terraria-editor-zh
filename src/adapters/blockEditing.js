@@ -39,6 +39,15 @@ export function createBlockEditing(world, ensureWritable) {
     read,
     write(index, values) { TILE_FIELDS.forEach((field, i) => { tiles[field][index] = values[i]; }); },
     paint(index, before, blockId, layer) {
+      if (layer === 'liquid') {
+        const x = Math.floor(index / tiles.height), y = index % tiles.height;
+        if (important(index) || entityNear(x, y)) return null;
+        const after = [...before];
+        after[6] = blockId.amount;
+        // A dry tile has no liquid type in the world file.
+        after[7] = blockId.amount ? blockId.type : 0;
+        return after;
+      }
       if (layer === 'wall') {
         if (blockId === null && !tiles.wallId[index]) return before;
         if (important(index) || (blockId === null && nearImportant(index))) return null;

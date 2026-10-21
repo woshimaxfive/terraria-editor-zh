@@ -4,6 +4,7 @@ import { createBlockEditing } from './blockEditing.js';
 import { preservesOtherSections } from './verifyExport.js';
 import { EditError, selectionCells } from '../editing/brush.js';
 import { findMaterial } from '../editing/materials.js';
+import { findLiquid } from '../editing/liquids.js';
 import { clipboardPreview } from './clipboardPreview.js';
 
 export const MAX_WORLD_BYTES = 128 * 1024 * 1024;
@@ -111,9 +112,9 @@ export async function openWorld(buffer, progress = () => {}) {
       summary,
       get editState() { return editing.state; },
       paint: stroke => editing.paint(stroke),
-      erase: stroke => editing.paint({ ...stroke, blockId: null, wallId: null }),
+      erase: stroke => editing.paint({ ...stroke, blockId: null, wallId: null, liquidAmount: 0, liquidType: 0 }),
       fillSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary) }),
-      eraseSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary), blockId: null, wallId: null }),
+      eraseSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary), blockId: null, wallId: null, liquidAmount: 0, liquidType: 0 }),
       copy(payload) {
         const clipboard = editing.copy(payload?.selection);
         return { clipboard, image: clipboardPreview(clipboard) };
@@ -128,16 +129,16 @@ export async function openWorld(buffer, progress = () => {}) {
         if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y) || x < 0 || y < 0 || x >= summary.width || y >= summary.height) {
           throw new EditError('请选择地图范围内的一个方块。');
         }
-        if (!['block', 'wall'].includes(layer)) throw new EditError('取样图层无效。');
+        if (!['block', 'wall', 'liquid'].includes(layer)) throw new EditError('取样图层无效。');
         const tiles = world.worldTiles.tiles, index = tiles.index(x, y);
         const blockId = tiles.hasBlock(index) ? tiles.blockId[index] : null;
         const wallId = tiles.wallId[index] || null;
-        const materialId = layer === 'wall' ? wallId : blockId;
-        const material = findMaterial(layer, materialId, summary.formatVersion);
+        const materialId = layer === 'liquid' ? (tiles.liquidAmount[index] ? tiles.liquidType[index] : null) : layer === 'wall' ? wallId : blockId;
+        const material = layer === 'liquid' ? findLiquid(materialId, summary.formatVersion) : findMaterial(layer, materialId, summary.formatVersion);
         const special = layer === 'block' && Boolean(blockId !== null && world.fileFormatHeader.importants[blockId]);
         const tile = tiles.getTile(x, y);
         return { x, y, layer, blockId, wallId, materialId,
-          name: material?.name ?? (materialId === null ? '空格' : `${layer === 'wall' ? '墙壁' : '方块'} ID ${materialId}`),
+          name: material?.name ?? (materialId === null ? '空格' : `${layer === 'liquid' ? '液体' : layer === 'wall' ? '墙壁' : '方块'} ID ${materialId}`),
           paintable: Boolean(material) && !special, special,
           properties: { blockColor: tile.blockColor ?? 0, wallColor: tile.wallColor ?? 0,
             liquidAmount: tile.liquidAmount ?? 0, liquidType: tile.liquidType ?? 0,
