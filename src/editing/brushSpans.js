@@ -38,3 +38,9 @@ export function brushFromSpans(shape, spans) {
   });
   return { shape, left, top, width: right - left + 1, height: rows.length, rows };
 }
+
+export function containsBrushCell({ rows, top }, x, y) {
+  const row = rows[y - top];
+  for (let i = 0; row && i < row.length; i += 2) if (x >= row[i] && x <= row[i + 1]) return true;
+  return false;
+}

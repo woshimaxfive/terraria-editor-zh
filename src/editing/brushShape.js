@@ -2,6 +2,8 @@
 // TEdit contributors. Adapted from Fill/Shape/BrushSettings; see vendor/tedit-editing-rules/.
 import { addBrushSpan, brushFromSpans, subtractBrushRow } from './brushSpans.js';
 import { complexBrushShape } from './complexBrushShape.js';
+import { hasBrushTransform, transformedPolygonBrush, transformPixelBrush, transformBrushPoint } from './brushTransform.js';
+export { containsBrushCell } from './brushSpans.js';
 export const MAX_BRUSH_DIMENSION = 400;
 export const BRUSH_SHAPES = [['rectangle', '矩形'], ['ellipse', '椭圆'],
   ['diagonalRight', '右斜线 ／'], ['diagonalLeft', '左斜线 ＼'], ['cross', 'X 形'],
@@ -11,19 +13,30 @@ export const maxLineThickness = ({ width, height }) => Math.max(1, Math.floor(Ma
 const cache = new WeakMap();
 
 export function createBrushShape(settings) {
-  const { width, height, shape = 'rectangle', thickness = 1 } = settings;
+  const { width, height, shape = 'rectangle', thickness = 1, rotation = 0, flipHorizontal = false, flipVertical = false } = settings;
   if (![width, height].every(value => Number.isInteger(value) && value >= 1 && value <= MAX_BRUSH_DIMENSION)
     || !BRUSH_SHAPES.some(([id]) => id === shape)
     || !Number.isInteger(thickness) || thickness < 1 || thickness > maxLineThickness(settings)) {
     throw new RangeError('画笔形状无效，宽高须为 1–400 格，线形粗细不可超过短边的一半。');
   }
+  if (!Number.isFinite(rotation) || rotation < 0 || rotation > 360 || typeof flipHorizontal !== 'boolean' || typeof flipVertical !== 'boolean') {
+    throw new RangeError('画笔变换无效，角度须为 0–360°，翻转须为开关。');
+  }
   const saved = cache.get(settings);
-  if (saved && saved.width === width && saved.height === height && saved.shape === shape && saved.thickness === thickness) return saved.value;
-  const value = width <= 1 || height <= 1 || ['rectangle', 'ellipse'].includes(shape)
-    ? filledBrush(width, height, shape) : isLineBrush(shape)
-      ? lineBrush(width, height, shape, thickness) : complexBrushShape(width, height, shape);
+  if (saved && saved.width === width && saved.height === height && saved.shape === shape && saved.thickness === thickness
+    && saved.rotation === rotation && saved.flipHorizontal === flipHorizontal && saved.flipVertical === flipVertical) return saved.value;
+  const transformed = hasBrushTransform(settings);
+  let value;
+  if (!transformed && (width <= 1 || height <= 1)) value = filledBrush(width, height, 'rectangle');
+  else if (isLineBrush(shape)) value = lineBrush(width, height, shape, thickness, settings);
+  else if (transformed && ['rectangle', 'star', 'triangle'].includes(shape)) value = transformedPolygonBrush(width, height, shape, settings);
+  else {
+    value = ['rectangle', 'ellipse'].includes(shape) ? filledBrush(width, height, shape) : complexBrushShape(width, height, shape);
+    if (transformed) value = transformPixelBrush(value, settings);
+  }
+  value.shape = shape;
   if (!value.rows.length && !value.issue) value.issue = '此尺寸下原版笔形不产生图格，请增大宽高；当前世界未修改。';
-  cache.set(settings, { width, height, shape, thickness, value });
+  cache.set(settings, { width, height, shape, thickness, rotation, flipHorizontal, flipVertical, value });
   return value;
 }
 
@@ -56,7 +69,7 @@ function* linePoints(start, end) {
   }
 }
 
-function lineBrush(width, height, shape, thickness) {
+function lineBrush(width, height, shape, thickness, settings) {
   const left = -Math.floor(width / 2), top = -Math.floor(height / 2);
   const right = left + width - 1, bottom = top + height - 1;
   const segments = shape === 'diagonalRight' ? [[[left, bottom], [right, top]]]
@@ -66,16 +79,10 @@ function lineBrush(width, height, shape, thickness) {
   if (thickness === 1) kernel.push([0, 0]);
   else for (let y = -thickness; y <= thickness; y++) kernel.push([y, Math.floor(Math.sqrt(thickness * thickness - y * y))]);
   const spans = new Map();
-  for (const [start, end] of segments) for (const [x, y] of linePoints(start, end)) for (const [dy, radius] of kernel) {
+  for (const [start, end] of segments) for (const [x, y] of linePoints(transformBrushPoint(start, settings), transformBrushPoint(end, settings))) for (const [dy, radius] of kernel) {
     addBrushSpan(spans, y + dy, x - radius, x + radius);
   }
   return brushFromSpans(shape, spans);
-}
-
-export function containsBrushCell({ rows, top }, x, y) {
-  const row = rows[y - top];
-  for (let i = 0; row && i < row.length; i += 2) if (x >= row[i] && x <= row[i + 1]) return true;
-  return false;
 }
 
 // Exposed grid edges of all row intervals; holes between disjoint arms stay open.

@@ -52,7 +52,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [layer, setLayer] = useState('block');
   const [layers, setLayers] = useState({ block: true, wall: true, liquid: true, wire: false, actuator: false });
   const [sample, setSample] = useState(null);
-  const [brushSettings, setBrushSettings] = useState({ shape: 'rectangle', width: 1, height: 1, locked: true, thickness: 1 });
+  const [brushSettings, setBrushSettings] = useState({ shape: 'rectangle', width: 1, height: 1, locked: true, thickness: 1,
+    rotation: 0, flipHorizontal: false, flipVertical: false });
   const brushSize = brushSettings.width === brushSettings.height && BRUSH_SIZES.includes(brushSettings.width) ? brushSettings.width : 'custom';
   const setBrushSize = size => setBrushSettings(previous => ({ ...previous, width: size, height: size,
     thickness: Math.min(previous.thickness, maxLineThickness({ width: size, height: size })) }));

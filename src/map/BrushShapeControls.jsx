@@ -28,6 +28,17 @@ export default function BrushShapeControls({ value, geometry, onChange, disabled
         onChange={event => change({ ...value, thickness: Math.max(1, Math.trunc(Number(event.target.value) || 1)) })} /></label>
       <p className="card-note">1 为细线；大于 1 时按原版作为圆形扩展半径，最多为短边的一半。</p>
     </>}
+    <div className="brush-transform" role="group" aria-label="画笔变换">
+      <label>旋转角度<input type="number" min="0" max="360" step="1" inputMode="decimal"
+        aria-label="画笔旋转角度" value={value.rotation ?? 0} disabled={disabled}
+        onChange={event => change({ ...value, rotation: Math.max(0, Math.min(360, Number(event.target.value) || 0)) })} /></label>
+      <label><input type="checkbox" checked={value.flipHorizontal ?? false} disabled={disabled}
+        onChange={event => change({ ...value, flipHorizontal: event.target.checked })} />左右翻转笔形</label>
+      <label><input type="checkbox" checked={value.flipVertical ?? false} disabled={disabled}
+        onChange={event => change({ ...value, flipVertical: event.target.checked })} />上下翻转笔形</label>
+      <button type="button" disabled={disabled} onClick={() => change({ ...value, rotation: 0, flipHorizontal: false, flipVertical: false })}>重置笔形变换</button>
+    </div>
+    <p className="card-note">先翻转，再绕落笔中心旋转。角度 0–360°；原版在大于 0.01° 时启用旋转，360° 仍按变换路径生成。实际范围与空洞以光标为准。</p>
     {geometry.issue && <p className="card-note" role="status" aria-label="画笔形状提示">{geometry.issue}</p>}
     {value.shape === 'crescent' && <p className="card-note">月牙：高决定外径，宽控制丰满程度，宽越大越饱满。</p>}
     {value.shape === 'donut' && <p className="card-note">圆环：高决定外径，宽控制环厚，按原版半径取整，保留中心空格。</p>}

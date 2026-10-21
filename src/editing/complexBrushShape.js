@@ -3,12 +3,12 @@
 // Midpoint fill: Copyright (c) 2009-2010 Rene Schulte and WriteableBitmapEx Contributors.
 import { addBrushSpan, brushFromSpans, subtractBrushRow } from './brushSpans.js';
 
-const roundEven = value => {
+export const roundEven = value => {
   const floor = Math.floor(value);
   return (value - floor === .5 ? floor + Math.abs(floor % 2) : Math.round(value)) || 0;
 };
 
-function polygon(vertices) {
+export function polygonBrushSpans(vertices) {
   const spans = new Map(), f = Math.fround;
   const minY = Math.min(...vertices.map(point => point[1])), maxY = Math.max(...vertices.map(point => point[1]));
   for (let y = minY; y <= maxY; y++) {
@@ -58,23 +58,34 @@ function subtract(outer, inner) {
   return result;
 }
 
+export function brushVertices(width, height, shape) {
+  const hw = Math.floor(width / 2), hh = Math.floor(height / 2);
+  if (shape === 'rectangle') return [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
+  if (shape === 'triangle') {
+    if (hw <= 0 || hh <= 0) return [[0, 0]];
+    return [[0, -Math.trunc(hh * 2 / 3)], [-hw, Math.trunc(hh / 3)], [hw, Math.trunc(hh / 3)]];
+  }
+  if (hw <= 0 && hh <= 0) return [[0, 0]];
+  const ratio = Math.cos(2 * Math.PI / 5) / Math.cos(Math.PI / 5);
+  const innerX = Math.trunc(hw * ratio), innerY = Math.trunc(hh * ratio);
+  return Array.from({ length: 10 }, (_, i) => {
+    const angle = -Math.PI / 2 + i * (Math.PI / 5);
+    return [roundEven(Math.cos(angle) * (i % 2 ? innerX : hw)), roundEven(Math.sin(angle) * (i % 2 ? innerY : hh))];
+  });
+}
+
 export function complexBrushShape(width, height, shape) {
   const hw = Math.floor(width / 2), hh = Math.floor(height / 2);
   let spans;
-  if (shape === 'triangle') {
-    spans = polygon([[0, -Math.trunc(hh * 2 / 3)], [-hw, Math.trunc(hh / 3)], [hw, Math.trunc(hh / 3)]]);
-  } else if (shape === 'star') {
-    const ratio = Math.cos(2 * Math.PI / 5) / Math.cos(Math.PI / 5);
-    const innerX = Math.trunc(hw * ratio), innerY = Math.trunc(hh * ratio);
-    spans = polygon(Array.from({ length: 10 }, (_, i) => {
-      const angle = -Math.PI / 2 + i * (Math.PI / 5);
-      return [roundEven(Math.cos(angle) * (i % 2 ? innerX : hw)), roundEven(Math.sin(angle) * (i % 2 ? innerY : hh))];
-    }));
+  if (shape === 'triangle' || shape === 'star') {
+    spans = polygonBrushSpans(brushVertices(width, height, shape));
+  } else if (hh <= 0) {
+    spans = circle(0);
   } else if (shape === 'donut') {
     spans = subtract(circle(hh), circle(Math.max(0, hh - Math.max(1, hw))));
   } else {
     const ratio = Math.max(.5, Math.min(2, width / height));
-    if (ratio < 1 && hh <= 1) return { ...brushFromSpans(shape, new Map()), issue: '月牙 2×3 在原版中无效，请调整宽高后绘制；当前世界未修改。' };
+    if (ratio < 1 && hh <= 1) return { ...brushFromSpans(shape, new Map()), issue: `月牙 ${width}×${height} 在原版中无效，请调整宽高后绘制；当前世界未修改。` };
     if (ratio >= 2) spans = circle(hh);
     else {
       let innerRadius, offset;
