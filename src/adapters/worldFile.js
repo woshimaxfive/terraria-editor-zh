@@ -5,6 +5,7 @@ import { preservesOtherSections } from './verifyExport.js';
 import { EditError, selectionCells } from '../editing/brush.js';
 import { findMaterial } from '../editing/materials.js';
 import { findLiquid } from '../editing/liquids.js';
+import { WIRES, wireMaskOf } from '../editing/circuits.js';
 import { clipboardPreview } from './clipboardPreview.js';
 
 export const MAX_WORLD_BYTES = 128 * 1024 * 1024;
@@ -112,9 +113,9 @@ export async function openWorld(buffer, progress = () => {}) {
       summary,
       get editState() { return editing.state; },
       paint: stroke => editing.paint(stroke),
-      erase: stroke => editing.paint({ ...stroke, blockId: null, wallId: null, liquidAmount: 0, liquidType: 0 }),
+      erase: stroke => editing.paint({ ...stroke, blockId: null, wallId: null, liquidAmount: 0, liquidType: 0, wireErase: true, actuator: false, actuated: false }),
       fillSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary) }),
-      eraseSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary), blockId: null, wallId: null, liquidAmount: 0, liquidType: 0 }),
+      eraseSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary), blockId: null, wallId: null, liquidAmount: 0, liquidType: 0, wireErase: true, actuator: false, actuated: false }),
       copy(payload) {
         const clipboard = editing.copy(payload?.selection);
         return { clipboard, image: clipboardPreview(clipboard) };
@@ -129,7 +130,7 @@ export async function openWorld(buffer, progress = () => {}) {
         if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y) || x < 0 || y < 0 || x >= summary.width || y >= summary.height) {
           throw new EditError('请选择地图范围内的一个方块。');
         }
-        if (!['block', 'wall', 'liquid'].includes(layer)) throw new EditError('取样图层无效。');
+        if (!['block', 'wall', 'liquid', 'wire', 'actuator'].includes(layer)) throw new EditError('取样图层无效。');
         const tiles = world.worldTiles.tiles, index = tiles.index(x, y);
         const blockId = tiles.hasBlock(index) ? tiles.blockId[index] : null;
         const wallId = tiles.wallId[index] || null;
@@ -137,7 +138,7 @@ export async function openWorld(buffer, progress = () => {}) {
         const material = layer === 'liquid' ? findLiquid(materialId, summary.formatVersion) : findMaterial(layer, materialId, summary.formatVersion);
         const special = layer === 'block' && Boolean(blockId !== null && world.fileFormatHeader.importants[blockId]);
         const tile = tiles.getTile(x, y);
-        return { x, y, layer, blockId, wallId, materialId,
+        const result = { x, y, layer, blockId, wallId, materialId,
           name: material?.name ?? (materialId === null ? '空格' : `${layer === 'liquid' ? '液体' : layer === 'wall' ? '墙壁' : '方块'} ID ${materialId}`),
           paintable: Boolean(material) && !special, special,
           properties: { blockColor: tile.blockColor ?? 0, wallColor: tile.wallColor ?? 0,
@@ -146,6 +147,17 @@ export async function openWorld(buffer, progress = () => {}) {
             invisibleBlock: Boolean(tile.invisibleBlock), fullBrightBlock: Boolean(tile.fullBrightBlock),
             invisibleWall: Boolean(tile.invisibleWall), fullBrightWall: Boolean(tile.fullBrightWall),
             wires: ['Red', 'Blue', 'Green', 'Yellow'].filter(color => tile[`wire${color}`]) } };
+        if (layer === 'wire') {
+          result.materialId = wireMaskOf(tile);
+          result.name = WIRES.filter(wire => result.materialId & wire.bit).map(wire => wire.name).join('、') + '电线';
+          if (!result.materialId) result.name = '无电线';
+          result.paintable = true;
+        } else if (layer === 'actuator') {
+          result.materialId = tile.actuator ? 1 : 0;
+          result.name = tile.actuator ? '制动器' : '无制动器';
+          result.paintable = blockId !== null;
+        }
+        return result;
       },
       undo: () => editing.undo(),
       redo: () => editing.redo(),

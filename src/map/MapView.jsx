@@ -5,6 +5,8 @@ import { BRUSH_SIZES, BrushStroke } from '../editing/brush.js';
 import { selectionFromPoints } from '../editing/selection.js';
 import MaterialPicker from './MaterialPicker.jsx';
 import LiquidPicker from './LiquidPicker.jsx';
+import CircuitPicker from './CircuitPicker.jsx';
+import { drawCircuitOverlay } from '../rendering/circuitOverlay.js';
 import { sampledLiquidAmount } from '../editing/liquids.js';
 import { pasteFits } from '../editing/clipboard.js';
 import Icon from '../app/Icon.jsx';
@@ -13,6 +15,7 @@ import { TextureResources } from '../platform/files/TextureResources.js';
 import EditorMenu from '../app/EditorMenu.jsx';
 
 const MAX_CANVAS_PIXELS = 4 * 1024 * 1024;
+const EDIT_LAYERS = [['block', '方块'], ['wall', '墙壁'], ['liquid', '液体'], ['wire', '电线'], ['actuator', '制动器']];
 
 export default function MapView({ session, world, disabled, onError, editState, onEdit, onDraftChange, clipboard, worldDetails, menuHost }) {
   const canvasRef = useRef(null);
@@ -33,8 +36,11 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [wallId, setWallId] = useState(1);
   const [liquidType, setLiquidType] = useState(1);
   const [liquidAmount, setLiquidAmount] = useState(255);
+  const [wireMask, setWireMask] = useState(1);
+  const [actuator, setActuator] = useState(true);
+  const [actuated, setActuated] = useState(false);
   const [layer, setLayer] = useState('block');
-  const [layers, setLayers] = useState({ block: true, wall: true, liquid: true });
+  const [layers, setLayers] = useState({ block: true, wall: true, liquid: true, wire: false, actuator: false });
   const [sample, setSample] = useState(null);
   const [brushSize, setBrushSize] = useState(1);
   const [drafting, setDrafting] = useState(false);
@@ -63,6 +69,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
   brush.current = { tool, blockId, brushSize };
   const current = useRef({ size, camera });
   current.current = { size, camera };
+  const selectLayer = id => {
+    setLayer(id); setHint('');
+    if (id === 'wire' || id === 'actuator') setLayers(previous => ({ ...previous, [id]: true }));
+  };
+  const parameters = { blockId, wallId, liquidType, liquidAmount, wireMask, actuator, actuated, layer };
+  const layerName = EDIT_LAYERS.find(([id]) => id === layer)[1];
 
   useEffect(() => {
     const narrow = window.matchMedia('(max-width: 900px)');
@@ -129,6 +141,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
             commands[i + 3] / 16 * camera.zoom, commands[i + 4] / 16 * camera.zoom);
         }
       }
+      if (image.circuits && camera.zoom >= 2) drawCircuitOverlay(context, image.circuits, x, y, camera.zoom);
       context.restore();
     }
     const spawnX = (world.spawn.x + .5 - camera.x) * camera.zoom + size.width / 2;
@@ -213,7 +226,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     setDrawing(true);
     const timer = setTimeout(async () => {
       try {
-        const { image } = await session.render({ ...visibleRegion(camera, size, world), layers,
+        const { image } = await session.render({ ...visibleRegion(camera, size, world), layers: { ...layers, wire: layers.wire && camera.zoom >= 2, actuator: layers.actuator && camera.zoom >= 2 },
           ...(displayMode === 'texture' && camera.zoom >= 4 ? { atlases: resourcesRef.current.atlases } : {}) });
         if (!active) return;
         const canvas = document.createElement('canvas');
@@ -221,7 +234,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         canvas.height = image.imageHeight;
         canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(image.buffer), image.imageWidth, image.imageHeight), 0, 0);
         const previous = imageRef.current;
-        imageRef.current = { ...image, buffer: undefined, sprites: image.sprites ? new Int32Array(image.sprites) : null, canvas };
+        imageRef.current = { ...image, buffer: undefined, sprites: image.sprites ? new Int32Array(image.sprites) : null, circuits: image.circuits ? new Int32Array(image.circuits) : null, canvas };
         setTextureStats(image.textureStats ?? null);
         if (previous) previous.canvas.width = 0;
         draw();
@@ -286,7 +299,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   };
   const startPaste = () => {
     if (!clipboard || clipboard.data.formatVersion !== world.formatVersion) return;
-    setLayers({ block: true, wall: true, liquid: true });
+    setLayers(previous => ({ ...previous, block: true, wall: true, liquid: true }));
     const position = { x: Math.floor(current.current.camera.x), y: Math.floor(current.current.camera.y) };
     pasteRef.current = position;
     setPastePosition(position);
@@ -296,7 +309,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     if (window.matchMedia('(max-width: 900px)').matches) setPanelOpen(false);
   };
   const confirmPaste = async () => {
-    if (disabled || placing || tool !== 'paste' || !pasteFits(clipboard?.data, pastePosition, world) || !Object.values(layers).every(Boolean)) return;
+    if (disabled || placing || tool !== 'paste' || !pasteFits(clipboard?.data, pastePosition, world) || !['block', 'wall', 'liquid'].every(id => layers[id])) return;
     const result = await onEdit('paste', { clipboard: clipboard.data, position: pastePosition });
     if (result && mountedRef.current) cancelPaste();
   };
@@ -333,11 +346,13 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const tile = await onEdit('pick', point);
     if (!tile || !mountedRef.current) return;
     setSample(tile);
-    const label = tile.layer === 'liquid' ? '液体' : tile.layer === 'wall' ? '墙壁' : '方块';
+    const label = EDIT_LAYERS.find(([id]) => id === tile.layer)[1];
     if (tile.materialId === null) setHint(`此处没有${label}，未更改画笔材料。`);
     else if (!tile.paintable) setHint(`${tile.name}${tile.special ? ' 是特殊图格' : ''}，当前画笔暂不支持，未更改材料。`);
     else {
-      if (tile.layer === 'liquid') { setLiquidType(tile.materialId); setLiquidAmount(sampledLiquidAmount(tile.properties.liquidAmount)); }
+      if (tile.layer === 'wire') setWireMask(tile.materialId);
+      else if (tile.layer === 'actuator') { setActuator(tile.properties.actuator); setActuated(tile.properties.actuated); }
+      else if (tile.layer === 'liquid') { setLiquidType(tile.materialId); setLiquidAmount(sampledLiquidAmount(tile.properties.liquidAmount)); }
       else if (tile.layer === 'wall') setWallId(tile.materialId);
       else setBlockId(tile.materialId);
       setTool('paint');
@@ -448,7 +463,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
       const commit = strokeRef.current;
       cancelStroke();
       if (event.type === 'pointerup' && commit?.stroke.cells.size && !disabled) {
-        onEdit(commit.tool, { cells: [...commit.stroke.cells], blockId: commit.blockId, wallId: commit.wallId, liquidType: commit.liquidType, liquidAmount: commit.liquidAmount, layer: commit.layer });
+        const { stroke, pointerId, tool: action, ...options } = commit;
+        onEdit(action, { ...options, cells: [...stroke.cells] });
       }
     }
     pointers.current.delete(event.pointerId);
@@ -475,7 +491,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         <button data-menu-command disabled={!selection} onClick={clearSelection}>清除选区<kbd>Esc</kbd></button>
       </EditorMenu>
       <EditorMenu label="图层" disabled={disabled || interacting}>
-        {[['block', '方块'], ['wall', '墙壁'], ['liquid', '液体']].map(([id, name]) => <button key={id} aria-pressed={layers[id]} onClick={() => setLayers(previous => ({ ...previous, [id]: !previous[id] }))}><span className="menu-check" aria-hidden="true">{layers[id] ? '✓' : ''}</span>{name}</button>)}
+        {EDIT_LAYERS.map(([id, name]) => <button key={id} aria-pressed={layers[id]} onClick={() => setLayers(previous => ({ ...previous, [id]: !previous[id] }))}><span className="menu-check" aria-hidden="true">{layers[id] ? '✓' : ''}</span>{name}</button>)}
         <hr /><button data-menu-command onClick={() => showPanel('view')}><Icon name="layers" />贴图与显示设置…</button>
       </EditorMenu>
       <EditorMenu label="帮助" disabled={interacting || panelLocked}>
@@ -486,8 +502,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
     <h2 id="map-title" className="sr-only">地图工作区</h2>
     <div className="action-bar" aria-label="编辑参数">
       <div className="tool-context"><span className="current-tool">{toolName}</span>
-      <label hidden={!usesLayer}><span className="context-label">图层</span><select aria-label="编辑图层" value={layer} disabled={disabled || interacting} onChange={event => { setLayer(event.target.value); setHint(''); }}>
-        <option value="block">方块</option><option value="wall">墙壁</option><option value="liquid">液体</option>
+      <label hidden={!usesLayer}><span className="context-label">图层</span><select aria-label="编辑图层" value={layer} disabled={disabled || interacting} onChange={event => selectLayer(event.target.value)}>
+        {EDIT_LAYERS.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
       </select></label>
       <label hidden={!usesBrush}><span className="context-label">尺寸</span><select aria-label="画笔尺寸" value={brushSize} disabled={disabled || interacting} onChange={event => setBrushSize(Number(event.target.value))}>{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
       {!usesLayer && <span className="context-description">{tool === 'paste' ? '定位后确认 · Esc 取消' : '拖动浏览 · 滚轮缩放'}</span>}</div>
@@ -517,14 +533,14 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <div className="selection-strip" aria-label="选区与区域编辑" hidden={!displayedSelection && tool !== 'select' && tool !== 'paste'}>
     <div className="selection-controls" role="group" aria-label="选区操作" hidden={tool === 'paste'}>
       <output aria-label="选区范围">{displayedSelection ? `X ${displayedSelection.x} · Y ${displayedSelection.y} · ${displayedSelection.width} × ${displayedSelection.height}（${displayedSelection.width * displayedSelection.height} 格）` : '未选择区域'}</output>
-      <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('fillSelection', { selection, blockId, wallId, liquidType, liquidAmount, layer })}>填充选区</button>
-      <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('eraseSelection', { selection, layer })}>擦除选区</button>
+      <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('fillSelection', { selection, ...parameters })}>填充选区</button>
+      <button disabled={disabled || interacting || !selection || !layers[layer]} onClick={() => onEdit('eraseSelection', { selection, ...parameters })}>擦除选区</button>
       <button disabled={disabled || interacting || !selection} onClick={clearSelection}>清除选区</button>
       <button disabled={disabled || interacting || !selection || tool === 'paste'} onClick={() => { onEdit('copy', { selection }); setPanel('templates'); setPanelOpen(true); }}>复制选区</button>
     </div>
         <div className="paste-confirmation" hidden={tool !== 'paste'}>
           <span>{clipboard?.data.width} × {clipboard?.data.height} 格 · 粘贴预览</span>
-          <button disabled={disabled || interacting || !pasteFits(clipboard?.data, pastePosition, world) || !Object.values(layers).every(Boolean)} onClick={confirmPaste}>确认粘贴</button>
+          <button disabled={disabled || interacting || !pasteFits(clipboard?.data, pastePosition, world) || !['block', 'wall', 'liquid'].every(id => layers[id])} onClick={confirmPaste}>确认粘贴</button>
           <button disabled={disabled || interacting} onClick={cancelPaste}>取消粘贴</button>
         </div>
       </div>
@@ -559,7 +575,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
             return;
           }
           if (!layers[layer]) { setHint('当前编辑图层已隐藏，请先勾选对应的显示开关。'); return; }
-          strokeRef.current = { pointerId: event.pointerId, blockId, wallId, liquidType, liquidAmount, layer, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current) };
+          strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, stroke: new BrushStroke(world, brushSize, selectionRef.current) };
           strokeRef.current.stroke.add(cell);
           setDrafting(true);
           onDraftChange(true);
@@ -613,9 +629,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
 
       </div>
     <p className={`tool-hint${hint ? ' has-hint' : ''}`} role="status">{hint || {
-      paint: `画笔模式：放大到 200% 以上绘制${layer === 'liquid' ? '液体' : layer === 'wall' ? '墙壁' : '方块'}。每次拖动为一步，双指可平移缩放。`,
-      erase: `橡皮模式：放大到 200% 以上擦除${layer === 'liquid' ? '液体' : layer === 'wall' ? '墙壁' : '方块'}，跳过受保护图格；保留其他图层。`,
-      pick: `吸管模式：放大到 200% 以上点击，读取${layer === 'liquid' ? '液体种类、液量' : layer === 'wall' ? '墙壁' : '方块'}和图格属性。`,
+      paint: `画笔模式：放大到 200% 以上绘制${layerName}。每次拖动为一步，双指可平移缩放。`,
+      erase: `橡皮模式：放大到 200% 以上擦除${layerName}；只修改当前层，电线仅移除选中颜色。`,
+      pick: `吸管模式：放大到 200% 以上点击，读取${layerName}和图格属性。`,
       select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
       paste: '粘贴预览：点击或拖动定位左上角，也可输入 X/Y；方向键微调，Enter 确认，Esc 取消。家具与实体暂不支持。',
       pan: '平移模式：拖动浏览地图。选择画笔后可绘制基础方块。',
@@ -632,9 +648,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <div className="panel-scroll">
         <section id="panel-materials" hidden={panel !== 'materials'}>
           <div className="material-layers" role="group" aria-label="材料图层">
-            {[['block', '方块'], ['wall', '墙壁'], ['liquid', '液体']].map(([id, name]) => <button key={id} aria-label={`${name}材料`} aria-pressed={layer === id} disabled={disabled || interacting} onClick={() => { setLayer(id); setHint(''); }}>{name}</button>)}
+            {EDIT_LAYERS.map(([id, name]) => <button key={id} aria-label={`${name}材料`} aria-pressed={layer === id} disabled={disabled || interacting} onClick={() => selectLayer(id)}>{name}</button>)}
           </div>
-    {layer === 'liquid' ? <LiquidPicker version={world.formatVersion} type={liquidType} amount={liquidAmount} onType={setLiquidType} onAmount={setLiquidAmount} disabled={disabled || interacting} /> : <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />}
+    {['wire', 'actuator'].includes(layer) ? <CircuitPicker layer={layer} mask={wireMask} onMask={setWireMask} actuator={actuator} actuated={actuated} onActuator={setActuator} onActuated={setActuated} disabled={disabled || interacting} /> : layer === 'liquid' ? <LiquidPicker version={world.formatVersion} type={liquidType} amount={liquidAmount} onType={setLiquidType} onAmount={setLiquidAmount} disabled={disabled || interacting} /> : <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />}
           <details className="inspector-details" open={sample ? true : undefined}><summary>图格属性</summary>
     <div className="tile-inspector" aria-label="图格属性" aria-live="polite">
       <strong>取样属性</strong>{sample ? <>
@@ -656,7 +672,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         <section id="panel-view" hidden={panel !== 'view'}>
           <h3>地图显示</h3>
           <div className="layer-controls" role="group" aria-label="图层显示">
-            <span>可见图层</span>{[['block', '方块'], ['wall', '墙壁'], ['liquid', '液体']].map(([key, name]) => <label key={key}>
+            <span>可见图层</span>{EDIT_LAYERS.map(([key, name]) => <label key={key}>
               <input type="checkbox" aria-label={`显示${name}`} checked={layers[key]} disabled={disabled || interacting} onChange={event => setLayers(previous => ({ ...previous, [key]: event.target.checked }))} />{name}
             </label>)}<span>隐藏图层不参与绘制或擦除</span>
           </div>
@@ -688,7 +704,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       </div>
       <details className="panel-help"><summary>模板格式与粘贴规则</summary><p>完整替换目标矩形的所有图层，含空格；不受旧选区限制。确认前仅预览，最多 10000 格。</p>
       <p>半砖仅支持左右翻转。模板为本项目的 JSON 格式（最多 2 MiB），导入需与当前世界格式相同，不支持桌面 .TEditSch。</p></details>
-      <output className="paste-state" aria-label="粘贴目标状态">{tool !== 'paste' ? '未开始粘贴' : !pasteFits(clipboard?.data, pastePosition, world) ? '目标超出地图或坐标无效。' : !Object.values(layers).every(Boolean) ? '请显示方块、墙壁和液体后确认。' : '预览中，确认后写入世界；家具及实体检查在确认时执行。'}</output>
+      <output className="paste-state" aria-label="粘贴目标状态">{tool !== 'paste' ? '未开始粘贴' : !pasteFits(clipboard?.data, pastePosition, world) ? '目标超出地图或坐标无效。' : !['block', 'wall', 'liquid'].every(id => layers[id]) ? '请显示方块、墙壁和液体后确认。' : '预览中，确认后写入世界；家具及实体检查在确认时执行。'}</output>
     </div>
 
         </section>
@@ -698,6 +714,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y、Ctrl+C / Ctrl+V。Esc 取消草稿或粘贴预览，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内，且只修改选中的编辑图层；粘贴完整替换所有图层，含空格。区域操作最多 10000 格。特殊图格受保护。显示面板可选择本机资源并切换贴图，未支持的外观使用色块。</p>
 
           <p className="panel-description">液体在材料面板选择种类和液量；0% 或橡皮清除液体，旧格式不支持微光。液体显示为基础色彩，不模拟流动或反应。</p>
+          <p className="panel-description">电线可多选颜色；制动器仅作用于已有方块。选择对应编辑图层会打开显示，放大到 200% 以上显示连线与制动器标记；显示面板可分别关闭。这里只编辑存档，不运行电路。</p>
           <p className="panel-description">存档仅在本机处理。导出世界副本后，保留原文件并在游戏中测试。建筑模板下载不会保存世界修改。</p>
           <a href="https://github.com/woshimaxfive/terraria-editor-zh" target="_blank" rel="noreferrer">项目源码</a> · <a href={`${import.meta.env.BASE_URL}THIRD_PARTY_NOTICES.txt`} target="_blank" rel="noreferrer">开源许可</a>
         </section>

@@ -36,7 +36,7 @@ self.addEventListener('message', async ({ data }) => {
     } else if (action === 'render') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const image = document.render(region);
-      self.postMessage({ id, type: 'result', image }, image.sprites ? [image.buffer, image.sprites] : [image.buffer]);
+      self.postMessage({ id, type: 'result', image }, [image.buffer, ...(image.sprites ? [image.sprites] : []), ...(image.circuits ? [image.circuits] : [])]);
     } else if (action === 'export') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const buffer = document.serialize(progress);

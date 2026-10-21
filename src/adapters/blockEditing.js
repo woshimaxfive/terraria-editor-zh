@@ -39,6 +39,18 @@ export function createBlockEditing(world, ensureWritable) {
     read,
     write(index, values) { TILE_FIELDS.forEach((field, i) => { tiles[field][index] = values[i]; }); },
     paint(index, before, blockId, layer) {
+      if (layer === 'wire') {
+        const after = [...before], mask = blockId.mask << 1;
+        after[8] = blockId.erase ? after[8] & ~mask : after[8] | mask;
+        return after;
+      }
+      if (layer === 'actuator') {
+        if (!tiles.hasBlock(index)) return before;
+        const after = [...before];
+        after[8] = (after[8] & ~(TileFlag.ACTUATOR | TileFlag.ACTUATED)) |
+          (blockId.actuator ? TileFlag.ACTUATOR : 0) | (blockId.actuated ? TileFlag.ACTUATED : 0);
+        return after;
+      }
       if (layer === 'liquid') {
         const x = Math.floor(index / tiles.height), y = index % tiles.height;
         if (important(index) || entityNear(x, y)) return null;
