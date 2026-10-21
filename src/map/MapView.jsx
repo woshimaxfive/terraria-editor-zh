@@ -13,6 +13,9 @@ import { continuesLine } from '../editing/constraints.js';
 import { brushOutline, createBrushShape, maxLineThickness } from '../editing/brushShape.js';
 import BrushShapeControls from './BrushShapeControls.jsx';
 import HollowBrushControls from './HollowBrushControls.jsx';
+import SprayBrushControls from './SprayBrushControls.jsx';
+import { SprayStroke } from '../editing/SprayStroke.js';
+import { createOrderedBrushStamp } from '../editing/orderedBrushStamp.js';
 import { createHollowBrushShape } from '../editing/hollowBrush.js';
 import { drawShapes } from '../rendering/appearance.js';
 import { drawCircuitOverlay } from '../rendering/circuitOverlay.js';
@@ -59,12 +62,14 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const brushSize = brushSettings.width === brushSettings.height && BRUSH_SIZES.includes(brushSettings.width) ? brushSettings.width : 'custom';
   const setBrushSize = size => setBrushSettings(previous => ({ ...previous, width: size, height: size,
     thickness: Math.min(previous.thickness, maxLineThickness({ width: size, height: size })) }));
-  const footprint = useMemo(() => createBrushShape(brushSettings), [brushSettings]);
+  const [strokeMode, setStrokeMode] = useState('freehand');
+  const sprayEnabled = Boolean(brushSettings.spray && strokeMode === 'freehand');
+  const orderedStamp = useMemo(() => sprayEnabled ? createOrderedBrushStamp(brushSettings) : null, [sprayEnabled, brushSettings]);
+  const footprint = useMemo(() => orderedStamp ? { ...orderedStamp.geometry, issue: orderedStamp.issue } : createBrushShape(brushSettings), [orderedStamp, brushSettings]);
   const outline = useMemo(() => brushOutline(footprint), [footprint]);
-  const hollowEnabled = Boolean(brushSettings.hollow && ['block', 'wall'].includes(layer));
+  const hollowEnabled = Boolean(!sprayEnabled && brushSettings.hollow && ['block', 'wall'].includes(layer));
   const strokeSettings = useMemo(() => ({ ...brushSettings, hollow: hollowEnabled, hollowBlock: layer === 'block' }), [brushSettings, hollowEnabled, layer]);
   const innerOutline = useMemo(() => hollowEnabled ? brushOutline(createHollowBrushShape(brushSettings).interior) : [], [hollowEnabled, brushSettings]);
-  const [strokeMode, setStrokeMode] = useState('freehand');
   const [chainAnchor, setChainAnchor] = useState(null);
   const chainRef = useRef(null);
   const chainGeneration = useRef(0);
@@ -359,10 +364,11 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const rect = canvasRef.current.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   };
-  const showCoordinates = (point, view = current.current.camera) => {
+  const showCoordinates = (point, view = current.current.camera, clamp = false) => {
     if (!view) return;
     const position = screenToWorld(point, view, current.current.size);
-    const x = Math.floor(position.x), y = Math.floor(position.y);
+    const x = clamp ? Math.max(0, Math.min(world.width - 1, Math.floor(position.x))) : Math.floor(position.x);
+    const y = clamp ? Math.max(0, Math.min(world.height - 1, Math.floor(position.y))) : Math.floor(position.y);
     const cell = x >= 0 && y >= 0 && x < world.width && y < world.height ? { x, y } : null;
     hoverRef.current = cell;
     setCoordinates(cell);
@@ -446,7 +452,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
     redraw();
   };
   const extendStroke = point => {
-    const cell = showCoordinates(point);
+    // Desktop GetTileMouseState clamps spray input before elapsed ticks are sampled.
+    const cell = showCoordinates(point, current.current.camera, strokeRef.current.stroke.mode === 'spray');
     if (!cell) { if (strokeRef.current.stroke.mode === 'freehand') strokeRef.current.stroke.previous = null; return; }
     try {
       strokeRef.current.stroke.add(cell);
@@ -611,7 +618,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const showPanel = name => { setPanel(name); setPanelOpen(true); };
   const closePanel = () => { setPanelOpen(false); panelToggleRef.current?.focus({ preventScroll: true }); };
   const trajectoryName = { freehand: '', line: '直线', polyline: '折线', constrain: '约束' }[strokeMode];
-  const toolName = { pan: '平移', paint: trajectoryName + (hollowEnabled ? '空心画笔' : '画笔'), erase: trajectoryName + (hollowEnabled ? '空心橡皮' : '橡皮'), pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
+  const toolName = { pan: '平移', paint: trajectoryName + (sprayEnabled ? '喷枪' : hollowEnabled ? '空心画笔' : '画笔'), erase: trajectoryName + (sprayEnabled ? '喷枪橡皮' : hollowEnabled ? '空心橡皮' : '橡皮'), pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
   const usesBrush = tool === 'paint' || tool === 'erase';
   const usesLayer = usesBrush || tool === 'fill' || tool === 'pick' || tool === 'select' || (selection && tool !== 'paste');
   return <section className={`map-view${panelOpen ? ' panel-open' : ''}`} aria-labelledby="map-title" onKeyDownCapture={event => {
@@ -693,7 +700,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         pointers.current.set(event.pointerId, pointOf(event));
         canvasRef.current.setPointerCapture(event.pointerId);
         setDragging(true);
-        const cell = showCoordinates(pointOf(event));
+        const cell = showCoordinates(pointOf(event), current.current.camera, sprayEnabled && ['paint', 'erase'].includes(tool));
         if (pointers.current.size === 2) { cancelStroke(); if (fillState) cancelFill(); if (tool === 'paste') cancelPaste(); return; }
         if (fillState) return;
         if (tool !== 'pan' && cell) {
@@ -725,7 +732,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
             pickRef.current = { tool, pointerId: event.pointerId, cell, start: pointOf(event) };
             return;
           }
-          strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, hollowFillWall: Boolean(brushSettings.fillWall && layer === 'block'), stroke: new BrushStroke(world, strokeSettings, selectionRef.current, strokeMode, strokeMode === 'polyline' ? chainRef.current : null) };
+          strokeRef.current = { pointerId: event.pointerId, ...parameters, tool, hollowFillWall: Boolean(brushSettings.fillWall && layer === 'block'), stroke: sprayEnabled ? new SprayStroke(world, brushSettings, selectionRef.current) : new BrushStroke(world, strokeSettings, selectionRef.current, strokeMode, strokeMode === 'polyline' ? chainRef.current : null) };
           if (strokeMode === 'constrain') strokeRef.current.stroke.direction = lastConstraintDirection.current;
           extendStroke(pointOf(event));
           if (!strokeRef.current) return;
@@ -783,8 +790,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
 
       </div>
     <p className={`tool-hint${hint ? ' has-hint' : ''}`} role="status">{hint || {
-      paint: `画笔${trajectoryName}模式：放大到 200% 以上绘制${layerName}。${strokeMode === 'line' ? '拖动预览起终点直线，抬起提交，Esc 取消。' : strokeMode === 'polyline' ? '点击续接上一端点；拖动超过 2 格结束续接，Esc 清除锚点。' : strokeMode === 'constrain' ? '开始移动后锁定水平、竖直或45°方向；Esc 取消。' : '每次拖动为一步，双指可平移缩放。'}${masksEnabled ? '条件过滤已启用。' : ''}`,
-      erase: `橡皮${trajectoryName}模式：放大到 200% 以上擦除${layerName}；${hollowEnabled ? '空心按启用的内部填墙设置处理相关层' : '只修改当前层，电线仅移除选中颜色'}。${masksEnabled ? '条件过滤已启用。' : ''}`,
+      paint: `${sprayEnabled ? '喷枪' : '画笔'}${trajectoryName}模式：放大到 200% 以上绘制${layerName}。${strokeMode === 'line' ? '拖动预览起终点直线，抬起提交，Esc 取消。' : strokeMode === 'polyline' ? '点击续接上一端点；拖动超过 2 格结束续接，Esc 清除锚点。' : strokeMode === 'constrain' ? '开始移动后锁定水平、竖直或45°方向；Esc 取消。' : '每次拖动为一步，双指可平移缩放。'}${masksEnabled ? '条件过滤已启用。' : ''}`,
+      erase: `${sprayEnabled ? '喷枪橡皮' : '橡皮'}${trajectoryName}模式：放大到 200% 以上擦除${layerName}；${hollowEnabled ? '空心按启用的内部填墙设置处理相关层' : '只修改当前层，电线仅移除选中颜色'}。${masksEnabled ? '条件过滤已启用。' : ''}`,
       pick: `吸管模式：放大到 200% 以上点击，读取${layerName}和图格属性。`,
       select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
       fill: '连通填充：点击起点，预览四方向连通区域后确认；Esc、双指或尺寸变化取消。最多 10000 格，可先框选限制范围。条件只过滤写入，不阻断连通路径；不支持电线。',
@@ -808,7 +815,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
     {['slope', 'paint'].includes(layer) ? <AppearancePicker layer={layer} version={world.formatVersion} slope={slope} onSlope={setSlope} value={appearance} onChange={setAppearance} disabled={disabled || interacting} /> : ['wire', 'actuator'].includes(layer) ? <CircuitPicker layer={layer} mask={wireMask} onMask={setWireMask} actuator={actuator} actuated={actuated} onActuator={setActuator} onActuated={setActuated} disabled={disabled || interacting} /> : layer === 'liquid' ? <LiquidPicker version={world.formatVersion} type={liquidType} amount={liquidAmount} onType={setLiquidType} onAmount={setLiquidAmount} disabled={disabled || interacting} /> : <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />}
           <div className="stroke-options"><label>画笔轨迹<select aria-label="画笔轨迹" value={strokeMode} disabled={disabled || interacting} onChange={event => setStrokeMode(event.target.value)}><option value="freehand">自由绘制</option><option value="line">起终点直线</option><option value="polyline">连续折线</option><option value="constrain">方向约束</option></select></label>
           <BrushShapeControls value={brushSettings} geometry={footprint} onChange={setBrushSettings} disabled={disabled || interacting} />
-          <HollowBrushControls value={brushSettings} onChange={setBrushSettings} layer={layer} version={world.formatVersion} wallId={wallId} onWallChange={setWallId} disabled={disabled || interacting} />
+          <SprayBrushControls value={brushSettings} onChange={setBrushSettings} mode={strokeMode} disabled={disabled || interacting} />
+          <HollowBrushControls value={brushSettings} onChange={setBrushSettings} layer={layer} version={world.formatVersion} wallId={wallId} onWallChange={setWallId} disabled={disabled || interacting || sprayEnabled} />
           {strokeMode === 'polyline' && <p className="card-note">点击续接上一端点，每段一步历史；拖动超过 2 格后结束续接。Esc、双指、尺寸或参数变化清除锚点。</p>}
           {strokeMode === 'constrain' && <p className="card-note">开始移动后锁定水平、竖直或 45° 方向，按原版整数规则吸附。每次拖动为一步，Esc 取消。</p>}</div>
           <MaskControls enabled={masksEnabled} onEnabled={setMasksEnabled} rules={masks} onRules={setMasks} sample={sample} disabled={disabled || interacting} />

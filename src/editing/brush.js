@@ -19,6 +19,21 @@ export function selectionCells(selection, world) {
     (x + Math.floor(i / height)) * world.height + y + i % height);
 }
 
+// Shape.DrawLineTool integer trajectory, shared by ordinary and timed strokes.
+export function* brushLine(start, end) {
+  let { x, y } = start;
+  const dx = Math.abs(end.x - x), dy = -Math.abs(end.y - y);
+  const sx = x < end.x ? 1 : -1, sy = y < end.y ? 1 : -1;
+  let error = dx + dy;
+  while (true) {
+    yield { x, y };
+    if (x === end.x && y === end.y) break;
+    const twice = 2 * error;
+    if (twice >= dy) { error += dy; x += sx; }
+    if (twice <= dx) { error += dx; y += sy; }
+  }
+}
+
 // The preview and Worker use the same bounded, column-major cell indices.
 export class BrushStroke {
   constructor(world, size, selection = null, mode = 'freehand', anchor = null) {
@@ -58,20 +73,13 @@ export class BrushStroke {
       this.previous = this.anchor;
       if (this.hollow?.simpleRectangle) this.stamp(this.anchor.x, this.anchor.y);
     }
-    let { x, y } = this.previous || point;
-    const dx = Math.abs(point.x - x), dy = -Math.abs(point.y - y);
-    const sx = x < point.x ? 1 : -1, sy = y < point.y ? 1 : -1;
-    let error = dx + dy;
-    const rectangleSweep = this.hollow?.simpleRectangle && (x !== point.x || y !== point.y);
+    const start = this.previous || point;
+    const rectangleSweep = this.hollow?.simpleRectangle && (start.x !== point.x || start.y !== point.y);
     let preceding = null;
-    while (true) {
+    for (const { x, y } of brushLine(start, point)) {
       if (!rectangleSweep) this.stamp(x, y);
       else if (preceding) this.stamp(x, y, preceding);
-      if (x === point.x && y === point.y) break;
       preceding = { x, y };
-      const twice = 2 * error;
-      if (twice >= dy) { error += dy; x += sx; }
-      if (twice <= dx) { error += dx; y += sy; }
     }
     this.previous = point;
   }

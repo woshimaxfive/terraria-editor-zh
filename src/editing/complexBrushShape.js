@@ -8,7 +8,7 @@ export const roundEven = value => {
   return (value - floor === .5 ? floor + Math.abs(floor % 2) : Math.round(value)) || 0;
 };
 
-export function polygonBrushSpans(vertices) {
+export function polygonBrushSpans(vertices, onSpan) {
   const spans = new Map(), f = Math.fround;
   const minY = Math.min(...vertices.map(point => point[1])), maxY = Math.max(...vertices.map(point => point[1]));
   for (let y = minY; y <= maxY; y++) {
@@ -20,19 +20,23 @@ export function polygonBrushSpans(vertices) {
       }
     }
     intersections.sort((a, b) => a - b);
-    for (let i = 0; i < intersections.length - 1; i += 2) addBrushSpan(spans, y, intersections[i], intersections[i + 1]);
+    for (let i = 0; i < intersections.length - 1; i += 2) {
+      onSpan?.(y, intersections[i], intersections[i + 1]);
+      addBrushSpan(spans, y, intersections[i], intersections[i + 1]);
+    }
   }
   return spans;
 }
 
 // Preserve the desktop midpoint circle rather than substituting the ellipse formula.
-function circle(radius, offsetX = 0) {
+export function circle(radius, offsetX = 0, onPair) {
   const spans = new Map();
   if (radius <= 0) { addBrushSpan(spans, 0, offsetX, offsetX); return spans; }
   const squared = radius * radius, twice = squared * 2;
   let x = radius, y = 0, xChange = squared * (1 - radius * 2), yChange = squared;
   let error = 0, xStop = twice * radius, yStop = 0;
   const stamp = () => {
+    onPair?.(offsetX - x, offsetX + x, y);
     addBrushSpan(spans, y, offsetX - x, offsetX + x);
     addBrushSpan(spans, -y, offsetX - x, offsetX + x);
   };

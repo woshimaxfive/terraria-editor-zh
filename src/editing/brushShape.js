@@ -40,7 +40,7 @@ export function createBrushShape(settings) {
   return value;
 }
 
-function filledBrush(width, height, shape) {
+export function filledBrush(width, height, shape) {
   const left = 0 - Math.floor(width / 2), top = 0 - Math.floor(height / 2);
   const rows = [];
   const f = Math.fround, rx = width / 2, ry = height / 2, cx = left + rx, cy = top + ry;
@@ -58,7 +58,7 @@ function filledBrush(width, height, shape) {
 }
 
 // Shape.DrawLine is float DDA with truncation, unlike the integer stroke trajectory.
-function* linePoints(start, end) {
+export function* linePoints(start, end) {
   const length = Math.max(Math.abs(end[0] - start[0]), Math.abs(end[1] - start[1]));
   if (!length) return;
   const dx = Math.fround((end[0] - start[0]) / length), dy = Math.fround((end[1] - start[1]) / length);
