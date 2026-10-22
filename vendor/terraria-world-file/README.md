@@ -15,4 +15,6 @@ Local changes:
 
 - TileEntitiesIO writes the format-311 ninth display-doll item in its native trailing position, preserves reserved display-doll/hat-rack flag bits, and explicitly rejects unknown entity types. DisplayDoll and HatRack declare the retained bytes. Native layout tests cover every payload kind; availability of a kind in a game version is a separate placement rule.
 
+- CreativePowersIO preserves empty/sparse collections, record order, duplicates, boolean bytes and original float payloads when untouched. It understands the nine saved power types handled by desktop TEdit at `84e3fc3466d405675a09da763169774b82c22d4d` (including player-only records if present) and rejects unknown layouts instead of continuing at an unverified offset. Optional raw-record metadata survives structured cloning; changing an exposed value updates its last record, removing it removes that power's records. This fixes an empty collection being expanded into six powers; it does not add a Journey powers editor or permit changes to this section through the application export guard.
+
 All remaining source files match the pinned source after LF normalization. `source.json` records the original source hashes. Keep these changes when reviewing an upstream update and run the world round-trip tests before changing the pinned version.
