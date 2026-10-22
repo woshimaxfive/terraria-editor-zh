@@ -20,6 +20,7 @@ import {
 import type { Section } from '../sections'
 import type { WorldProperties } from '../FileReader'
 import type BinarySaver from '../BinarySaver'
+import TerrariaWorldFileError from '../TerrariaWorldFileError'
 
 export class TileEntitiesData {
   entities!: TileEntity[]
@@ -65,6 +66,8 @@ export default class TileEntitiesIO implements Section.IODefinition<TileEntities
         return this.parseKiteAnchor(reader, entity)
       case TileEntityType.CritterAnchor:
         return this.parseCritterAnchor(reader, entity)
+      default:
+        throw new TerrariaWorldFileError(`Unknown tile entity type: ${entity.type}`)
     }
   }
 
@@ -102,10 +105,11 @@ export default class TileEntitiesIO implements Section.IODefinition<TileEntities
       pose = reader.readUInt8()
     }
 
+    let extraSlotFlags = 0
     let extraSlotBits = [false, false, false]
     if (world.version >= 308) {
-      const extraByte = reader.readUInt8()
-      extraSlotBits = [Boolean(extraByte & 1), Boolean(extraByte & 2), Boolean(extraByte & 4)]
+      extraSlotFlags = reader.readUInt8()
+      extraSlotBits = [Boolean(extraSlotFlags & 1), Boolean(extraSlotFlags & 2), Boolean(extraSlotFlags & 4)]
     }
 
     let v311ExtraItem = false
@@ -158,6 +162,7 @@ export default class TileEntitiesIO implements Section.IODefinition<TileEntities
     }
     if (world.version >= 308) {
       result.misc = misc
+      result.extraSlotFlags = extraSlotFlags
     }
 
     return result
@@ -173,7 +178,8 @@ export default class TileEntitiesIO implements Section.IODefinition<TileEntities
 
   private parseHatRack(reader: BinaryReader, entity: TileEntityBase): HatRack {
     const numSlots = 2
-    const slots = reader.readBits(8)
+    const slotFlags = reader.readUInt8()
+    const slots = Array.from({ length: 8 }, (_, i) => Boolean(slotFlags & (1 << i)))
 
     const items: ItemSlot[] = []
     for (let i = 0; i < numSlots; i++) {
@@ -188,6 +194,7 @@ export default class TileEntitiesIO implements Section.IODefinition<TileEntities
     return {
       ...entity,
       type: TileEntityType.HatRack,
+      slotFlags,
       items,
       dyes,
     }
@@ -266,11 +273,12 @@ export default class TileEntitiesIO implements Section.IODefinition<TileEntities
       case TileEntityType.HatRack: {
         // Pack both item flags and dye flags into a single byte
         // bits 0-1: item slots, bits 2-3: dye slots
-        const hatSlotBits = [
-          ...entity.items.map((s) => s !== null),
-          ...entity.dyes.map((s) => s !== null),
-        ]
-        saver.saveBits(hatSlotBits)
+        let flags = (entity.slotFlags ?? 0) & 0xf0
+        for (let i = 0; i < 2; i++) {
+          if (entity.items[i] != null) flags |= 1 << i
+          if (entity.dyes[i] != null) flags |= 1 << (i + 2)
+        }
+        saver.saveUInt8(flags)
         for (const itemSlot of entity.items) {
           if (itemSlot !== null) this.saveItem(saver, itemSlot)
         }
@@ -279,6 +287,8 @@ export default class TileEntitiesIO implements Section.IODefinition<TileEntities
         }
         break
       }
+      case TileEntityType.Pylon:
+        break
       case TileEntityType.DeadCellsDisplayJar:
         this.saveItem(saver, entity.item)
         break
@@ -286,6 +296,8 @@ export default class TileEntitiesIO implements Section.IODefinition<TileEntities
       case TileEntityType.KiteAnchor:
         saver.saveInt16(entity.itemId)
         break
+      default:
+        throw new TerrariaWorldFileError(`Unknown tile entity type: ${entity.type}`)
     }
   }
 
@@ -305,7 +317,7 @@ export default class TileEntitiesIO implements Section.IODefinition<TileEntities
 
     // v308+: extra slots byte
     if (world.version >= 308) {
-      let extraByte = 0
+      let extraByte = (entity.extraSlotFlags ?? 0) & 0xf8
       if (entity.misc?.[0] !== null && entity.misc?.[0] !== undefined) extraByte |= 1
       if (entity.items[8] !== null && entity.items[8] !== undefined) extraByte |= 2
       if (entity.dyes[8] !== null && entity.dyes[8] !== undefined) extraByte |= 4
@@ -316,6 +328,8 @@ export default class TileEntitiesIO implements Section.IODefinition<TileEntities
 
     // Write item data
     for (let i = 0; i < maxSlots; i++) {
+      // v311 stores the ninth item after dyes and misc, as LoadDisplayDoll reads it.
+      if (world.version === 311 && i === 8) continue
       if (entity.items[i] !== null && entity.items[i] !== undefined) {
         this.saveItem(saver, entity.items[i])
       }
@@ -335,6 +349,9 @@ export default class TileEntitiesIO implements Section.IODefinition<TileEntities
           this.saveItem(saver, entity.misc[i])
         }
       }
+    }
+    if (world.version === 311 && entity.items[8] != null) {
+      this.saveItem(saver, entity.items[8])
     }
   }
 

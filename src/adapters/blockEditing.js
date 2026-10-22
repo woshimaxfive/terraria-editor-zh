@@ -28,11 +28,10 @@ export function createBlockEditing(world, ensureWritable, objects = null) {
     }
     return false;
   }
-  const entityPositions = [
-    ...world.chests.chests, ...world.signs.signs, ...world.tileEntities.entities,
-    ...world.weightedPressurePlates.weightedPressurePlates,
-  ].map(item => item.position);
-  const entityNear = (x, y) => entityPositions.some(point => Math.abs(point.x - x) <= 1 && Math.abs(point.y - y) <= 1);
+  // Collection transactions can replace these arrays. Resolve current records
+  // on each check so additions/removals and undo immediately update protection.
+  const entityNear = (x, y) => [world.chests.chests, world.signs.signs, world.tileEntities.entities,
+    world.weightedPressurePlates.weightedPressurePlates].some(list => list.some(({ position: point }) => Math.abs(point.x - x) <= 1 && Math.abs(point.y - y) <= 1));
   const read = index => TILE_FIELDS.map(field => tiles[field][index]);
   const editing = new EditHistory({
     count: tiles.count,

@@ -155,6 +155,7 @@ export interface DisplayDoll extends TileEntityBase {
   dyes: ItemSlot[]
   pose?: number
   misc?: ItemSlot[]
+  extraSlotFlags?: number
 }
 
 export enum DisplayDollSlot {
@@ -177,6 +178,7 @@ export interface HatRack extends TileEntityBase {
   type: TileEntityType.HatRack
   items: ItemSlot[]
   dyes: ItemSlot[]
+  slotFlags?: number
 }
 
 export enum HatRackSlot {

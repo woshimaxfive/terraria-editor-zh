@@ -16,6 +16,21 @@ function setup(timeout = 1000) {
   return { session, workers };
 }
 
+test('furniture previews, structure writes and entity contents use the serialized world queue and close cancels pending reads', async () => {
+  const {session,workers}=setup();
+  await assert.rejects(session.inspectFurniture({x:1,y:2}),/先打开/);await assert.rejects(session.previewFurniture({}),/先打开/);await assert.rejects(session.readEntities(),/先打开/);
+  const opening=session.open({name:'furniture.wld'});workers[0].reply({type:'result',summary:{}});await opening;
+  const preview=session.previewFurniture({revision:0,action:'place',tileId:21,styleIndex:0,x:1,y:2});
+  const edit=session.edit('editFurniture',{revision:0,action:'place',tileId:21,styleIndex:0,x:1,y:2}),read=session.readEntities();
+  assert.equal(workers[0].message.action,'previewFurniture');workers[0].reply({type:'result',preview:{changes:4}});assert.equal((await preview).preview.changes,4);
+  assert.equal(workers[0].message.action,'editFurniture');workers[0].reply({type:'result',editState:{revision:1}});await edit;
+  assert.equal(workers[0].message.action,'readEntities');workers[0].reply({type:'result',entities:{records:[],revision:1}});await read;
+  const invalid=session.edit('editEntity',{index:0,revision:0,changes:{item:null}}),rejected=assert.rejects(invalid,/已变化/),exporting=session.export();
+  workers[0].reply({type:'error',recoverable:true,message:'已变化'});await rejected;assert.equal(session.loaded,true);
+  assert.equal(workers[0].message.action,'export');workers[0].reply({type:'result',buffer:new ArrayBuffer(4)});await exporting;
+  const inspect=session.inspectFurniture({x:1,y:2}),cancelled=assert.rejects(inspect,{name:'AbortError'});session.close();await cancelled;
+});
+
 test('cancel terminates work, invalidates the loaded world and ignores late results', async () => {
   const { session, workers } = setup();
   const opening = session.open({ name: 'first.wld' });

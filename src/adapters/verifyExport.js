@@ -26,7 +26,7 @@ function sectionLayout(buffer) {
 export function preservesEditedSections(original, output, expectedSections = new Map()) {
   const a = sectionLayout(original), b = sectionLayout(output);
   if (!a || !b || a.count !== b.count || a.pointers.length !== b.pointers.length ||
-      !(expectedSections instanceof Map) || [...expectedSections].some(([index, bytes]) => ![0, 2, 3, 4, a.pointers.length - 1].includes(index) || !(bytes instanceof ArrayBuffer)) ||
+      !(expectedSections instanceof Map) || [...expectedSections].some(([index, bytes]) => ![0, 2, 3, 4, 5, a.pointers.length - 1].includes(index) || !(bytes instanceof ArrayBuffer)) ||
       expectedSections.has(0) !== expectedSections.has(a.pointers.length - 1)) return false;
   if (!equalRange(original, 0, 26, output, 0, 26) ||
       !equalRange(original, a.tableEnd, a.pointers[0], output, b.tableEnd, b.pointers[0])) return false;

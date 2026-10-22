@@ -46,6 +46,13 @@ export function createObjectEditing(world) {
   }
   return {
     read,
+    snapshot: kind => clone(expected[kind]),
+    prepareCollection(kind, after) {
+      const before = clone(expected[kind]);
+      if (equal(before, after)) return null;
+      const bytes = new TextEncoder().encode(JSON.stringify(before) + JSON.stringify(after)).byteLength;
+      return { kind: `collection:${kind}`, index: 0, before, after: clone(after), cost: Math.max(1, Math.ceil(bytes / 64)) };
+    },
     list(kind) {
       if (!collection(kind)) fail();
       return expected[kind].map((object, index) => ({ kind, index, x: object.position.x, y: object.position.y,
@@ -82,6 +89,14 @@ export function createObjectEditing(world) {
       return { kind, index, before, after, cost: Math.max(1, Math.ceil(bytes / 64)) };
     },
     write(kind, index, snapshot) {
+      if (kind.startsWith('collection:')) {
+        kind = kind.slice('collection:'.length);
+        if (kind === 'chest') world.chests.chests = clone(snapshot);
+        else if (kind === 'sign') world.signs.signs = clone(snapshot);
+        else fail();
+        expected[kind] = clone(snapshot);
+        return;
+      }
       collection(kind)[index] = clone(snapshot);
       expected[kind][index] = clone(snapshot);
     },

@@ -32,6 +32,7 @@ import EditorMenu from '../app/EditorMenu.jsx';
 const ObjectEditor = lazy(() => import('./ObjectEditor.jsx'));
 const WorldPropertiesEditor = lazy(() => import('./WorldPropertiesEditor.jsx'));
 const NpcEditor = lazy(() => import('./NpcEditor.jsx'));
+const FurnitureEditor = lazy(() => import('./FurnitureEditor.jsx'));
 
 const MAX_CANVAS_PIXELS = 4 * 1024 * 1024;
 const DISPLAY_LAYERS = [['block', '方块'], ['wall', '墙壁'], ['liquid', '液体'], ['wire', '电线'], ['actuator', '制动器']];
@@ -53,6 +54,18 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [dragging, setDragging] = useState(false);
   const [tool, setTool] = useState('pan');
   const [pointTarget, setPointTarget] = useState('spawn');
+  const [furniturePoint, setFurniturePoint] = useState(null);
+  const [furniturePreview, setFurniturePreview] = useState(null);
+  const [furnitureReset, setFurnitureReset] = useState(0);
+  const furnitureRef = useRef(null);
+  const showFurniturePreview = useCallback(value => {
+    furnitureRef.current = value; setFurniturePreview(value);
+    if (value) setTool('furniture');
+  }, []);
+  const cancelFurniture = useCallback(() => {
+    furnitureRef.current = null; setFurniturePreview(null); setFurnitureReset(value => value + 1);
+  }, []);
+  useEffect(() => { if (tool !== 'furniture') cancelFurniture(); }, [tool, cancelFurniture]);
   const pointTargets = world.points ?? [{ id: 'spawn', label: '出生点', ...world.spawn }, { id: 'dungeon', label: '地牢入口', ...world.dungeon }];
   const activePoint = pointTargets.find(point => point.id === pointTarget) ?? pointTargets[0];
   const [blockId, setBlockId] = useState(1);
@@ -109,6 +122,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const templateInputRef = useRef(null);
   const thumbnailRef = useRef(null);
   const [panel, setPanel] = useState('materials');
+  useEffect(() => { if (panel !== 'furniture' && tool === 'furniture') setTool('pan'); }, [panel, tool]);
   const [objectDraft, setObjectDraft] = useState(false);
   const objectDraftChange = useCallback(value => { setObjectDraft(value); onDraftChange(value); }, [onDraftChange]);
   const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 900);
@@ -173,7 +187,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
       if (next.width < 1 || next.height < 1) return;
       clearChain(); clearCad();
       if (fillJobRef.current || fillRef.current) cancelFill();
-      if (['cad', 'point'].includes(pickRef.current?.tool)) { setDrafting(false); onDraftChange(false); }
+      cancelFurniture();
+      if (['cad', 'point', 'furniture'].includes(pickRef.current?.tool)) { setDrafting(false); onDraftChange(false); }
       pickRef.current = null;
       pasteDragRef.current = null;
       setPlacing(false);
@@ -190,7 +205,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     });
     observer.observe(canvasRef.current);
     return () => observer.disconnect();
-  }, [world.width, world.height, changeCamera, onDraftChange, cancelFill, clearChain, clearCad]);
+  }, [world.width, world.height, changeCamera, onDraftChange, cancelFill, clearChain, clearCad, cancelFurniture]);
 
   const draw = useCallback(() => {
     if (!camera || !size.width) return;
@@ -305,10 +320,24 @@ export default function MapView({ session, world, disabled, onError, editState, 
       context.strokeRect(toX(position.x), toY(position.y), preview.width * camera.zoom, preview.height * camera.zoom);
       context.setLineDash([]);
     }
+    const furniture = furnitureRef.current;
+    if (furniture) {
+      context.fillStyle = '#ff805966'; context.strokeStyle = '#ff9875'; context.lineWidth = 1;
+      for (const {x, y} of furniture.affected) {
+        context.fillRect(toX(x), toY(y), camera.zoom, camera.zoom);
+        context.strokeRect(toX(x), toY(y), camera.zoom, camera.zoom);
+      }
+      if (furniture.placed) {
+        const {x, y, width, height} = furniture.placed;
+        context.fillStyle = '#73e29b66'; context.strokeStyle = '#8af4b0'; context.lineWidth = 2;
+        context.fillRect(toX(x), toY(y), width * camera.zoom, height * camera.zoom);
+        context.strokeRect(toX(x), toY(y), width * camera.zoom, height * camera.zoom);
+      }
+    }
     if (hoverRef.current && !['pan', 'paste'].includes(brush.current.tool) && camera.zoom >= 2) {
       context.strokeStyle = '#ffffff';
       context.lineWidth = 1;
-      if (['pick', 'select', 'fill'].includes(brush.current.tool)) {
+      if (['pick', 'select', 'fill', 'furniture'].includes(brush.current.tool)) {
         context.strokeRect(toX(hoverRef.current.x), toY(hoverRef.current.y), camera.zoom, camera.zoom);
       } else {
         context.beginPath();
@@ -334,6 +363,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
 
   useEffect(() => { draw(); }, [tool, brushSettings, chainAnchor, cadMode, cadDirection, cadStatus, pointTarget, draw]);
   useEffect(() => { draw(); }, [pastePosition, draw]);
+  useEffect(() => { draw(); }, [furniturePreview, draw]);
   useEffect(() => { draw(); }, [fillState, draw]);
 
   useEffect(() => {
@@ -562,6 +592,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       if (disabled) return;
       event.preventDefault();
       if (strokeRef.current || selectionDraftRef.current || fillJobRef.current || fillRef.current) return;
+      if (['cad', 'point', 'furniture'].includes(pickRef.current?.tool)) { setDrafting(false); onDraftChange(false); }
       pickRef.current = null;
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? current.current.size.height : 1);
       const rect = canvas.getBoundingClientRect();
@@ -579,7 +610,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     };
     canvas.addEventListener('wheel', wheel, { passive: false });
     return () => canvas.removeEventListener('wheel', wheel);
-  }, [disabled, world, changeCamera]);
+  }, [disabled, world, changeCamera, onDraftChange]);
 
   function move(event) {
     const point = pointOf(event);
@@ -606,7 +637,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         showCoordinates(point);
         return;
       }
-      if (['cad', 'point'].includes(pickRef.current.tool)) { setDrafting(false); onDraftChange(false); }
+      if (['cad', 'point', 'furniture'].includes(pickRef.current.tool)) { setDrafting(false); onDraftChange(false); }
       pickRef.current = null;
     }
     if (strokeRef.current && strokeRef.current.pointerId === event.pointerId && !disabled) {
@@ -651,12 +682,15 @@ export default function MapView({ session, world, disabled, onError, editState, 
     }
     const pick = pickRef.current;
     pickRef.current = null;
-    if (['cad', 'point'].includes(pick?.tool)) { setDrafting(false); onDraftChange(false); }
+    if (['cad', 'point', 'furniture'].includes(pick?.tool)) { setDrafting(false); onDraftChange(false); }
     if (pick?.pointerId === event.pointerId && event.type === 'pointerup' && !disabled) {
       const point = pointOf(event);
       if (Math.hypot(point.x - pick.start.x, point.y - pick.start.y) <= 6) {
         if (pick.tool === 'fill') startFill(pick.cell);
         else if (pick.tool === 'cad') commitCad(pick);
+        else if (pick.tool === 'furniture') {
+          setFurniturePoint({...pick.cell, revision: pick.revision}); setPanelOpen(true);
+        }
         else if (pick.tool === 'point') {
           if (pick.target.startsWith('npc:')) onEdit('editNpc', { revision: pick.revision, action: 'move', key: pick.target.slice(4), ...pick.cell });
           else onEdit('editWorldProperties', { revision: pick.revision, changes: pointChanges(pick.target, pick.cell) });
@@ -691,11 +725,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const showPanel = name => { setPanel(name); setPanelOpen(true); };
   const closePanel = () => { setPanelOpen(false); panelToggleRef.current?.focus({ preventScroll: true }); };
   const trajectoryName = { freehand: '', line: '直线', polyline: '折线', constrain: '约束' }[strokeMode];
-  const toolName = { pan: '平移', point: '位置工具', paint: (cadEnabled ? 'CAD画笔' : trajectoryName + (sprayEnabled ? '喷枪' : hollowEnabled ? '空心画笔' : '画笔')), erase: cadEnabled ? 'CAD橡皮' : trajectoryName + (sprayEnabled ? '喷枪橡皮' : hollowEnabled ? '空心橡皮' : '橡皮'), pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
+  const toolName = { pan: '平移', furniture: '家具', point: '位置工具', paint: (cadEnabled ? 'CAD画笔' : trajectoryName + (sprayEnabled ? '喷枪' : hollowEnabled ? '空心画笔' : '画笔')), erase: cadEnabled ? 'CAD橡皮' : trajectoryName + (sprayEnabled ? '喷枪橡皮' : hollowEnabled ? '空心橡皮' : '橡皮'), pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
   const usesBrush = tool === 'paint' || tool === 'erase';
-  const usesLayer = usesBrush || tool === 'fill' || tool === 'pick' || tool === 'select' || (selection && !['paste', 'point'].includes(tool));
+  const usesLayer = usesBrush || tool === 'fill' || tool === 'pick' || tool === 'select' || (selection && !['paste', 'point', 'furniture'].includes(tool));
   return <section className={`map-view${panelOpen ? ' panel-open' : ''}`} aria-labelledby="map-title" onKeyDownCapture={event => {
     if (event.key === 'Escape' && fillState && !disabled) { event.stopPropagation(); cancelFill(); }
+    if (event.key === 'Escape' && tool === 'furniture' && !disabled && !objectDraft) { event.stopPropagation(); cancelStroke(); cancelFurniture(); setTool('pan'); }
   }}>
     {menuHost && createPortal(<>
       <EditorMenu label="编辑" disabled={disabled || interacting}>
@@ -723,7 +758,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       </select></label>
       <label hidden={!usesBrush}><span className="context-label">尺寸</span><select aria-label="画笔尺寸" value={brushSize} disabled={disabled || interacting} onChange={event => setBrushSize(Number(event.target.value))}>{brushSize === 'custom' && <option value="custom" disabled>{brushSettings.width} × {brushSettings.height}</option>}{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
       {tool === 'point' && <><label>目标<select aria-label="地图位置目标" value={activePoint.id} disabled={disabled || interacting} onChange={event => setPointTarget(event.target.value)}>{pointTargets.map(point => <option key={point.id} value={point.id}>{point.label}</option>)}</select></label><button disabled={disabled || interacting} onClick={() => setTool('pan')}>退出位置工具</button></>}
-      {!usesLayer && <span className="context-description">{tool === 'point' ? '点按移动 · 拖动浏览 · Esc 退出' : tool === 'paste' ? '定位后确认 · Esc 取消' : '拖动浏览 · 滚轮缩放'}</span>}</div>
+      {!usesLayer && <span className="context-description">{tool === 'furniture' ? '点按预览 · 拖动浏览 · Esc 取消' : tool === 'point' ? '点按移动 · 拖动浏览 · Esc 退出' : tool === 'paste' ? '定位后确认 · Esc 取消' : '拖动浏览 · 滚轮缩放'}</span>}</div>
       <div className="tool-buttons" role="group" aria-label="编辑历史">
         <button aria-label={`撤销 (${editState.undoCount})`} title="撤销 · Ctrl Z" disabled={disabled || interacting || !editState.undoCount} onClick={() => onEdit('undo')}><Icon name="undo" size={16} /><span className="history-label">撤销 </span><span className="history-count">({editState.undoCount})</span></button>
         <button aria-label={`重做 (${editState.redoCount})`} title="重做 · Ctrl Y" disabled={disabled || interacting || !editState.redoCount} onClick={() => onEdit('redo')}><Icon name="redo" size={16} /><span className="history-label">重做 </span><span className="history-count">({editState.redoCount})</span></button>
@@ -739,6 +774,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     </div>
     <div className="tool-rail" role="group" aria-label="工具模式">
       <button disabled={disabled || interacting || !clipboard || tool === 'paste' || clipboard.data.formatVersion !== world.formatVersion} aria-label="粘贴工具" aria-pressed={tool === 'paste'} title="粘贴预览 · Ctrl V" onClick={startPaste}><Icon name="paste" size={21} /><span>粘贴</span></button>
+      <button disabled={disabled || interacting} aria-label="家具工具" aria-pressed={tool === 'furniture'} title="家具工具" onClick={() => { setTool('furniture'); showPanel('furniture'); setHint(''); }}><Icon name="furniture" size={21} /><span>家具</span></button>
       {[['pan', '平移'], ['point', '位置工具'], ['select', '框选'], ['pick', '吸管'], ['paint', '画笔'], ['erase', '橡皮'], ['fill', '连通填充']].map(([id, label]) =>
         <button key={id} disabled={disabled || interacting || (id === 'fill' && layer === 'wire')} aria-label={label} title={label} aria-pressed={tool === id} onClick={() => { setTool(id); setHint(''); if (window.innerWidth <= 900) setPanelOpen(false); }}><Icon name={id} size={21} /><span>{id === 'fill' ? '填充' : label}</span></button>)}
       <div className="rail-divider" />
@@ -775,7 +811,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         canvasRef.current.setPointerCapture(event.pointerId);
         setDragging(true);
         const cell = showCoordinates(pointOf(event), current.current.camera, (sprayEnabled || cadEnabled) && ['paint', 'erase'].includes(tool));
-        if (pointers.current.size === 2) { cancelStroke(); clearCad(); if (fillState) cancelFill(); if (tool === 'paste') cancelPaste(); return; }
+        if (pointers.current.size === 2) { cancelStroke(); clearCad(); cancelFurniture(); if (fillState) cancelFill(); if (tool === 'paste') cancelPaste(); return; }
         if (fillState) return;
         if (tool !== 'pan' && cell) {
           if (camera.zoom < 2) { setHint('请先放大到 200% 以上，或点击“出生点”后操作。'); return; }
@@ -785,6 +821,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
             setPastePosition(cell);
             setPlacing(true);
             return;
+          }
+          if (tool === 'furniture') {
+            pickRef.current = {tool, revision: editState.revision, pointerId: event.pointerId, cell, start: pointOf(event)};
+            setDrafting(true); onDraftChange(true); return;
           }
           if (tool === 'point') {
             pickRef.current = { tool, target: activePoint.id, revision: editState.revision, pointerId: event.pointerId, cell, start: pointOf(event) };
@@ -844,7 +884,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
           return;
         }
         if (fillState) { if (!fillState.preparing && event.key === 'Enter') { event.preventDefault(); confirmFill(); } return; }
-        if (strokeRef.current || selectionDraftRef.current || pasteDragRef.current) return;
+        if (strokeRef.current || selectionDraftRef.current || pasteDragRef.current || pickRef.current?.tool === 'furniture') return;
         pickRef.current = null;
         if (tool === 'paste' && event.key === 'Enter') { event.preventDefault(); confirmPaste(); return; }
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c' && selection && tool !== 'paste') {
@@ -886,6 +926,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       pick: `吸管模式：放大到 200% 以上点击，读取${layerName}和图格属性。`,
       select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
       fill: '连通填充：点击起点，预览四方向连通区域后确认；Esc、双指或尺寸变化取消。最多 10000 格，可先框选限制范围。条件只过滤写入，不阻断连通路径；不支持电线。',
+      furniture: '家具工具：放大后点按选择左上角，侧栏预览完整影响范围后确认；拖动浏览。Esc、双指或尺寸变化取消预览。',
       paste: '粘贴预览：点击或拖动定位左上角，也可输入 X/Y；方向键微调，Enter 确认，Esc 取消。家具与实体暂不支持。',
       pan: '平移模式：拖动浏览地图。选择画笔后可绘制基础方块。',
     }[tool]}</p>
@@ -894,9 +935,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
     <aside id="editor-sidebar" className="editor-sidebar" aria-label="编辑面板" hidden={!panelOpen} onKeyDown={event => {
       if (event.key === 'Escape' && !panelLocked) { event.stopPropagation(); closePanel(); }
     }}>
-      <div className="sidebar-heading"><strong>{ { materials: '材料与属性', templates: '建筑与模板', world: '世界信息', objects: '箱子与告示牌', npcs: 'NPC 编辑', view: '图层与贴图', help: '操作帮助' }[panel]}</strong><button disabled={panelLocked} aria-label="关闭侧边面板" onClick={closePanel}><Icon name="close" size={16} /></button></div>
+      <div className="sidebar-heading"><strong>{ { materials: '材料与属性', templates: '建筑与模板', furniture: '家具与图格实体', world: '世界信息', objects: '箱子与告示牌', npcs: 'NPC 编辑', view: '图层与贴图', help: '操作帮助' }[panel]}</strong><button disabled={panelLocked} aria-label="关闭侧边面板" onClick={closePanel}><Icon name="close" size={16} /></button></div>
       <div className="panel-nav" role="group" aria-label="面板分类">
-        {[['materials', '材料'], ['templates', '建筑'], ['world', '世界'], ['objects', '对象'], ['npcs', 'NPC'], ['view', '显示'], ['help', '帮助']].map(([id, label]) => <button key={id} title={label} aria-label={label} aria-pressed={panel === id} aria-controls={`panel-${id}`} disabled={interacting} onClick={() => setPanel(id)}><Icon name={{ materials: 'paint', templates: 'template', world: 'world', objects: 'template', npcs: 'npc', view: 'layers', help: 'help' }[id]} /><span>{label}</span></button>)}
+        {[['materials', '材料'], ['templates', '建筑'], ['furniture', '家具'], ['world', '世界'], ['objects', '对象'], ['npcs', 'NPC'], ['view', '显示'], ['help', '帮助']].map(([id, label]) => <button key={id} title={label} aria-label={label} aria-pressed={panel === id} aria-controls={`panel-${id}`} disabled={interacting} onClick={() => setPanel(id)}><Icon name={{ materials: 'paint', templates: 'template', furniture: 'furniture', world: 'world', objects: 'template', npcs: 'npc', view: 'layers', help: 'help' }[id]} /><span>{label}</span></button>)}
       </div>
       <div className="panel-scroll">
         <section id="panel-materials" hidden={panel !== 'materials'}>
@@ -972,6 +1013,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         <section id="panel-objects" hidden={panel !== 'objects'}>{panel === 'objects' && <Suspense fallback={<p role="status">正在读取对象编辑器…</p>}><ObjectEditor session={session} revision={editState.revision} version={world.formatVersion} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} onLocate={object => { clearChain(); clearCad(); setTool('pan'); changeCamera(constrainCamera({ x: object.x + 1, y: object.y + 1, zoom: Math.max(4, camera.zoom) }, size, world)); }} /></Suspense>}</section>
         <section id="panel-world" hidden={panel !== 'world'}>{worldDetails}{panel === 'world' && <Suspense fallback={<p role="status">正在读取世界属性编辑器…</p>}><WorldPropertiesEditor session={session} revision={editState.revision} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} onPointTarget={id => { clearChain(); clearCad(); setPointTarget(id); setTool('point'); setHint(''); if (window.innerWidth <= 900) setPanelOpen(false); canvasRef.current?.focus({ preventScroll: true }); }} onLocate={point => { setTool('pan'); changeCamera(constrainCamera({ x: point.x + .5, y: point.y + .5, zoom: Math.max(4, camera.zoom) }, size, world)); }} /></Suspense>}</section>
         <section id="panel-npcs" hidden={panel !== 'npcs'}>{panel === 'npcs' && <Suspense fallback={<p role="status">正在读取 NPC 编辑器…</p>}><NpcEditor session={session} revision={editState.revision} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} onPointTarget={id => { clearChain(); clearCad(); setPointTarget(id); setTool('point'); setHint(''); if (window.innerWidth <= 900) setPanelOpen(false); canvasRef.current?.focus({ preventScroll: true }); }} onLocate={point => { clearChain(); clearCad(); setTool('pan'); changeCamera(constrainCamera({ x: point.x + .5, y: point.y + .5, zoom: Math.max(4, camera.zoom) }, size, world)); }} /></Suspense>}</section>
+        <section id="panel-furniture" hidden={panel !== 'furniture'}>{panel === 'furniture' && <Suspense fallback={<p role="status">正在读取家具目录…</p>}><FurnitureEditor session={session} world={world} revision={editState.revision} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} point={furniturePoint} reset={furnitureReset} selection={selection} onPreview={showFurniturePreview} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} onMapPick={() => { clearChain(); clearCad(); setTool('furniture'); setHint(''); if (window.innerWidth <= 900) setPanelOpen(false); canvasRef.current?.focus({ preventScroll: true }); }} onLocate={point => { changeCamera(constrainCamera({ x: point.x + .5, y: point.y + .5, zoom: Math.max(4, camera.zoom) }, size, world)); }} /></Suspense>}</section>
         <section id="panel-help" hidden={panel !== 'help'}>
           <h3>地图操作</h3><dl className="shortcut-list"><div><dt>平移地图</dt><dd>拖动 / 方向键</dd></div><div><dt>缩放地图</dt><dd>滚轮 / 双指 / ＋ −</dd></div><div><dt>撤销 / 重做</dt><dd>Ctrl Z / Ctrl Y</dd></div><div><dt>复制 / 粘贴</dt><dd>Ctrl C / Ctrl V</dd></div><div><dt>确认 / 取消粘贴</dt><dd>Enter / Esc</dd></div></dl>
     <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y、Ctrl+C / Ctrl+V。Esc 取消草稿或粘贴预览，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内，普通绘制只修改选中的编辑图层，空心填墙同时处理墙壁；粘贴完整替换所有图层，含空格。区域操作最多 10000 格。特殊图格受保护。显示面板可选择本机资源并切换贴图，未支持的外观使用色块。</p>

@@ -4,6 +4,7 @@ import { createBlockEditing, TILE_FIELDS } from './blockEditing.js';
 import { tileMaskValues } from './tileMaskValues.js';
 import { preservesEditedSections } from './verifyExport.js';
 import { createObjectEditing } from './objectEditing.js';
+import { createFurnitureEditing } from './furnitureEditing.js';
 import { createNpcEditing } from './npcEditing.js';
 import { createWorldProperties } from './worldProperties.js';
 import { guidText } from '../editing/worldIdentity.js';
@@ -116,6 +117,7 @@ export async function openWorld(buffer, progress = () => {}) {
       return new FileSaver().save(world, onProgress);
     }
     const objects = createObjectEditing(world);
+    const furniture = createFurnitureEditing(world, objects);
     const properties = createWorldProperties(world);
     const npcs = createNpcEditing(world, properties);
     const editing = createBlockEditing(world, () => {
@@ -124,12 +126,32 @@ export async function openWorld(buffer, progress = () => {}) {
         throw new EditError('当前解析器不能完整保留这份存档，未进行修改。仍可浏览地图。');
       }
       editable = true;
-    }, { write: (kind, index, snapshot) => kind === 'world' ? properties.write(snapshot) : kind === 'npc' ? npcs.write(snapshot) : objects.write(kind, index, snapshot) });
+    }, { write: (kind, index, snapshot) => kind === 'world' ? properties.write(snapshot) : kind === 'npc' ? npcs.write(snapshot) :
+      kind === 'entities' ? furniture.write(snapshot) : objects.write(kind, index, snapshot) });
     return {
       get summary() { return { ...summary, name: header.mapName, worldId: header.worldId, guid: guidText(header.guid),
-        spawn: { x: header.spawnTileX, y: header.spawnTileY }, dungeon: { x: header.dungeonX, y: header.dungeonY }, points: [...properties.points(), ...npcs.points()], counts: { ...summary.counts, npcs: world.NPCs.townNPCs.length },
+        spawn: { x: header.spawnTileX, y: header.spawnTileY }, dungeon: { x: header.dungeonX, y: header.dungeonY }, points: [...properties.points(), ...npcs.points()], counts: { ...summary.counts, npcs: world.NPCs.townNPCs.length,
+          chests: world.chests.chests.length, signs: world.signs.signs.length, tileEntities: world.tileEntities.entities.length },
         gameMode: summary.formatVersion < 225 ? Number(header.expertMode) : header.gameMode, hardmode: header.hardMode }; },
       get editState() { return editing.state; },
+      readEntities: () => ({...furniture.readEntities(),revision:editing.state.revision}),
+      editEntity: payload => editing.commit(furniture.prepareEntity(payload,editing.state.revision)),
+      inspectFurniture: point => furniture.inspect(point),
+      previewFurniture: payload => {
+        const prepared = furniture.prepare(payload, editing.state.revision);
+        const removed={chests:0,signs:0,entities:0,items:0,texts:0};
+        for (const change of prepared.changes.filter(c=>c.kind)) {
+          const kind=change.kind==='collection:chest'?'chests':change.kind==='collection:sign'?'signs':change.kind==='entities'?'entities':null;
+          if (!kind) continue;
+          const retained=new Set(change.after.map(record=>JSON.stringify(record)));
+          for(const record of change.before) if(!retained.has(JSON.stringify(record))) {
+            removed[kind]++;if(record.text) removed.texts++;
+            removed.items += [record.item,...(record.items??[]),...(record.dyes??[]),...(record.misc??[])].filter(item=>item?.stack>0).length;
+          }
+        }
+        return { affected: prepared.affected, placed: prepared.placed, removed, changes: prepared.changes.length, revision: editing.state.revision };
+      },
+      editFurniture: payload => editing.commit(furniture.prepare(payload, editing.state.revision).changes),
       readNpcs: () => ({ ...npcs.read(), revision: editing.state.revision }),
       editNpc: payload => editing.commit(npcs.prepare(payload, editing.state.revision)),
       readWorldProperties: () => ({ ...properties.read(), revision: editing.state.revision }),
@@ -222,7 +244,7 @@ export async function openWorld(buffer, progress = () => {}) {
         if (!editable && !bytesEqual(buffer, output)) {
           throw new WorldFileError('重新生成的文件与原文件存在差异，本次未导出。当前版本暂不能完整保留这份存档。', 'EXPORT_CHANGED');
         }
-        if (editable && !preservesEditedSections(buffer, output, new Map([...objects.expectedSections(), ...properties.expectedSections(), ...npcs.expectedSections()]))) {
+        if (editable && !preservesEditedSections(buffer, output, new Map([...objects.expectedSections(), ...properties.expectedSections(), ...npcs.expectedSections(), ...furniture.expectedSections()]))) {
           throw new WorldFileError('未编辑的存档区段出现差异，本次未导出。请撤销修改或重新打开原始文件。', 'EXPORT_CHANGED');
         }
         editing.markExported();

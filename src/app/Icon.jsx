@@ -14,6 +14,7 @@ const paths = {
   select: 'M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6M8 8h8v8H8Z',
   point: 'M12 22s8-8 8-14a8 8 0 1 0-16 0c0 6 8 14 8 14ZM15 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
   npc: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-3a8 8 0 0 1 16 0v3H4Z',
+  furniture: 'M5 12V5h14v7M3 10v9h18v-9h-4v5H7v-5H3Zm2 9v3m14-3v3',
   undo: 'M8 4 3 9l5 5M3 9h10a7 7 0 0 1 0 14',
   redo: 'm16 4 5 5-5 5m5-5H11a7 7 0 0 0 0 14',
   layers: 'm12 3 10 6-10 6L2 9l10-6Zm-9 11 9 5 9-5M3 18l9 5 9-5',

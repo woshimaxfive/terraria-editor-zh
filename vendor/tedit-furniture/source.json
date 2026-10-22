@@ -1,0 +1,36 @@
+{
+  "repository": "https://github.com/TEdit/Terraria-Map-Editor",
+  "commit": "84e3fc3466d405675a09da763169774b82c22d4d",
+  "license": "MS-PL",
+  "files": [
+    "src/TEdit.Terraria/Data/tiles.json",
+    "src/TEdit.Terraria/Data/versions.json",
+    "src/TEdit.Terraria/Objects/SpriteSheet.cs",
+    "src/TEdit.Terraria/Objects/TileProperty.cs",
+    "src/TEdit.Terraria/Objects/FrameProperty.cs",
+    "src/TEdit/Editor/SpritePlacer.cs",
+    "src/TEdit/Editor/Tools/SpriteTool2.cs",
+    "src/TEdit.Terraria/TileType.cs",
+    "src/TEdit.Terraria/TileEntity.cs",
+    "src/TEdit.Terraria/TileEntityType.cs",
+    "src/TEdit.Terraria/Chest.cs",
+    "src/TEdit.Terraria/Sign.cs",
+    "src/TEdit.Terraria/World.FileV2.cs"
+  ],
+  "sourceSha256": {
+    "src/TEdit.Terraria/Data/tiles.json": "b6aabb95d380e26852eaede2bb1a00cce522f05dd00012b02ab746938040a990",
+    "src/TEdit.Terraria/Data/versions.json": "00c7bd1e1f91a1734a14799253b41c324e1ebdfda865d768cc548abafd473c37",
+    "src/TEdit.Terraria/Objects/SpriteSheet.cs": "b4657aebda65becbe4c90b31a1430b7ec64fac826602ba1dd242373e712cf0d4",
+    "src/TEdit.Terraria/Objects/TileProperty.cs": "ad407f5d3e3f7e156a8817def31bff7d21c507e9b1d123013bc71a3513ff870b",
+    "src/TEdit.Terraria/Objects/FrameProperty.cs": "2e311c7065101c51ef7c9ccace1fb382bd0a6c7765dff30b0d63d459e1beaf34",
+    "src/TEdit/Editor/SpritePlacer.cs": "560ec71af057603e5291af27949150343389d939f08e015c43d0e0de0afd4b7d",
+    "src/TEdit/Editor/Tools/SpriteTool2.cs": "dd6b4dc18d52ec519a807f86cc383de855a7f4daecea718122c7ca56d8b43069",
+    "src/TEdit.Terraria/TileType.cs": "47c3628e32bb0057b5bfd8430a572950effca40439d5fa4af19043b87643dc68",
+    "src/TEdit.Terraria/TileEntity.cs": "22830dc588822fbe1f5fdceb89193a7a553f3a7a7ea6b0f72f6795a4483f02fa",
+    "src/TEdit.Terraria/TileEntityType.cs": "ab641a41e23dd28842a1119b529fb31a944d725294fe73f35aebf234a9a8e181",
+    "src/TEdit.Terraria/Chest.cs": "7022ada1b757cb6820c957269dcc8e62a748b0f8891478928be71f102901b03a",
+    "src/TEdit.Terraria/Sign.cs": "889261d087994bdcace0f0054cbd82b3f13ae9adb8a2870425e552b791640bb6",
+    "src/TEdit.Terraria/World.FileV2.cs": "2d45573ce1538b6f726d82f8fad38b09034c475a144e826b3a63cb6bdec7a893"
+  },
+  "changes": "Extract 412 framed tile identities and 9546 style definitions, dimensions, frame intervals, UV wrap configuration, save-version tile limits and exact DisplayDollPoseID/LeashedKites/LeashedCritters enums. Adapt SpriteItem.GetTiles, TileProperty.GetWorldUV, SpritePlacer Christmas-tree rules and companion record defaults. Chinese identification labels reuse the separately attributed tedit-objects catalogue where exact names match. No game textures or preview images are included."
+}

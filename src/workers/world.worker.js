@@ -37,10 +37,15 @@ self.addEventListener('message', async ({ data }) => {
       fillPreparation = preparation;
       const fill = await document.prepareFill(stroke, { cancelled: () => preparation.cancelled, progress });
       self.postMessage({ id, type: 'result', fill });
-    } else if (['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo', 'commitFill', 'editObject', 'editWorldProperties', 'editNpc'].includes(action)) {
+    } else if (['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo', 'commitFill', 'editObject', 'editWorldProperties', 'editNpc', 'editFurniture', 'editEntity'].includes(action)) {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const editState = document[action](stroke);
       self.postMessage({ id, type: 'result', editState, summary: document.summary });
+    } else if (action === 'inspectFurniture' || action === 'previewFurniture' || action === 'readEntities') {
+      if (!document) throw new WorldFileError('请先打开一个世界。');
+      const result = action === 'inspectFurniture' ? { furniture: document.inspectFurniture(point) } :
+        action === 'previewFurniture' ? { preview: document.previewFurniture(stroke) } : { entities: document.readEntities() };
+      self.postMessage({ id, type: 'result', ...result });
     } else if (action === 'readNpcs') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       self.postMessage({ id, type: 'result', npcs: document.readNpcs() });

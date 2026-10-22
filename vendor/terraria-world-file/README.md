@@ -13,4 +13,6 @@ Local changes:
 
 - NPCsIO preserves complete shimmer ID sequences from format 268, reads variation flags from format 213, retains unknown flag bits and correctly writes absent variations. TownNPC declares the retained flag byte.
 
+- TileEntitiesIO writes the format-311 ninth display-doll item in its native trailing position, preserves reserved display-doll/hat-rack flag bits, and explicitly rejects unknown entity types. DisplayDoll and HatRack declare the retained bytes. Native layout tests cover every payload kind; availability of a kind in a game version is a separate placement rule.
+
 All remaining source files match the pinned source after LF normalization. `source.json` records the original source hashes. Keep these changes when reviewing an upstream update and run the world round-trip tests before changing the pinned version.
