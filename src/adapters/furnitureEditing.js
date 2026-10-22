@@ -7,6 +7,7 @@ import { EditError, MAX_STROKE_TILES } from '../editing/brush.js';
 import { containsCell, validSelection } from '../editing/selection.js';
 import { validObjectItem } from './objectEditing.js';
 import entityRules from '../../vendor/tedit-furniture/entity-rules.json' with { type: 'json' };
+import { isLegacyEquipment, legacyBaseU, legacyContents, legacyWithContents, legacyItemCount, validateLegacyChanges } from '../editing/legacyEquipment.js';
 
 const clone = value => structuredClone(value);
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b);
@@ -56,34 +57,45 @@ export function createFurnitureEditing(world, objects) {
     if (!bounds(x,y)) fail();
     const index = tiles.index(x,y);
     if (!tiles.hasBlock(index) || !world.fileFormatHeader.importants[tiles.blockId[index]]) return null;
-    const tileId = tiles.blockId[index], matches = new Map();
-    for (const {pattern,offset} of frameIndex(tileId).get(key(tiles.frameX[index],tiles.frameY[index])) ?? []) {
+    const tileId = tiles.blockId[index], matches = new Map(), legacy=isLegacyEquipment(tileId);
+    for (const {pattern,offset} of frameIndex(tileId).get(key(legacyBaseU(tileId,tiles.frameX[index]),tiles.frameY[index])) ?? []) {
       const left = x - offset.x, top = y - offset.y;
       if (!bounds(left,top) || !bounds(left + pattern.width - 1,top + pattern.height - 1)) continue;
       if (!pattern.frames.every(f => {
         const i = tiles.index(left+f.x,top+f.y);
-        return tiles.hasBlock(i) && tiles.blockId[i] === tileId && tiles.frameX[i] === f.u && tiles.frameY[i] === f.v;
+        const u=tiles.frameX[i], embedded=tileId===334 ? f.y===1&&f.x<2 : f.x===0;
+        return tiles.hasBlock(i) && tiles.blockId[i] === tileId && tiles.frameY[i] === f.v &&
+          (legacy&&embedded ? legacyBaseU(tileId,u)===f.u : u===f.u);
       })) continue;
+      if(tileId===334 && (tiles.frameX[tiles.index(left,top+1)]>=5000)!==(tiles.frameX[tiles.index(left+1,top+1)]>=5000)) continue;
       const k = `${left},${top},${pattern.width},${pattern.height}`;
-      if (!matches.has(k)) matches.set(k,{...pattern,x:left,y:top});
+      if (!matches.has(k)) {
+        const found={...pattern,x:left,y:top};
+        if(legacy) {
+          found.frames=pattern.frames.map(f=>({...f,u:tiles.frameX[tiles.index(left+f.x,top+f.y)]}));
+          found.legacy=legacyContents(found);
+        }
+        matches.set(k,found);
+      }
     }
     if (matches.size !== 1) fail(matches.size ? '家具帧对应多个完整结构，暂不能确定编辑范围。' : '家具帧未知或结构不完整，未修改世界。');
     return [...matches.values()][0];
   }
   function prepare(payload,revision) {
-    if (!plain(payload) || Object.keys(payload).some(k => !['action','revision','x','y','tileId','styleIndex','selection'].includes(k)) || payload.revision !== revision) fail('世界或家具已变化，请重新预览后再确认。');
+    if (!plain(payload) || Object.keys(payload).some(k => !['action','revision','x','y','tileId','styleIndex','selection','changes'].includes(k)) || payload.revision !== revision) fail('世界或家具已变化，请重新预览后再确认。');
     const {action,x,y,selection} = payload;
-    if (!['place','remove'].includes(action) || !bounds(x,y) || (selection != null && !validSelection(selection,tiles))) fail();
+    if (!['place','remove','content'].includes(action) || !bounds(x,y) || (selection != null && !validSelection(selection,tiles)) || (action!=='content'&&Object.hasOwn(payload,'changes'))) fail();
     let next = null;
     if (action === 'place') {
       if (payload.tileId > furnitureLimit(version) || !world.fileFormatHeader.importants[payload.tileId]) fail('此世界格式不支持该家具。');
-      // Legacy equipment uses embedded UV item encoding, not modern TE records.
-      // Keep it explicit until conversion/legacy editing has its own reference.
-      if ([128,269,334].includes(payload.tileId)) fail('旧式装备家具的帧内物品规则尚未接入。');
       next = {...furnitureFrames(payload.tileId,payload.styleIndex),x,y};
     } else {
       if (Object.hasOwn(payload,'tileId') || Object.hasOwn(payload,'styleIndex')) fail();
-      next = inspect({x,y}); if (!next) return {changes:[], affected:[], placed:null};
+      next = inspect({x,y});
+      if(action==='content') {
+        if(!next||!isLegacyEquipment(next.tileId)) fail('此处没有完整的旧式装备家具。');
+        next={...legacyWithContents(furnitureFrames(next.tileId,next.styleIndex),{...next.legacy,...validateLegacyChanges(next.tileId,payload.changes,version)}),x:next.x,y:next.y};
+      } else if (!next) return {changes:[], affected:[], placed:null};
     }
     const affected = new Map(), owners = new Map();
     function addCell(x,y) {
@@ -101,6 +113,11 @@ export function createFurnitureEditing(world, objects) {
         for (const f of owner.frames) addCell(owner.x+f.x,owner.y+f.y);
       }
     }
+    const previous=owners.get(key(next.x,next.y));
+    const preserveLegacy=action==='place'&&isLegacyEquipment(next.tileId)&&previous&&
+      (next.tileId===334 ? previous.tileId===334 : [128,269].includes(previous.tileId));
+    if(preserveLegacy) next=legacyWithContents(next,previous.legacy);
+    const removedLegacyItems=action==='content'?0:[...owners.values()].filter(owner=>!(preserveLegacy&&owner===previous)).reduce((count,owner)=>count+legacyItemCount(owner),0);
     const data = {chest:objects.snapshot('chest'),sign:objects.snapshot('sign'),entity:clone(expectedEntities)};
     // Never silently repair unrelated orphan records or discard duplicate data.
     for (const [kind,list] of Object.entries(data)) {
@@ -115,7 +132,7 @@ export function createFurnitureEditing(world, objects) {
       }
     }
     if (world.weightedPressurePlates.weightedPressurePlates.some(p => bounds(p.position.x,p.position.y) && affected.has(tiles.index(p.position.x,p.position.y)))) fail('编辑区域包含压力板配套记录，尚不能整体替换。');
-    const newKind = action==='place' ? furnitureCompanion(next.tileId) : null;
+    const newKind = action!=='remove' ? furnitureCompanion(next.tileId) : null;
     const keep = newKind ? data[newKind].find(r => r.position.x===x && r.position.y===y &&
       (newKind!=='entity' || r.type===furnitureEntityType(next.tileId))) : null;
     for (const [kind,list] of Object.entries(data)) data[kind]=list.filter(record => {
@@ -142,7 +159,7 @@ export function createFurnitureEditing(world, objects) {
       if (owners.size && [...owners.values()].some(owner => cx>=owner.x && cx<owner.x+owner.width && cy>=owner.y && cy<owner.y+owner.height)) {
         after[0]=after[1]=after[2]=after[3]=0; after[8]&=~blockFlags;
       }
-      if (action==='place') {
+      if (action!=='remove') {
         const f=next.frames.find(f => next.x+f.x===cx && next.y+f.y===cy);
         if (f) {
           // Preserve destination extras as SpritePlacer does, including paint.
@@ -157,7 +174,7 @@ export function createFurnitureEditing(world, objects) {
       const cost=Math.max(1,Math.ceil(new TextEncoder().encode(JSON.stringify(before)+JSON.stringify(after)).byteLength/64));
       changes.push({kind:'entities',index:0,before,after,cost});
     }
-    return {changes,affected:[...affected.values()],placed:action==='place'?next:null};
+    return {changes,affected:[...affected.values()],placed:action!=='remove'?next:null,removedLegacyItems};
   }
   return {
     inspect,prepare,

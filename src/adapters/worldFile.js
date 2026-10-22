@@ -139,7 +139,7 @@ export async function openWorld(buffer, progress = () => {}) {
       inspectFurniture: point => furniture.inspect(point),
       previewFurniture: payload => {
         const prepared = furniture.prepare(payload, editing.state.revision);
-        const removed={chests:0,signs:0,entities:0,items:0,texts:0};
+        const removed={chests:0,signs:0,entities:0,items:prepared.removedLegacyItems??0,texts:0,legacyItems:prepared.removedLegacyItems??0};
         for (const change of prepared.changes.filter(c=>c.kind)) {
           const kind=change.kind==='collection:chest'?'chests':change.kind==='collection:sign'?'signs':change.kind==='entities'?'entities':null;
           if (!kind) continue;

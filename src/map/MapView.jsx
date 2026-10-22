@@ -126,6 +126,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [objectDraft, setObjectDraft] = useState(false);
   const objectDraftChange = useCallback(value => { setObjectDraft(value); onDraftChange(value); }, [onDraftChange]);
   const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 900);
+  // A resize can collapse the mobile panel just before a child draft reaches
+  // this component. Keep its save/cancel controls reachable once it does.
+  useEffect(() => { if (objectDraft) setPanelOpen(true); }, [objectDraft]);
   const panelToggleRef = useRef(null);
   pasteRef.current = tool === 'paste' ? pastePosition : null;
   const strokeRef = useRef(null);

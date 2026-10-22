@@ -114,11 +114,11 @@ test('all eleven modern entity defaults, full multi-tile removal, replacement an
   const recreated=await parse(doc.serialize());assert.equal(recreated.tileEntities.entities.at(-1).id, start ? Math.max(...before.tileEntities.entities.map(r=>r.id))+12 : 11);
 });
 
-test('stale/invalid/version/edge/partial-selection/legacy and broken structures fail atomically; previews never write',async()=>{
+test('stale/invalid/version/edge/partial-selection and broken structures fail atomically; previews never write',async()=>{
   const bytes=await input('v1.3.5.3'),doc=await openWorld(bytes);
   const base={action:'place',tileId:21,styleIndex:0,x:10,y:10};
   for(const change of [{revision:-1},{tileId:470},{tileId:0},{styleIndex:-1},{x:doc.summary.width-1},{y:doc.summary.height-1},
-    {selection:{x:10,y:10,width:1,height:2}},{tileId:128},{action:'x'},{injected:1}]) {
+    {selection:{x:10,y:10,width:1,height:2}},{action:'x'},{injected:1}]) {
     assert.throws(()=>doc.editFurniture({revision:0,...base,...change}));assert.equal(doc.editState.revision,0);same(doc.serialize(),bytes);
   }
   edit(doc,base);const placed=doc.serialize(),revision=doc.editState.revision;

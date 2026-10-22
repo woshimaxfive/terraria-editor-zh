@@ -87,7 +87,7 @@ for(const fixture of fixtures) test(fixture.name+': native world with added item
   for(const field of ['header','footer','NPCs','chests','signs','weightedPressurePlates','townManager','bestiary','creativePowers']) assert.deepEqual(after[field],before[field],field);
   assert.throws(()=>doc.editEntity({index,revision,changes:{item:null}}),/已变化/);same(doc.serialize(),filled);
   const preview=doc.previewFurniture({revision:doc.editState.revision,action:'remove',x:10,y:10});
-  assert.deepEqual(preview.removed,{chests:0,signs:0,entities:1,items:1,texts:0});same(doc.serialize(),filled);
+  assert.deepEqual(preview.removed,{chests:0,signs:0,entities:1,items:1,texts:0,legacyItems:0});same(doc.serialize(),filled);
   doc.editFurniture({revision:doc.editState.revision,action:'remove',x:10,y:10});const removed=doc.serialize();
   for(const expected of [filled,placed,bytes]) {doc.undo();same(doc.serialize(),expected);}
   for(const expected of [placed,filled,removed]) {doc.redo();same(doc.serialize(),expected);}

@@ -6,8 +6,8 @@ import { furnitureLabels } from './furnitureLabels.js';
 export const FURNITURE = catalogue.tiles.map(tile => ({...tile,zh:furnitureLabels[tile.id]??tile.zh}));
 const byId = new Map(FURNITURE.map(tile => [tile.id, tile]));
 const chests = new Set([21, 88, 441, 467, 468]), signs = new Set([55, 85, 425, 573]);
-const entityTypes = new Map([[378, 0], [395, 1], [423, 2], [128, 3], [269, 3], [470, 3],
-  [334, 4], [471, 4], [475, 5], [520, 6], [597, 7], [698, 8], [723, 9], [724, 10]]);
+const entityTypes = new Map([[378, 0], [395, 1], [423, 2], [470, 3],
+  [471, 4], [475, 5], [520, 6], [597, 7], [698, 8], [723, 9], [724, 10]]);
 const short = value => (value << 16) >> 16;
 export const furnitureLimit = version => catalogue.versions.findLast(v => v.version <= version)?.maxTileId ?? -1;
 export const furnitureType = id => byId.get(id) ?? null;
