@@ -72,7 +72,7 @@ export class WorldSession {
 
   edit(action, stroke) {
     if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
-    if (!['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo', 'commitFill', 'editObject', 'editWorldProperties'].includes(action)) return Promise.reject(new Error('无法识别这项编辑操作。'));
+    if (!['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo', 'commitFill', 'editObject', 'editWorldProperties', 'editNpc'].includes(action)) return Promise.reject(new Error('无法识别这项编辑操作。'));
     return this.request(action, { stroke });
   }
 
@@ -84,6 +84,11 @@ export class WorldSession {
   readWorldProperties() {
     if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
     return this.request('readWorldProperties');
+  }
+
+  readNpcs() {
+    if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
+    return this.request('readNpcs');
   }
 
   readObject(point) {

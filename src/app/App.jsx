@@ -27,7 +27,7 @@ export default function App() {
   const [drafting, setDrafting] = useState(false);
   const [clipboard, setClipboard] = useState(null);
   const [menuHost, setMenuHost] = useState(null);
-  const unsaved = editState.dirty || drafting || ['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'commitFill', 'editObject', 'editWorldProperties'].includes(phase);
+  const unsaved = editState.dirty || drafting || ['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'commitFill', 'editObject', 'editWorldProperties', 'editNpc'].includes(phase);
 
   useEffect(() => {
     if (!unsaved) return;
@@ -96,7 +96,7 @@ export default function App() {
         setEditState(result.editState);
         const { changed, skipped, filtered } = result.editState;
         const verb = { undo: '已撤销', redo: '已重做', erase: '已擦除', eraseSelection: '已擦除', fillSelection: '已填充', commitFill: '已填充', paint: '已绘制', paste: '已粘贴' }[action];
-        setNotice(`${action === 'editWorldProperties' ? '已保存世界属性' : action === 'editObject' ? '已保存对象' : verb} ${changed} ${['editWorldProperties', 'editObject', 'undo', 'redo'].includes(action) ? '项' : '格'}。${skipped ? `跳过 ${skipped} 格受保护图格。` : ''}${filtered ? `${filtered} 格不符合匹配条件。` : ''}`);
+        setNotice(`${action === 'editNpc' ? '已保存 NPC' : action === 'editWorldProperties' ? '已保存世界属性' : action === 'editObject' ? '已保存对象' : verb} ${changed} ${['editNpc', 'editWorldProperties', 'editObject', 'undo', 'redo'].includes(action) ? '项' : '格'}。${skipped ? `跳过 ${skipped} 格受保护图格。` : ''}${filtered ? `${filtered} 格不符合匹配条件。` : ''}`);
         return result.editState;
       }
     } catch (failure) {

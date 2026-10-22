@@ -176,3 +176,7 @@ Item IDs, English search names/keys, Chinese item/prefix identification labels, 
 
 Desktop TEdit world property semantics (MS-PL)
 TEdit contributors. Browser adaptations: src/adapters/worldProperties.js and src/editing/worldPropertyRules.js. Pinned desktop fields, clock, progress, boundary/layer setters, layer-gap repair, world identity/point semantics and selectable background metadata: vendor/tedit-world-properties/source.json. Full license: vendor/tedit-world-properties/LICENSE. Browser drafts, field validation, history and expected-section checks are maintained by this project. Required Chinese quest item labels reuse the separately pinned tedit-objects identification catalogue; no game preview textures are distributed.
+
+TEdit NPC catalogue and semantics (MS-PL)
+TEdit contributors. Pinned source: https://github.com/TEdit/Terraria-Map-Editor/tree/84e3fc3466d405675a09da763169774b82c22d4d
+Selectable NPC identities, necessary Chinese identification labels, variants and save-version limits: vendor/tedit-npcs/catalogue.json. Source paths, hashes and adaptations: vendor/tedit-npcs/source.json. Full license: vendor/tedit-npcs/LICENSE. Browser adaptations of add/remove, naming, variation and PointTool semantics: src/adapters/npcEditing.js and src/editing/npcs.js. Explicit shimmer/party changes use target ID membership while retaining unrelated raw list entries. No game sprites or full language packs are distributed. Browser drafts, stable session keys and transaction validation are maintained by this project.

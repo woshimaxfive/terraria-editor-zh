@@ -7,14 +7,16 @@ import type { Pillar, TownNPC } from '../types'
 export class NPCsData {
   townNPCs!: TownNPC[]
   pillars!: Pillar[]
+  shimmeredNPCIds?: number[]
 }
 
 export default class NPCsIO implements Section.IODefinition<NPCsData> {
   public parse(reader: BinaryReader, world: WorldProperties): NPCsData {
     const data = new NPCsData()
 
-    const shimmeredNPCIds = world.version > 268 ? reader.readArray(reader.readInt32(), () => reader.readInt32()) : []
+    const shimmeredNPCIds = world.version >= 268 ? reader.readArray(reader.readInt32(), () => reader.readInt32()) : []
 
+    data.shimmeredNPCIds = shimmeredNPCIds
     data.townNPCs = reader.readArrayUntil(
       () => reader.readBoolean(),
       () => this.parseNPC(reader, world, shimmeredNPCIds),
@@ -43,8 +45,10 @@ export default class NPCsIO implements Section.IODefinition<NPCsData> {
       },
     }
 
-    if (world.version >= 225 && reader.readBits(1)[0]) {
-      NPC.variationIndex = reader.readInt32()
+    if (world.version >= 213) {
+      const flags = reader.readUInt8()
+      NPC.variationFlags = flags
+      if (flags & 1) NPC.variationIndex = reader.readInt32()
     }
 
     if (world.version >= 315) {
@@ -69,11 +73,11 @@ export default class NPCsIO implements Section.IODefinition<NPCsData> {
   }
 
   public save(saver: BinarySaver, data: NPCsData, world: WorldProperties): void {
-    if (world.version > 268) {
+    if (world.version >= 268) {
       saver.saveArray(
-        data.townNPCs.filter((NPC) => NPC.shimmered),
+        data.shimmeredNPCIds ?? data.townNPCs.filter((NPC) => NPC.shimmered).map(NPC => NPC.id),
         (length) => saver.saveInt32(length),
-        (e) => saver.saveInt32(e.id),
+        (id) => saver.saveInt32(id),
       )
     }
 
@@ -87,13 +91,10 @@ export default class NPCsIO implements Section.IODefinition<NPCsData> {
       saver.saveInt32(NPC.homePosition.x)
       saver.saveInt32(NPC.homePosition.y)
 
-      if (world.version >= 225) {
-        if (NPC.variationIndex !== undefined) {
-          saver.saveUInt8(1)
-          saver.saveInt32(NPC.variationIndex)
-        } else {
-          saver.saveUInt8(1)
-        }
+      if (world.version >= 213) {
+        const flags = (NPC.variationFlags ?? 0) & ~1
+        saver.saveUInt8(flags | (NPC.variationIndex !== undefined ? 1 : 0))
+        if (NPC.variationIndex !== undefined) saver.saveInt32(NPC.variationIndex)
       }
 
       if (world.version >= 315) {

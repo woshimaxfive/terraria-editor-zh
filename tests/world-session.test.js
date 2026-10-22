@@ -297,3 +297,16 @@ test('world property reads and writes serialize with exports; recoverable reject
   workers[0].reply({ type: 'error', recoverable: true, message: '版本已变化' }); await rejected; assert.equal(session.loaded, true);
   workers[0].reply({ type: 'result', buffer: new ArrayBuffer(4) }); await exporting; session.close();
 });
+
+
+test('NPC reads and writes queue with export and recoverable stale edits retain the loaded session', async () => {
+  const { session, workers } = setup(); await assert.rejects(session.readNpcs(), /先打开/);
+  const opening = session.open({ name: 'npcs.wld' }); workers[0].reply({ type: 'result', summary: {} }); await opening;
+  const read = session.readNpcs(), edit = session.edit('editNpc', { revision: 0, action: 'update', key: '1', changes: { name: '中文居民' } });
+  assert.equal(workers[0].message.action, 'readNpcs'); workers[0].reply({ type: 'result', npcs: { records: [], revision: 0 } }); await read;
+  assert.equal(workers[0].message.action, 'editNpc'); assert.equal(workers[0].message.stroke.key, '1');
+  workers[0].reply({ type: 'result', summary: { counts: { npcs: 1 } }, editState: { revision: 1 } }); assert.equal((await edit).editState.revision, 1);
+  const stale = session.edit('editNpc', { revision: 0, action: 'remove', key: '1' }), rejected = assert.rejects(stale, /版本/), exporting = session.export();
+  workers[0].reply({ type: 'error', recoverable: true, message: '版本已变化' }); await rejected; assert.equal(session.loaded, true);
+  workers[0].reply({ type: 'result', buffer: new ArrayBuffer(4) }); await exporting; session.close();
+});

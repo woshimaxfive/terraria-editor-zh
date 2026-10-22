@@ -11,4 +11,6 @@ Local changes:
 - WorldTiles.parse rejects negative RLE values and runs crossing a column boundary.
 - BinaryReader.readBytes/readArray reject negative lengths and, in strict mode, lengths larger than the remaining file before allocating storage. Every array element in this parser consumes at least one byte.
 
-All other source files match the pinned source after LF normalization. `source.json` records the original source hashes. Keep these changes when reviewing an upstream update and run the world round-trip tests before changing the pinned version.
+- NPCsIO preserves complete shimmer ID sequences from format 268, reads variation flags from format 213, retains unknown flag bits and correctly writes absent variations. TownNPC declares the retained flag byte.
+
+All remaining source files match the pinned source after LF normalization. `source.json` records the original source hashes. Keep these changes when reviewing an upstream update and run the world round-trip tests before changing the pinned version.

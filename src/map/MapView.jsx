@@ -31,6 +31,7 @@ import EditorMenu from '../app/EditorMenu.jsx';
 
 const ObjectEditor = lazy(() => import('./ObjectEditor.jsx'));
 const WorldPropertiesEditor = lazy(() => import('./WorldPropertiesEditor.jsx'));
+const NpcEditor = lazy(() => import('./NpcEditor.jsx'));
 
 const MAX_CANVAS_PIXELS = 4 * 1024 * 1024;
 const DISPLAY_LAYERS = [['block', '方块'], ['wall', '墙壁'], ['liquid', '液体'], ['wire', '电线'], ['actuator', '制动器']];
@@ -656,7 +657,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
       if (Math.hypot(point.x - pick.start.x, point.y - pick.start.y) <= 6) {
         if (pick.tool === 'fill') startFill(pick.cell);
         else if (pick.tool === 'cad') commitCad(pick);
-        else if (pick.tool === 'point') onEdit('editWorldProperties', { revision: pick.revision, changes: pointChanges(pick.target, pick.cell) });
+        else if (pick.tool === 'point') {
+          if (pick.target.startsWith('npc:')) onEdit('editNpc', { revision: pick.revision, action: 'move', key: pick.target.slice(4), ...pick.cell });
+          else onEdit('editWorldProperties', { revision: pick.revision, changes: pointChanges(pick.target, pick.cell) });
+        }
         else pickBlock({ ...pick.cell, layer: pick.layer, ...pick.appearance });
       }
     }
@@ -890,9 +894,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
     <aside id="editor-sidebar" className="editor-sidebar" aria-label="编辑面板" hidden={!panelOpen} onKeyDown={event => {
       if (event.key === 'Escape' && !panelLocked) { event.stopPropagation(); closePanel(); }
     }}>
-      <div className="sidebar-heading"><strong>{ { materials: '材料与属性', templates: '建筑与模板', world: '世界信息', objects: '箱子与告示牌', view: '图层与贴图', help: '操作帮助' }[panel]}</strong><button disabled={panelLocked} aria-label="关闭侧边面板" onClick={closePanel}><Icon name="close" size={16} /></button></div>
+      <div className="sidebar-heading"><strong>{ { materials: '材料与属性', templates: '建筑与模板', world: '世界信息', objects: '箱子与告示牌', npcs: 'NPC 编辑', view: '图层与贴图', help: '操作帮助' }[panel]}</strong><button disabled={panelLocked} aria-label="关闭侧边面板" onClick={closePanel}><Icon name="close" size={16} /></button></div>
       <div className="panel-nav" role="group" aria-label="面板分类">
-        {[['materials', '材料'], ['templates', '建筑'], ['world', '世界'], ['objects', '对象'], ['view', '显示'], ['help', '帮助']].map(([id, label]) => <button key={id} title={label} aria-label={label} aria-pressed={panel === id} aria-controls={`panel-${id}`} disabled={interacting} onClick={() => setPanel(id)}><Icon name={{ materials: 'paint', templates: 'template', world: 'world', objects: 'template', view: 'layers', help: 'help' }[id]} /><span>{label}</span></button>)}
+        {[['materials', '材料'], ['templates', '建筑'], ['world', '世界'], ['objects', '对象'], ['npcs', 'NPC'], ['view', '显示'], ['help', '帮助']].map(([id, label]) => <button key={id} title={label} aria-label={label} aria-pressed={panel === id} aria-controls={`panel-${id}`} disabled={interacting} onClick={() => setPanel(id)}><Icon name={{ materials: 'paint', templates: 'template', world: 'world', objects: 'template', npcs: 'npc', view: 'layers', help: 'help' }[id]} /><span>{label}</span></button>)}
       </div>
       <div className="panel-scroll">
         <section id="panel-materials" hidden={panel !== 'materials'}>
@@ -967,6 +971,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         </section>
         <section id="panel-objects" hidden={panel !== 'objects'}>{panel === 'objects' && <Suspense fallback={<p role="status">正在读取对象编辑器…</p>}><ObjectEditor session={session} revision={editState.revision} version={world.formatVersion} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} onLocate={object => { clearChain(); clearCad(); setTool('pan'); changeCamera(constrainCamera({ x: object.x + 1, y: object.y + 1, zoom: Math.max(4, camera.zoom) }, size, world)); }} /></Suspense>}</section>
         <section id="panel-world" hidden={panel !== 'world'}>{worldDetails}{panel === 'world' && <Suspense fallback={<p role="status">正在读取世界属性编辑器…</p>}><WorldPropertiesEditor session={session} revision={editState.revision} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} onPointTarget={id => { clearChain(); clearCad(); setPointTarget(id); setTool('point'); setHint(''); if (window.innerWidth <= 900) setPanelOpen(false); canvasRef.current?.focus({ preventScroll: true }); }} onLocate={point => { setTool('pan'); changeCamera(constrainCamera({ x: point.x + .5, y: point.y + .5, zoom: Math.max(4, camera.zoom) }, size, world)); }} /></Suspense>}</section>
+        <section id="panel-npcs" hidden={panel !== 'npcs'}>{panel === 'npcs' && <Suspense fallback={<p role="status">正在读取 NPC 编辑器…</p>}><NpcEditor session={session} revision={editState.revision} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} onPointTarget={id => { clearChain(); clearCad(); setPointTarget(id); setTool('point'); setHint(''); if (window.innerWidth <= 900) setPanelOpen(false); canvasRef.current?.focus({ preventScroll: true }); }} onLocate={point => { clearChain(); clearCad(); setTool('pan'); changeCamera(constrainCamera({ x: point.x + .5, y: point.y + .5, zoom: Math.max(4, camera.zoom) }, size, world)); }} /></Suspense>}</section>
         <section id="panel-help" hidden={panel !== 'help'}>
           <h3>地图操作</h3><dl className="shortcut-list"><div><dt>平移地图</dt><dd>拖动 / 方向键</dd></div><div><dt>缩放地图</dt><dd>滚轮 / 双指 / ＋ −</dd></div><div><dt>撤销 / 重做</dt><dd>Ctrl Z / Ctrl Y</dd></div><div><dt>复制 / 粘贴</dt><dd>Ctrl C / Ctrl V</dd></div><div><dt>确认 / 取消粘贴</dt><dd>Enter / Esc</dd></div></dl>
     <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y、Ctrl+C / Ctrl+V。Esc 取消草稿或粘贴预览，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内，普通绘制只修改选中的编辑图层，空心填墙同时处理墙壁；粘贴完整替换所有图层，含空格。区域操作最多 10000 格。特殊图格受保护。显示面板可选择本机资源并切换贴图，未支持的外观使用色块。</p>

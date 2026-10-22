@@ -52,7 +52,7 @@ test('empty modern team lists initialize all six points as one transaction and r
  doc.editWorldProperties(payload(doc,{teamSpawnsEnabled:true,spawnX:100,spawnY:200,team2X:300,team2Y:400}));const out=doc.serialize(),actual=await parse(out);
  assert.deepEqual(actual.header.teamSpawns,[{x:100,y:200},{x:100,y:200},{x:300,y:400},{x:100,y:200},{x:100,y:200},{x:100,y:200}]);
  assert.deepEqual({...actual.header},{...before.header,spawnTileX:100,spawnTileY:200,teamBasedSpawnsSeed:true,teamSpawns:actual.header.teamSpawns});untouched(before,actual);
- assert.equal(doc.summary.points.length,8);assert.equal(doc.readWorldProperties().constraints.teamSpawnCount,6);doc.undo();equalBytes(doc.serialize(),bytes);doc.redo();equalBytes(doc.serialize(),out);
+ assert.equal(doc.summary.points.filter(point=>!point.id.startsWith('npc:')).length,8);assert.equal(doc.readWorldProperties().constraints.teamSpawnCount,6);doc.undo();equalBytes(doc.serialize(),bytes);doc.redo();equalBytes(doc.serialize(),out);
  doc.undo();const captured=initializeTeamDraft({spawnX:before.header.spawnTileX,spawnY:before.header.spawnTileY});
  doc.editWorldProperties(payload(doc,{teamSpawnsEnabled:true,spawnX:101,spawnY:201,...captured}));
  assert.deepEqual((await parse(doc.serialize())).header.teamSpawns,Array.from({length:6},()=>({x:before.header.spawnTileX,y:before.header.spawnTileY})));
@@ -64,7 +64,7 @@ test('nonempty team lists retain their count, disabled state, unknown coordinate
  const bytes=new FileSaver().save(world),doc=await openWorld(bytes);
  doc.editWorldProperties(payload(doc,{identityId:2147483647,team0X:42}));const actual=await parse(doc.serialize());
  assert.deepEqual({...actual.header},{...world.header,worldId:2147483647,teamSpawns:[{x:42,y:20},...world.header.teamSpawns.slice(1)]});
- assert.equal(doc.summary.points.length,8);assert.equal(doc.readWorldProperties().values.team1X,-1);untouched(world,actual);doc.undo();equalBytes(doc.serialize(),bytes);
+ assert.equal(doc.summary.points.filter(point=>!point.id.startsWith('npc:')).length,8);assert.equal(doc.readWorldProperties().values.team1X,-1);untouched(world,actual);doc.undo();equalBytes(doc.serialize(),bytes);
  world.header.teamSpawns=[{x:1,y:2},{x:3,y:4}];const shortBytes=new FileSaver().save(world),short=await openWorld(shortBytes);
  short.editWorldProperties(payload(short,{teamSpawnsEnabled:true}));assert.deepEqual((await parse(short.serialize())).header.teamSpawns,world.header.teamSpawns);
  assert.throws(()=>short.editWorldProperties(payload(short,{team2X:10})),/参数无效/);assert.equal(short.readWorldProperties().fields.some(field=>field.id==='team2X'),false);

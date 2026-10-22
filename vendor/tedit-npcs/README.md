@@ -1,0 +1,3 @@
+# TEdit NPC catalogue and semantics
+
+Source and licence are recorded in source.json and LICENSE. Only selectable identification labels, variants and NPC format limits are included. No game sprites or full language packs are redistributed. NPC objects stay behind the world-file adapter; validated snapshots and stable session keys share existing history. Explicit shimmer changes edit ID membership, preserving all other IDs and ordering. Party flags are validated header patches in the same transaction. Browser point gestures confirm on release and cancel on drag, second pointer, resize or Escape.

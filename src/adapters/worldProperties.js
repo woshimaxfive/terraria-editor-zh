@@ -266,6 +266,15 @@ export function createWorldProperties(world) {
       if (!Object.keys(after).length) return null;
       return { kind: 'world', index: 0, before, after, cost: Math.max(1, Math.ceil(new TextEncoder().encode(JSON.stringify(before) + JSON.stringify(after)).byteLength / 64)) };
     },
+    npcParty: id => expected.tempPartyCelebratingNPCs.includes(id),
+    prepareNpcParty(id, enabled) {
+      if (!Number.isInteger(id) || id < 0 || id > 2147483647 || typeof enabled !== 'boolean') fail();
+      const current = expected.tempPartyCelebratingNPCs;
+      if (current.includes(id) === enabled) return null;
+      const next = enabled ? [...current, id] : current.filter(value => value !== id);
+      return { kind: 'world', index: 0, before: { tempPartyCelebratingNPCs: clone(current) }, after: { tempPartyCelebratingNPCs: next },
+        cost: Math.max(1, Math.ceil(new TextEncoder().encode(JSON.stringify(current) + JSON.stringify(next)).byteLength / 64)) };
+    },
     write(snapshot) {
       Object.assign(world.header, clone(snapshot)); Object.assign(expected, clone(snapshot));
       world.footer.signoff2 = expected.mapName;

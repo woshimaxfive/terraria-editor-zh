@@ -4,6 +4,7 @@ import { createBlockEditing, TILE_FIELDS } from './blockEditing.js';
 import { tileMaskValues } from './tileMaskValues.js';
 import { preservesEditedSections } from './verifyExport.js';
 import { createObjectEditing } from './objectEditing.js';
+import { createNpcEditing } from './npcEditing.js';
 import { createWorldProperties } from './worldProperties.js';
 import { guidText } from '../editing/worldIdentity.js';
 import { EditError, selectionCells } from '../editing/brush.js';
@@ -116,18 +117,21 @@ export async function openWorld(buffer, progress = () => {}) {
     }
     const objects = createObjectEditing(world);
     const properties = createWorldProperties(world);
+    const npcs = createNpcEditing(world, properties);
     const editing = createBlockEditing(world, () => {
       if (editable) return;
       if (!bytesEqual(buffer, save())) {
         throw new EditError('当前解析器不能完整保留这份存档，未进行修改。仍可浏览地图。');
       }
       editable = true;
-    }, { write: (kind, index, snapshot) => kind === 'world' ? properties.write(snapshot) : objects.write(kind, index, snapshot) });
+    }, { write: (kind, index, snapshot) => kind === 'world' ? properties.write(snapshot) : kind === 'npc' ? npcs.write(snapshot) : objects.write(kind, index, snapshot) });
     return {
       get summary() { return { ...summary, name: header.mapName, worldId: header.worldId, guid: guidText(header.guid),
-        spawn: { x: header.spawnTileX, y: header.spawnTileY }, dungeon: { x: header.dungeonX, y: header.dungeonY }, points: properties.points(),
+        spawn: { x: header.spawnTileX, y: header.spawnTileY }, dungeon: { x: header.dungeonX, y: header.dungeonY }, points: [...properties.points(), ...npcs.points()], counts: { ...summary.counts, npcs: world.NPCs.townNPCs.length },
         gameMode: summary.formatVersion < 225 ? Number(header.expertMode) : header.gameMode, hardmode: header.hardMode }; },
       get editState() { return editing.state; },
+      readNpcs: () => ({ ...npcs.read(), revision: editing.state.revision }),
+      editNpc: payload => editing.commit(npcs.prepare(payload, editing.state.revision)),
       readWorldProperties: () => ({ ...properties.read(), revision: editing.state.revision }),
       editWorldProperties(payload) {
         const change = properties.prepare(payload, editing.state.revision);
@@ -218,7 +222,7 @@ export async function openWorld(buffer, progress = () => {}) {
         if (!editable && !bytesEqual(buffer, output)) {
           throw new WorldFileError('重新生成的文件与原文件存在差异，本次未导出。当前版本暂不能完整保留这份存档。', 'EXPORT_CHANGED');
         }
-        if (editable && !preservesEditedSections(buffer, output, new Map([...objects.expectedSections(), ...properties.expectedSections()]))) {
+        if (editable && !preservesEditedSections(buffer, output, new Map([...objects.expectedSections(), ...properties.expectedSections(), ...npcs.expectedSections()]))) {
           throw new WorldFileError('未编辑的存档区段出现差异，本次未导出。请撤销修改或重新打开原始文件。', 'EXPORT_CHANGED');
         }
         editing.markExported();

@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/TEdit/Terraria-Map-Editor",
+  "commit": "84e3fc3466d405675a09da763169774b82c22d4d",
+  "license": "MS-PL",
+  "files": [
+    "src/TEdit.Terraria/Data/npcs.json",
+    "src/TEdit.Terraria/Data/Localization/zh-Hans.json",
+    "src/TEdit.Terraria/Data/versions.json",
+    "src/TEdit/View/Sidebar/NpcNameEditor.xaml",
+    "src/TEdit/ViewModel/WorldViewModel.Commands.cs",
+    "src/TEdit/ViewModel/NpcListItem.cs",
+    "src/TEdit.Terraria/World.FileV2.cs",
+    "src/TEdit/Editor/Tools/PointTool.cs"
+  ],
+  "sourceSha256": {
+    "src/TEdit.Terraria/Data/npcs.json": "0f88836bf168b4f5c466c7a4c79cc785217ba875593ef91bd4a3dcc3d311ffa1",
+    "src/TEdit.Terraria/Data/Localization/zh-Hans.json": "d5b5f79d801b3d5f26870976afd8817a054b849a510d004d1cf05edd081817f0",
+    "src/TEdit.Terraria/Data/versions.json": "00c7bd1e1f91a1734a14799253b41c324e1ebdfda865d768cc548abafd473c37",
+    "src/TEdit/View/Sidebar/NpcNameEditor.xaml": "9994b8e216dd9a06a87eb13dad72505013e6f52a85b3bf42c64ad591443e1d4c",
+    "src/TEdit/ViewModel/WorldViewModel.Commands.cs": "2f3149c04678bcf68bde62cd7aa1bdbc852e8c7565e0890b518f48d1716b5072",
+    "src/TEdit/ViewModel/NpcListItem.cs": "d34f754d466ed58c926fc6d4d15e80d4d84ba5420258dab46fea66371ed32c2e",
+    "src/TEdit.Terraria/World.FileV2.cs": "2d45573ce1538b6f726d82f8fad38b09034c475a144e826b3a63cb6bdec7a893",
+    "src/TEdit/Editor/Tools/PointTool.cs": "9ac060257755d35efd13a9fe4ebf4252d8af15448b66d93b2513af8fcba51cae"
+  },
+  "changes": "Extract only 60 selectable NPC identities, necessary Chinese identification labels, variant names and save-version NPC limits. Adapt add/remove, per-instance naming and source PointTool home/position behavior. Preserve unknown raw records and shimmer ID sequences. Explicit shimmer edits use ID membership to match file encoding; party changes use the validated world-header field in the same history. No sprite images or complete language resources are distributed. Chinese variant descriptions are local display labels. Resolve NPC localization item references using the same pinned Chinese language source."
+}
