@@ -4,6 +4,7 @@ import FooterIO from '../../vendor/terraria-world-file/src/section/Footer.ts';
 import { EditError } from '../editing/brush.js';
 import catalogue from '../../vendor/tedit-world-properties/catalogue.json' with { type: 'json' };
 import { worldLayerLimits } from '../editing/worldPropertyRules.js';
+import { guidBytes, guidText, TEAM_NAMES } from '../editing/worldIdentity.js';
 
 // Field semantics and limits follow the pinned desktop WorldPropertiesView.
 // Storage fields and third-party section objects stay inside this adapter.
@@ -16,6 +17,13 @@ const number = (id, storage, label, group, min, max, options = {}) => field(id, 
 field('name', 'mapName', '世界名称', '基本', 'text');
 field('difficulty', 'gameMode', '世界难度', '基本', 'select', { options: [[0, '经典'], [1, '专家'], [2, '大师'], [3, '旅行']] });
 boolean('hardmode', 'hardMode', '困难模式（已击败血肉墙）', '基本');
+number('identityId', 'worldId', '世界 ID', '基本', -2147483648, 2147483647);
+field('identityGuid', 'guid', '世界 GUID', '基本', 'guid');
+for (const [id, storage, label, coordinate] of [
+  ['spawnX', 'spawnTileX', '出生点 X', 'x'], ['spawnY', 'spawnTileY', '出生点 Y', 'y'],
+  ['dungeonX', 'dungeonX', '地牢入口 X', 'x'], ['dungeonY', 'dungeonY', '地牢入口 Y', 'y'],
+]) number(id, storage, label, '位置', 0, null, { coordinate });
+boolean('teamSpawnsEnabled', 'teamBasedSpawnsSeed', '启用队伍出生点', '位置', 297);
 field('clock', null, '世界时间', '时间与天气', 'clock');
 field('moonPhase', 'tempMoonPhase', '月相', '时间与天气', 'select', { options: ['满月', '亏凸月', '下弦月', '残月', '新月', '娥眉月', '上弦月', '盈凸月'].map((label, id) => [id, label]) });
 boolean('bloodMoon', 'tempBloodMoon', '血月', '时间与天气');
@@ -169,13 +177,20 @@ function encode(io, data, properties) {
 export function createWorldProperties(world) {
   const version = world.fileFormatHeader.version;
   const expected = clone(world.header);
-  const constraints = { width: expected.maxTilesX, height: expected.maxTilesY, layerMargin: catalogue.layerMargin };
-  const fields = definitions.filter(definition => definition.since <= version).map(definition => ({ ...definition,
+  const constraints = { width: expected.maxTilesX, height: expected.maxTilesY, layerMargin: catalogue.layerMargin, teamSpawnCount: expected.teamSpawns?.length ?? 0 };
+  const teamFields = version < 297 ? [] : TEAM_NAMES.slice(0, constraints.teamSpawnCount || 6).flatMap((label, teamIndex) => ['x', 'y'].map(axis => ({
+    id: 'team' + teamIndex + axis.toUpperCase(), storage: 'teamSpawns', label: label + '出生点 ' + axis.toUpperCase(), group: '位置',
+    type: 'number', min: 0, max: null, integer: true, since: 297, coordinate: axis, teamIndex, teamPoint: true,
+  })));
+  const fields = [...definitions, ...teamFields].filter(definition => definition.since <= version).map(definition => ({ ...definition,
     ...(definition.widthBound ? { max: constraints.width } : {}),
+    ...(definition.coordinate ? { max: constraints[definition.coordinate === 'x' ? 'width' : 'height'] - 1 } : {}),
     ...(definition.layer ? { max: worldLayerLimits(constraints, false)[definition.layer] } : {}),
     ...(definition.id === 'difficulty' && version < 225 ? { options: definition.options.slice(0, 2) } : {}) }));
   const byId = new Map(fields.map(definition => [definition.id, definition]));
   function value(definition) {
+    if (definition.type === 'guid') return guidText(expected.guid);
+    if (definition.teamPoint) return expected.teamSpawns[definition.teamIndex]?.[definition.coordinate] ?? expected[definition.coordinate === 'x' ? 'spawnTileX' : 'spawnTileY'];
     if (definition.id === 'difficulty') return version < 225 ? Number(expected.expertMode) : expected.gameMode;
     if (definition.id === 'clock') return ((expected.tempTime + (expected.tempDayTime ? 0 : 54000) + 16200) % 86400 + 86400) % 86400;
     const slot = treeTopSlot(definition);
@@ -184,7 +199,7 @@ export function createWorldProperties(world) {
   }
   return {
     read() {
-      return { constraints: clone(constraints), fields: fields.map(({ storage, component, float32, since, widthBound, ...definition }) => clone(definition)),
+      return { constraints: { ...clone(constraints), teamSpawnCount: expected.teamSpawns?.length ?? 0 }, fields: fields.map(({ storage, component, float32, since, widthBound, teamIndex, ...definition }) => clone(definition)),
         values: Object.fromEntries(fields.map(definition => [definition.id, value(definition)])) };
     },
     prepare(payload, revision) {
@@ -197,19 +212,29 @@ export function createWorldProperties(world) {
       // History stores validated field patches, never a caller-supplied header.
       const before = {}, after = {};
       const set = (key, next) => {
-        if (Object.is(expected[key], next) || (Array.isArray(next) && JSON.stringify(expected[key]) === JSON.stringify(next))) { delete before[key]; delete after[key]; }
+        if (Object.is(expected[key], next) || (Array.isArray(next) && JSON.stringify(expected[key]) === JSON.stringify(next)) ||
+            (next instanceof Uint8Array && expected[key] instanceof Uint8Array && next.length === expected[key].length && next.every((value, index) => value === expected[key][index]))) { delete before[key]; delete after[key]; }
         else { before[key] = clone(expected[key]); after[key] = clone(next); }
       };
       for (const [id, next] of Object.entries(payload.changes)) {
         const definition = byId.get(id); if (!definition) fail();
-        if (definition.type === 'boolean') { if (typeof next !== 'boolean') fail(); }
+        if (definition.type === 'guid') { if (!guidBytes(next)) fail(); }
+        else if (definition.type === 'boolean') { if (typeof next !== 'boolean') fail(); }
         else if (definition.type === 'text') {
           if (typeof next !== 'string' || !next.trim() || /[\r\n\x00]/.test(next) || next.length > 1024 ||
               [...next].some(char => char.codePointAt(0) >= 0xd800 && char.codePointAt(0) <= 0xdfff) || new TextEncoder().encode(next).byteLength > 1024) fail();
         } else if (definition.type === 'select') { if (!definition.options.some(([option]) => option === next)) fail(); }
         else if (definition.type === 'clock') { if (!Number.isInteger(next) || next < 0 || next >= 86400) fail(); }
         else if (!Number.isFinite(next) || next < definition.min || next > (definition.layer ? layerLimits[definition.layer] : definition.max) || (definition.integer && !Number.isInteger(next))) fail();
-        if (id === 'difficulty') set(version < 225 ? 'expertMode' : 'gameMode', version < 225 ? Boolean(next) : next);
+        if (definition.type === 'guid') set('guid', guidBytes(next));
+        else if (definition.teamPoint) {
+          const enabled = payload.changes.teamSpawnsEnabled ?? expected.teamBasedSpawnsSeed;
+          if (!expected.teamSpawns.length && !enabled) fail();
+          const array = clone(after.teamSpawns ?? (expected.teamSpawns.length ? expected.teamSpawns : TEAM_NAMES.map(() => ({
+            x: payload.changes.spawnX ?? expected.spawnTileX, y: payload.changes.spawnY ?? expected.spawnTileY,
+          }))));
+          array[definition.teamIndex][definition.coordinate] = next; set('teamSpawns', array);
+        } else if (id === 'difficulty') set(version < 225 ? 'expertMode' : 'gameMode', version < 225 ? Boolean(next) : next);
         else if (id === 'clock') {
           const continuous = (next - 16200 + 86400) % 86400;
           set('tempDayTime', continuous < 54000); set('tempTime', continuous < 54000 ? continuous : continuous - 54000);
@@ -223,6 +248,12 @@ export function createWorldProperties(world) {
           array[slot] = next; set('treeTopsVariations', array);
         }
       }
+      if (payload.changes.teamSpawnsEnabled === true && !expected.teamSpawns.length && !after.teamSpawns) {
+        const x = payload.changes.spawnX ?? expected.spawnTileX, y = payload.changes.spawnY ?? expected.spawnTileY;
+        if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x >= constraints.width || y < 0 || y >= constraints.height) fail();
+        set('teamSpawns', TEAM_NAMES.map(() => ({ x, y })));
+      }
+      if (!expected.teamSpawns?.length && after.teamSpawns?.some(({ x, y }) => !Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= constraints.width || y >= constraints.height)) fail();
       if (['destroyer', 'twins', 'prime'].some(id => Object.hasOwn(payload.changes, id))) {
         const combined = { ...expected, ...after };
         set('downedMechBossAny', combined.downedMechBoss1 || combined.downedMechBoss2 || combined.downedMechBoss3);
@@ -238,6 +269,14 @@ export function createWorldProperties(world) {
     write(snapshot) {
       Object.assign(world.header, clone(snapshot)); Object.assign(expected, clone(snapshot));
       world.footer.signoff2 = expected.mapName;
+      world.footer.signoff3 = expected.worldId;
+    },
+    points() {
+      const spawn = { x: expected.spawnTileX, y: expected.spawnTileY };
+      return [{ id: 'spawn', label: '出生点', ...spawn }, { id: 'dungeon', label: '地牢入口', x: expected.dungeonX, y: expected.dungeonY },
+        ...(version >= 297 ? TEAM_NAMES.slice(0, expected.teamSpawns.length || (expected.teamBasedSpawnsSeed ? 6 : 0)).map((name, index) => ({
+          id: 'team' + index, label: name + '出生点', ...(expected.teamSpawns[index] ?? spawn),
+        })) : [])];
     },
     expectedSections() {
       const footerIndex = world.fileFormatHeader.pointers.filter(pointer => pointer > 0).length - 1;

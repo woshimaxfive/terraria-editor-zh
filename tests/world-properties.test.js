@@ -30,7 +30,7 @@ for (const fixture of fixtures) {
     assert.equal(fields.fields.some(field => field.id === 'queenSlime'), fixture.version >= 225);
     assert.equal(fields.fields.some(field => field.id === 'halloweenAlways'), fixture.version >= 287);
     assert.equal(new Set(fields.fields.map(field => field.id)).size, fields.fields.length);
-    for (const field of fields.fields) assert.equal(typeof fields.values[field.id], field.type === 'boolean' ? 'boolean' : field.type === 'text' ? 'string' : 'number', field.id);
+    for (const field of fields.fields) assert.equal(typeof fields.values[field.id], field.type === 'boolean' ? 'boolean' : ['text', 'guid'].includes(field.type) ? 'string' : 'number', field.id);
     fields.values.name = '外部修改'; fields.fields[0].label = '外部修改';
     assert.notEqual(doc.readWorldProperties().values.name, '外部修改'); assert.notEqual(doc.readWorldProperties().fields[0].label, '外部修改');
     const changes = { name: '新世界🧭中文', difficulty: fixture.version < 225 ? 1 : 3, hardmode: !original.header.hardMode,

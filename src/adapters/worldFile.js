@@ -5,6 +5,7 @@ import { tileMaskValues } from './tileMaskValues.js';
 import { preservesEditedSections } from './verifyExport.js';
 import { createObjectEditing } from './objectEditing.js';
 import { createWorldProperties } from './worldProperties.js';
+import { guidText } from '../editing/worldIdentity.js';
 import { EditError, selectionCells } from '../editing/brush.js';
 import { findMaterial } from '../editing/materials.js';
 import { findLiquid } from '../editing/liquids.js';
@@ -123,7 +124,9 @@ export async function openWorld(buffer, progress = () => {}) {
       editable = true;
     }, { write: (kind, index, snapshot) => kind === 'world' ? properties.write(snapshot) : objects.write(kind, index, snapshot) });
     return {
-      get summary() { return { ...summary, name: header.mapName, gameMode: summary.formatVersion < 225 ? Number(header.expertMode) : header.gameMode, hardmode: header.hardMode }; },
+      get summary() { return { ...summary, name: header.mapName, worldId: header.worldId, guid: guidText(header.guid),
+        spawn: { x: header.spawnTileX, y: header.spawnTileY }, dungeon: { x: header.dungeonX, y: header.dungeonY }, points: properties.points(),
+        gameMode: summary.formatVersion < 225 ? Number(header.expertMode) : header.gameMode, hardmode: header.hardMode }; },
       get editState() { return editing.state; },
       readWorldProperties: () => ({ ...properties.read(), revision: editing.state.revision }),
       editWorldProperties(payload) {

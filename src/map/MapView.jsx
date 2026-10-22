@@ -19,6 +19,7 @@ import { cadWireCells } from '../editing/wireRouting.js';
 import { SprayStroke } from '../editing/SprayStroke.js';
 import { createOrderedBrushStamp } from '../editing/orderedBrushStamp.js';
 import { createHollowBrushShape } from '../editing/hollowBrush.js';
+import { pointChanges } from '../editing/worldIdentity.js';
 import { drawShapes } from '../rendering/appearance.js';
 import { drawCircuitOverlay } from '../rendering/circuitOverlay.js';
 import { sampledLiquidAmount } from '../editing/liquids.js';
@@ -50,6 +51,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [drawing, setDrawing] = useState(true);
   const [dragging, setDragging] = useState(false);
   const [tool, setTool] = useState('pan');
+  const [pointTarget, setPointTarget] = useState('spawn');
+  const pointTargets = world.points ?? [{ id: 'spawn', label: '出生点', ...world.spawn }, { id: 'dungeon', label: '地牢入口', ...world.dungeon }];
+  const activePoint = pointTargets.find(point => point.id === pointTarget) ?? pointTargets[0];
   const [blockId, setBlockId] = useState(1);
   const [wallId, setWallId] = useState(1);
   const [liquidType, setLiquidType] = useState(1);
@@ -117,7 +121,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const hoverRef = useRef(null);
   const frameRef = useRef(0);
   const brush = useRef(null);
-  brush.current = { tool, blockId, settings: strokeSettings, outline, innerOutline, strokeMode, cadEnabled };
+  brush.current = { tool, blockId, settings: strokeSettings, outline, innerOutline, strokeMode, cadEnabled, point: activePoint };
   const current = useRef({ size, camera });
   current.current = { size, camera };
   const selectLayer = id => {
@@ -168,7 +172,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       if (next.width < 1 || next.height < 1) return;
       clearChain(); clearCad();
       if (fillJobRef.current || fillRef.current) cancelFill();
-      if (pickRef.current?.tool === 'cad') { setDrafting(false); onDraftChange(false); }
+      if (['cad', 'point'].includes(pickRef.current?.tool)) { setDrafting(false); onDraftChange(false); }
       pickRef.current = null;
       pasteDragRef.current = null;
       setPlacing(false);
@@ -236,6 +240,11 @@ export default function MapView({ session, world, disabled, onError, editState, 
     }
     const toX = x => (x - camera.x) * camera.zoom + size.width / 2;
     const toY = y => (y - camera.y) * camera.zoom + size.height / 2;
+    if (brush.current.tool === 'point') {
+      const point = brush.current.point, x = toX(point.x + .5), y = toY(point.y + .5);
+      context.strokeStyle = '#79c9ff'; context.lineWidth = 2;
+      context.strokeRect(x - 8, y - 8, 16, 16);
+    }
     const selected = selectionDraftRef.current?.rectangle || selectionRef.current;
     if (selected) {
       context.fillStyle = '#79c9ff20';
@@ -322,7 +331,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     return () => cancelAnimationFrame(frame);
   }, [draw]);
 
-  useEffect(() => { draw(); }, [tool, brushSettings, chainAnchor, cadMode, cadDirection, cadStatus, draw]);
+  useEffect(() => { draw(); }, [tool, brushSettings, chainAnchor, cadMode, cadDirection, cadStatus, pointTarget, draw]);
   useEffect(() => { draw(); }, [pastePosition, draw]);
   useEffect(() => { draw(); }, [fillState, draw]);
 
@@ -596,7 +605,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         showCoordinates(point);
         return;
       }
-      if (pickRef.current.tool === 'cad') { setDrafting(false); onDraftChange(false); }
+      if (['cad', 'point'].includes(pickRef.current.tool)) { setDrafting(false); onDraftChange(false); }
       pickRef.current = null;
     }
     if (strokeRef.current && strokeRef.current.pointerId === event.pointerId && !disabled) {
@@ -641,12 +650,13 @@ export default function MapView({ session, world, disabled, onError, editState, 
     }
     const pick = pickRef.current;
     pickRef.current = null;
-    if (pick?.tool === 'cad') { setDrafting(false); onDraftChange(false); }
+    if (['cad', 'point'].includes(pick?.tool)) { setDrafting(false); onDraftChange(false); }
     if (pick?.pointerId === event.pointerId && event.type === 'pointerup' && !disabled) {
       const point = pointOf(event);
       if (Math.hypot(point.x - pick.start.x, point.y - pick.start.y) <= 6) {
         if (pick.tool === 'fill') startFill(pick.cell);
         else if (pick.tool === 'cad') commitCad(pick);
+        else if (pick.tool === 'point') onEdit('editWorldProperties', { revision: pick.revision, changes: pointChanges(pick.target, pick.cell) });
         else pickBlock({ ...pick.cell, layer: pick.layer, ...pick.appearance });
       }
     }
@@ -677,9 +687,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const showPanel = name => { setPanel(name); setPanelOpen(true); };
   const closePanel = () => { setPanelOpen(false); panelToggleRef.current?.focus({ preventScroll: true }); };
   const trajectoryName = { freehand: '', line: '直线', polyline: '折线', constrain: '约束' }[strokeMode];
-  const toolName = { pan: '平移', paint: (cadEnabled ? 'CAD画笔' : trajectoryName + (sprayEnabled ? '喷枪' : hollowEnabled ? '空心画笔' : '画笔')), erase: cadEnabled ? 'CAD橡皮' : trajectoryName + (sprayEnabled ? '喷枪橡皮' : hollowEnabled ? '空心橡皮' : '橡皮'), pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
+  const toolName = { pan: '平移', point: '位置工具', paint: (cadEnabled ? 'CAD画笔' : trajectoryName + (sprayEnabled ? '喷枪' : hollowEnabled ? '空心画笔' : '画笔')), erase: cadEnabled ? 'CAD橡皮' : trajectoryName + (sprayEnabled ? '喷枪橡皮' : hollowEnabled ? '空心橡皮' : '橡皮'), pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
   const usesBrush = tool === 'paint' || tool === 'erase';
-  const usesLayer = usesBrush || tool === 'fill' || tool === 'pick' || tool === 'select' || (selection && tool !== 'paste');
+  const usesLayer = usesBrush || tool === 'fill' || tool === 'pick' || tool === 'select' || (selection && !['paste', 'point'].includes(tool));
   return <section className={`map-view${panelOpen ? ' panel-open' : ''}`} aria-labelledby="map-title" onKeyDownCapture={event => {
     if (event.key === 'Escape' && fillState && !disabled) { event.stopPropagation(); cancelFill(); }
   }}>
@@ -708,7 +718,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
         {EDIT_LAYERS.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
       </select></label>
       <label hidden={!usesBrush}><span className="context-label">尺寸</span><select aria-label="画笔尺寸" value={brushSize} disabled={disabled || interacting} onChange={event => setBrushSize(Number(event.target.value))}>{brushSize === 'custom' && <option value="custom" disabled>{brushSettings.width} × {brushSettings.height}</option>}{BRUSH_SIZES.map(value => <option key={value} value={value}>{value} × {value}</option>)}</select></label>
-      {!usesLayer && <span className="context-description">{tool === 'paste' ? '定位后确认 · Esc 取消' : '拖动浏览 · 滚轮缩放'}</span>}</div>
+      {tool === 'point' && <><label>目标<select aria-label="地图位置目标" value={activePoint.id} disabled={disabled || interacting} onChange={event => setPointTarget(event.target.value)}>{pointTargets.map(point => <option key={point.id} value={point.id}>{point.label}</option>)}</select></label><button disabled={disabled || interacting} onClick={() => setTool('pan')}>退出位置工具</button></>}
+      {!usesLayer && <span className="context-description">{tool === 'point' ? '点按移动 · 拖动浏览 · Esc 退出' : tool === 'paste' ? '定位后确认 · Esc 取消' : '拖动浏览 · 滚轮缩放'}</span>}</div>
       <div className="tool-buttons" role="group" aria-label="编辑历史">
         <button aria-label={`撤销 (${editState.undoCount})`} title="撤销 · Ctrl Z" disabled={disabled || interacting || !editState.undoCount} onClick={() => onEdit('undo')}><Icon name="undo" size={16} /><span className="history-label">撤销 </span><span className="history-count">({editState.undoCount})</span></button>
         <button aria-label={`重做 (${editState.redoCount})`} title="重做 · Ctrl Y" disabled={disabled || interacting || !editState.redoCount} onClick={() => onEdit('redo')}><Icon name="redo" size={16} /><span className="history-label">重做 </span><span className="history-count">({editState.redoCount})</span></button>
@@ -724,7 +735,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     </div>
     <div className="tool-rail" role="group" aria-label="工具模式">
       <button disabled={disabled || interacting || !clipboard || tool === 'paste' || clipboard.data.formatVersion !== world.formatVersion} aria-label="粘贴工具" aria-pressed={tool === 'paste'} title="粘贴预览 · Ctrl V" onClick={startPaste}><Icon name="paste" size={21} /><span>粘贴</span></button>
-      {[['pan', '平移'], ['select', '框选'], ['pick', '吸管'], ['paint', '画笔'], ['erase', '橡皮'], ['fill', '连通填充']].map(([id, label]) =>
+      {[['pan', '平移'], ['point', '位置工具'], ['select', '框选'], ['pick', '吸管'], ['paint', '画笔'], ['erase', '橡皮'], ['fill', '连通填充']].map(([id, label]) =>
         <button key={id} disabled={disabled || interacting || (id === 'fill' && layer === 'wire')} aria-label={label} title={label} aria-pressed={tool === id} onClick={() => { setTool(id); setHint(''); if (window.innerWidth <= 900) setPanelOpen(false); }}><Icon name={id} size={21} /><span>{id === 'fill' ? '填充' : label}</span></button>)}
       <div className="rail-divider" />
       <button disabled={interacting || (!panelOpen && panelLocked)} aria-label="建筑模板面板" title="建筑模板" onClick={() => showPanel('templates')}><Icon name="template" size={21} /><span>建筑</span></button>
@@ -771,6 +782,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
             setPlacing(true);
             return;
           }
+          if (tool === 'point') {
+            pickRef.current = { tool, target: activePoint.id, revision: editState.revision, pointerId: event.pointerId, cell, start: pointOf(event) };
+            setDrafting(true); onDraftChange(true); return;
+          }
           if (tool === 'pick') {
             pickRef.current = { pointerId: event.pointerId, cell, layer, appearance: layer === 'paint' ? { target: appearance.target, mode: appearance.mode } : {}, start: pointOf(event) };
             return;
@@ -810,6 +825,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       onKeyDown={event => {
         if (!camera || disabled || objectDraft) return;
         if (event.key === 'Escape') {
+          if (tool === 'point') { cancelStroke(); setTool('pan'); return; }
           if (cadEnabled && ['paint', 'erase'].includes(tool)) { cancelStroke(); if (cadRef.current.anchor) clearCad(); else setCadMode('off'); return; }
           if (fillState) cancelFill();
           else if (tool === 'paste') cancelPaste();
@@ -950,7 +966,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
 
         </section>
         <section id="panel-objects" hidden={panel !== 'objects'}>{panel === 'objects' && <Suspense fallback={<p role="status">正在读取对象编辑器…</p>}><ObjectEditor session={session} revision={editState.revision} version={world.formatVersion} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} onLocate={object => { clearChain(); clearCad(); setTool('pan'); changeCamera(constrainCamera({ x: object.x + 1, y: object.y + 1, zoom: Math.max(4, camera.zoom) }, size, world)); }} /></Suspense>}</section>
-        <section id="panel-world" hidden={panel !== 'world'}>{worldDetails}{panel === 'world' && <Suspense fallback={<p role="status">正在读取世界属性编辑器…</p>}><WorldPropertiesEditor session={session} revision={editState.revision} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} /></Suspense>}</section>
+        <section id="panel-world" hidden={panel !== 'world'}>{worldDetails}{panel === 'world' && <Suspense fallback={<p role="status">正在读取世界属性编辑器…</p>}><WorldPropertiesEditor session={session} revision={editState.revision} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} onPointTarget={id => { clearChain(); clearCad(); setPointTarget(id); setTool('point'); setHint(''); if (window.innerWidth <= 900) setPanelOpen(false); canvasRef.current?.focus({ preventScroll: true }); }} onLocate={point => { setTool('pan'); changeCamera(constrainCamera({ x: point.x + .5, y: point.y + .5, zoom: Math.max(4, camera.zoom) }, size, world)); }} /></Suspense>}</section>
         <section id="panel-help" hidden={panel !== 'help'}>
           <h3>地图操作</h3><dl className="shortcut-list"><div><dt>平移地图</dt><dd>拖动 / 方向键</dd></div><div><dt>缩放地图</dt><dd>滚轮 / 双指 / ＋ −</dd></div><div><dt>撤销 / 重做</dt><dd>Ctrl Z / Ctrl Y</dd></div><div><dt>复制 / 粘贴</dt><dd>Ctrl C / Ctrl V</dd></div><div><dt>确认 / 取消粘贴</dt><dd>Enter / Esc</dd></div></dl>
     <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y、Ctrl+C / Ctrl+V。Esc 取消草稿或粘贴预览，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内，普通绘制只修改选中的编辑图层，空心填墙同时处理墙壁；粘贴完整替换所有图层，含空格。区域操作最多 10000 格。特殊图格受保护。显示面板可选择本机资源并切换贴图，未支持的外观使用色块。</p>
