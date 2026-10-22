@@ -21,12 +21,13 @@ function sectionLayout(buffer) {
   return { count, tableEnd, pointers };
 }
 
-// Only tiles may vary freely. Object sections must match independently tracked,
+// Only tiles may vary freely. Edited sections must match independently tracked,
 // field-validated snapshots; every other section remains byte-identical.
 export function preservesEditedSections(original, output, expectedSections = new Map()) {
   const a = sectionLayout(original), b = sectionLayout(output);
   if (!a || !b || a.count !== b.count || a.pointers.length !== b.pointers.length ||
-      !(expectedSections instanceof Map) || [...expectedSections].some(([index, bytes]) => ![2, 3].includes(index) || !(bytes instanceof ArrayBuffer))) return false;
+      !(expectedSections instanceof Map) || [...expectedSections].some(([index, bytes]) => ![0, 2, 3, a.pointers.length - 1].includes(index) || !(bytes instanceof ArrayBuffer)) ||
+      expectedSections.has(0) !== expectedSections.has(a.pointers.length - 1)) return false;
   if (!equalRange(original, 0, 26, output, 0, 26) ||
       !equalRange(original, a.tableEnd, a.pointers[0], output, b.tableEnd, b.pointers[0])) return false;
   for (let i = 0; i < a.pointers.length; i++) {

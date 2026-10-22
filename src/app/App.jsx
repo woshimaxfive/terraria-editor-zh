@@ -27,7 +27,7 @@ export default function App() {
   const [drafting, setDrafting] = useState(false);
   const [clipboard, setClipboard] = useState(null);
   const [menuHost, setMenuHost] = useState(null);
-  const unsaved = editState.dirty || drafting || ['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'commitFill', 'editObject'].includes(phase);
+  const unsaved = editState.dirty || drafting || ['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'commitFill', 'editObject', 'editWorldProperties'].includes(phase);
 
   useEffect(() => {
     if (!unsaved) return;
@@ -92,10 +92,11 @@ export default function App() {
       } else {
         const result = await session.current.edit(action, file);
         if (current !== operation.current) return;
+        if (result.summary) setSummary(previous => JSON.stringify(previous) === JSON.stringify(result.summary) ? previous : result.summary);
         setEditState(result.editState);
         const { changed, skipped, filtered } = result.editState;
         const verb = { undo: '已撤销', redo: '已重做', erase: '已擦除', eraseSelection: '已擦除', fillSelection: '已填充', commitFill: '已填充', paint: '已绘制', paste: '已粘贴' }[action];
-        setNotice(`${action === 'editObject' ? '已保存对象' : verb} ${changed} ${action === 'editObject' || ['undo', 'redo'].includes(action) ? '项' : '格'}。${skipped ? `跳过 ${skipped} 格受保护图格。` : ''}${filtered ? `${filtered} 格不符合匹配条件。` : ''}`);
+        setNotice(`${action === 'editWorldProperties' ? '已保存世界属性' : action === 'editObject' ? '已保存对象' : verb} ${changed} ${['editWorldProperties', 'editObject', 'undo', 'redo'].includes(action) ? '项' : '格'}。${skipped ? `跳过 ${skipped} 格受保护图格。` : ''}${filtered ? `${filtered} 格不符合匹配条件。` : ''}`);
         return result.editState;
       }
     } catch (failure) {
@@ -154,6 +155,7 @@ export default function App() {
       <div><dt>世界尺寸</dt><dd>{summary.width} × {summary.height} 格</dd></div>
       <div><dt>难度</dt><dd>{modes[summary.gameMode] ?? '未知'}</dd></div>
       <div><dt>出生点</dt><dd>X {summary.spawn.x} · Y {summary.spawn.y}</dd></div>
+      <div><dt>地牢入口</dt><dd>X {summary.dungeon.x} · Y {summary.dungeon.y}</dd></div>
       <div><dt>文件格式版本</dt><dd>{summary.formatVersion}</dd></div>
       <div><dt>世界 ID</dt><dd>{summary.worldId}</dd></div>
       <div><dt>箱子 / 告示牌</dt><dd>{summary.counts.chests} / {summary.counts.signs}</dd></div>

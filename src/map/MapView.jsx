@@ -29,6 +29,7 @@ import { TextureResources } from '../platform/files/TextureResources.js';
 import EditorMenu from '../app/EditorMenu.jsx';
 
 const ObjectEditor = lazy(() => import('./ObjectEditor.jsx'));
+const WorldPropertiesEditor = lazy(() => import('./WorldPropertiesEditor.jsx'));
 
 const MAX_CANVAS_PIXELS = 4 * 1024 * 1024;
 const DISPLAY_LAYERS = [['block', '方块'], ['wall', '墙壁'], ['liquid', '液体'], ['wire', '电线'], ['actuator', '制动器']];
@@ -184,7 +185,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     });
     observer.observe(canvasRef.current);
     return () => observer.disconnect();
-  }, [world, changeCamera, onDraftChange, cancelFill, clearChain, clearCad]);
+  }, [world.width, world.height, changeCamera, onDraftChange, cancelFill, clearChain, clearCad]);
 
   const draw = useCallback(() => {
     if (!camera || !size.width) return;
@@ -949,7 +950,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
 
         </section>
         <section id="panel-objects" hidden={panel !== 'objects'}>{panel === 'objects' && <Suspense fallback={<p role="status">正在读取对象编辑器…</p>}><ObjectEditor session={session} revision={editState.revision} version={world.formatVersion} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} onLocate={object => { clearChain(); clearCad(); setTool('pan'); changeCamera(constrainCamera({ x: object.x + 1, y: object.y + 1, zoom: Math.max(4, camera.zoom) }, size, world)); }} /></Suspense>}</section>
-        <section id="panel-world" hidden={panel !== 'world'}>{worldDetails}</section>
+        <section id="panel-world" hidden={panel !== 'world'}>{worldDetails}{panel === 'world' && <Suspense fallback={<p role="status">正在读取世界属性编辑器…</p>}><WorldPropertiesEditor session={session} revision={editState.revision} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} /></Suspense>}</section>
         <section id="panel-help" hidden={panel !== 'help'}>
           <h3>地图操作</h3><dl className="shortcut-list"><div><dt>平移地图</dt><dd>拖动 / 方向键</dd></div><div><dt>缩放地图</dt><dd>滚轮 / 双指 / ＋ −</dd></div><div><dt>撤销 / 重做</dt><dd>Ctrl Z / Ctrl Y</dd></div><div><dt>复制 / 粘贴</dt><dd>Ctrl C / Ctrl V</dd></div><div><dt>确认 / 取消粘贴</dt><dd>Enter / Esc</dd></div></dl>
     <p id="map-help" className="file-hint">滚轮或双指缩放；聚焦地图后可用方向键、+ / −、Ctrl+Z / Ctrl+Y、Ctrl+C / Ctrl+V。Esc 取消草稿或粘贴预览，无草稿时清除选区。有选区时，画笔和橡皮仅作用于选区内，普通绘制只修改选中的编辑图层，空心填墙同时处理墙壁；粘贴完整替换所有图层，含空格。区域操作最多 10000 格。特殊图格受保护。显示面板可选择本机资源并切换贴图，未支持的外观使用色块。</p>

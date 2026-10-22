@@ -285,3 +285,15 @@ test('a rejected stale object save retains the loaded world and queued export st
   assert.equal(session.loaded, true); assert.equal(workers[0].message.action, 'export');
   workers[0].reply({ type: 'result', buffer: new ArrayBuffer(4), filename: 'objects-副本.wld' }); assert.equal((await output).buffer.byteLength, 4); session.close();
 });
+
+test('world property reads and writes serialize with exports; recoverable rejection keeps the world and summary responses', async () => {
+  const { session, workers } = setup(); await assert.rejects(session.readWorldProperties(), /先打开/);
+  const opening = session.open({ name: 'world.wld' }); workers[0].reply({ type: 'result', summary: {} }); await opening;
+  const read = session.readWorldProperties(), edit = session.edit('editWorldProperties', { revision: 0, changes: { name: '中文世界' } });
+  assert.equal(workers[0].message.action, 'readWorldProperties'); workers[0].reply({ type: 'result', properties: { revision: 0 } }); await read;
+  assert.equal(workers[0].message.action, 'editWorldProperties');
+  workers[0].reply({ type: 'result', summary: { name: '中文世界' }, editState: { revision: 1 } }); assert.equal((await edit).summary.name, '中文世界');
+  const invalid = session.edit('editWorldProperties', { revision: 0, changes: { name: '旧版本' } }), rejected = assert.rejects(invalid, /版本/), exporting = session.export();
+  workers[0].reply({ type: 'error', recoverable: true, message: '版本已变化' }); await rejected; assert.equal(session.loaded, true);
+  workers[0].reply({ type: 'result', buffer: new ArrayBuffer(4) }); await exporting; session.close();
+});

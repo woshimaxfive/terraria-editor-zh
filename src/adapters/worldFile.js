@@ -4,6 +4,7 @@ import { createBlockEditing, TILE_FIELDS } from './blockEditing.js';
 import { tileMaskValues } from './tileMaskValues.js';
 import { preservesEditedSections } from './verifyExport.js';
 import { createObjectEditing } from './objectEditing.js';
+import { createWorldProperties } from './worldProperties.js';
 import { EditError, selectionCells } from '../editing/brush.js';
 import { findMaterial } from '../editing/materials.js';
 import { findLiquid } from '../editing/liquids.js';
@@ -94,9 +95,10 @@ export async function openWorld(buffer, progress = () => {}) {
       width: header.maxTilesX,
       height: header.maxTilesY,
       seed: header.seedText,
-      gameMode: header.gameMode,
+      gameMode: world.fileFormatHeader.version < 225 ? Number(header.expertMode) : header.gameMode,
       hardmode: header.hardMode,
       spawn: { x: header.spawnTileX, y: header.spawnTileY },
+      dungeon: { x: header.dungeonX, y: header.dungeonY },
       counts: {
         chests: world.chests.chests.length,
         signs: world.signs.signs.length,
@@ -112,16 +114,22 @@ export async function openWorld(buffer, progress = () => {}) {
       return new FileSaver().save(world, onProgress);
     }
     const objects = createObjectEditing(world);
+    const properties = createWorldProperties(world);
     const editing = createBlockEditing(world, () => {
       if (editable) return;
       if (!bytesEqual(buffer, save())) {
         throw new EditError('当前解析器不能完整保留这份存档，未进行修改。仍可浏览地图。');
       }
       editable = true;
-    }, objects);
+    }, { write: (kind, index, snapshot) => kind === 'world' ? properties.write(snapshot) : objects.write(kind, index, snapshot) });
     return {
-      summary,
+      get summary() { return { ...summary, name: header.mapName, gameMode: summary.formatVersion < 225 ? Number(header.expertMode) : header.gameMode, hardmode: header.hardMode }; },
       get editState() { return editing.state; },
+      readWorldProperties: () => ({ ...properties.read(), revision: editing.state.revision }),
+      editWorldProperties(payload) {
+        const change = properties.prepare(payload, editing.state.revision);
+        return editing.commit(change ? [change] : []);
+      },
       listObjects: kind => objects.list(kind),
       readObject: point => ({ ...objects.read(point), revision: editing.state.revision }),
       editObject(payload) {
@@ -207,7 +215,7 @@ export async function openWorld(buffer, progress = () => {}) {
         if (!editable && !bytesEqual(buffer, output)) {
           throw new WorldFileError('重新生成的文件与原文件存在差异，本次未导出。当前版本暂不能完整保留这份存档。', 'EXPORT_CHANGED');
         }
-        if (editable && !preservesEditedSections(buffer, output, objects.expectedSections())) {
+        if (editable && !preservesEditedSections(buffer, output, new Map([...objects.expectedSections(), ...properties.expectedSections()]))) {
           throw new WorldFileError('未编辑的存档区段出现差异，本次未导出。请撤销修改或重新打开原始文件。', 'EXPORT_CHANGED');
         }
         editing.markExported();

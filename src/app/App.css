@@ -326,3 +326,7 @@ summary { cursor: pointer; color: #c3cbd6; }
 .object-item-results { display: grid; gap: 4px; max-height: 220px; overflow-y: auto; }
 .object-item-results button { justify-content: flex-start; text-align: left; white-space: normal; overflow-wrap: anywhere; }
 .object-editor .card-note { margin-top: 2px; }
+.world-properties-editor { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.world-property-actions { position: sticky; top: 0; z-index: 2; background: var(--panel, #22262e); padding: 6px 0; }
+.object-editor .world-property-toggle { display: flex; align-items: center; gap: 8px; line-height: 1.6; }
+.object-editor .world-property-toggle input { width: auto; flex: 0 0 auto; }

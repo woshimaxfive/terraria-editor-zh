@@ -1,0 +1,16 @@
+{
+  "repository": "https://github.com/TEdit/Terraria-Map-Editor",
+  "commit": "84e3fc3466d405675a09da763169774b82c22d4d",
+  "license": "MS-PL",
+  "files": [
+    "src/TEdit/View/Sidebar/WorldPropertiesView.xaml",
+    "src/TEdit.Terraria/World.Properties.cs",
+    "src/TEdit/Converters/TerrariaTimeConverter.cs"
+  ],
+  "sourceSha256": {
+    "src/TEdit/View/Sidebar/WorldPropertiesView.xaml": "3c8a1bb3cdb09004b7a715180fa96907fd66644cb079fceae572eb79012ada99",
+    "src/TEdit.Terraria/World.Properties.cs": "d79361eeff3c9c65e3526dfc6f1d11a387e6d63818bb705c9782bb8ab8636d9b",
+    "src/TEdit/Converters/TerrariaTimeConverter.cs": "f26ef51832babfef87d1a2cce4ff2b26507559af79faa99037224d8dfd7762ff"
+  },
+  "changes": "Adapt world property field semantics, format-aware difficulty, 4:30 dawn / 19:30 dusk clock, weather limits and derived mechanical boss progress. Browser implementation uses validated field patches, independent expected header/footer encoding, shared history and detached sidebar drafts. Preserve identity, generation data, coordinates, NPC records and all unrelated fields. Numeric events, biome/background styles, secret seeds, terrain levels and structural editing remain separate work."
+}

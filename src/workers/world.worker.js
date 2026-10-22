@@ -37,10 +37,13 @@ self.addEventListener('message', async ({ data }) => {
       fillPreparation = preparation;
       const fill = await document.prepareFill(stroke, { cancelled: () => preparation.cancelled, progress });
       self.postMessage({ id, type: 'result', fill });
-    } else if (['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo', 'commitFill', 'editObject'].includes(action)) {
+    } else if (['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo', 'commitFill', 'editObject', 'editWorldProperties'].includes(action)) {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const editState = document[action](stroke);
-      self.postMessage({ id, type: 'result', editState });
+      self.postMessage({ id, type: 'result', editState, summary: document.summary });
+    } else if (action === 'readWorldProperties') {
+      if (!document) throw new WorldFileError('请先打开一个世界。');
+      self.postMessage({ id, type: 'result', properties: document.readWorldProperties() });
     } else if (action === 'copy' || action === 'prepareClipboard') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const result = action === 'copy' ? document.copy(stroke) : document.prepareClipboard(stroke?.clipboard);
