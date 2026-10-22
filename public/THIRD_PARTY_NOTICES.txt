@@ -170,3 +170,6 @@ WriteableBitmapEx-derived midpoint fill
 Copyright (c) 2009-2010 Rene Schulte and WriteableBitmapEx Contributors, MS-PL.
 Adapted through TEdit.Common/Geometry/Fill.cs; source and full license references
 are retained in vendor/tedit-editing-rules/source.json and LICENSE.
+
+TEdit object metadata (MS-PL)
+Item IDs, English search names/keys, Chinese item/prefix identification labels, stack limits and save-version boundaries are extracted from TEdit contributors at commit 84e3fc3466d405675a09da763169774b82c22d4d. Source paths and changes: vendor/tedit-objects/source.json. License: vendor/tedit-objects/LICENSE. These metadata identify Terraria content; game resources remain the property of their respective owners.

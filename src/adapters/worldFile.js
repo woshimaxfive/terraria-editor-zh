@@ -2,7 +2,8 @@ import { FileReader, FileSaver } from '../../vendor/terraria-world-file/src/inde
 import { rasterizeRegion } from '../rendering/worldRaster.js';
 import { createBlockEditing, TILE_FIELDS } from './blockEditing.js';
 import { tileMaskValues } from './tileMaskValues.js';
-import { preservesOtherSections } from './verifyExport.js';
+import { preservesEditedSections } from './verifyExport.js';
+import { createObjectEditing } from './objectEditing.js';
 import { EditError, selectionCells } from '../editing/brush.js';
 import { findMaterial } from '../editing/materials.js';
 import { findLiquid } from '../editing/liquids.js';
@@ -110,16 +111,23 @@ export async function openWorld(buffer, progress = () => {}) {
       }
       return new FileSaver().save(world, onProgress);
     }
+    const objects = createObjectEditing(world);
     const editing = createBlockEditing(world, () => {
       if (editable) return;
       if (!bytesEqual(buffer, save())) {
         throw new EditError('当前解析器不能完整保留这份存档，未进行修改。仍可浏览地图。');
       }
       editable = true;
-    });
+    }, objects);
     return {
       summary,
       get editState() { return editing.state; },
+      listObjects: kind => objects.list(kind),
+      readObject: point => ({ ...objects.read(point), revision: editing.state.revision }),
+      editObject(payload) {
+        const change = objects.prepare(payload, editing.state.revision);
+        return editing.commit(change ? [change] : []);
+      },
       paint: stroke => stroke?.hollow ? editing.paintHollow(stroke) : editing.paint(stroke),
       prepareFill: (payload, control) => editing.prepareFill(payload, control),
       cancelFill: () => editing.cancelFill(),
@@ -199,7 +207,7 @@ export async function openWorld(buffer, progress = () => {}) {
         if (!editable && !bytesEqual(buffer, output)) {
           throw new WorldFileError('重新生成的文件与原文件存在差异，本次未导出。当前版本暂不能完整保留这份存档。', 'EXPORT_CHANGED');
         }
-        if (editable && !preservesOtherSections(buffer, output)) {
+        if (editable && !preservesEditedSections(buffer, output, objects.expectedSections())) {
           throw new WorldFileError('未编辑的存档区段出现差异，本次未导出。请撤销修改或重新打开原始文件。', 'EXPORT_CHANGED');
         }
         editing.markExported();

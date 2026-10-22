@@ -63,19 +63,26 @@ export class EditHistory {
     return { ...this.commit(changes, skipped), filtered };
   }
 
+  writeChange(change, direction) {
+    if (change.kind) this.source.writeObject(change.kind, change.index, change[direction]);
+    else this.source.write(change.index, change[direction]);
+  }
+
   // Only the adapter supplies fully validated changes; public payloads never enter here.
   commit(changes, skipped = 0) {
     if (!changes.length) return { ...this.state, changed: 0, skipped };
+    const cost = changes.reduce((sum, change) => sum + (change.cost ?? 1), 0);
+    if (cost > MAX_HISTORY_TILES) throw new EditError('本次编辑超出撤销记录预算，未修改世界。');
     this.source.ensureWritable();
-    for (const change of changes) this.source.write(change.index, change.after);
-    const entry = { changes, beforeRevision: this.revision, afterRevision: ++this.nextRevision };
-    this.retainedTiles -= this.redoStack.reduce((count, item) => count + item.changes.length, 0);
+    for (const change of changes) this.writeChange(change, 'after');
+    const entry = { changes, cost, beforeRevision: this.revision, afterRevision: ++this.nextRevision };
+    this.retainedTiles -= this.redoStack.reduce((count, item) => count + item.cost, 0);
     this.redoStack = [];
     this.undoStack.push(entry);
     this.revision = entry.afterRevision;
-    this.retainedTiles += changes.length;
+    this.retainedTiles += entry.cost;
     while (this.undoStack.length > MAX_HISTORY_STEPS || this.retainedTiles > MAX_HISTORY_TILES) {
-      this.retainedTiles -= this.undoStack.shift().changes.length;
+      this.retainedTiles -= this.undoStack.shift().cost;
     }
     return { ...this.state, changed: changes.length, skipped };
   }
@@ -86,7 +93,7 @@ export class EditHistory {
   move(from, to, direction) {
     const entry = from.pop();
     if (!entry) return { ...this.state, changed: 0 };
-    for (const change of entry.changes) this.source.write(change.index, change[direction]);
+    for (const change of entry.changes) this.writeChange(change, direction);
     this.revision = entry[`${direction}Revision`];
     to.push(entry);
     return { ...this.state, changed: entry.changes.length };

@@ -37,7 +37,7 @@ self.addEventListener('message', async ({ data }) => {
       fillPreparation = preparation;
       const fill = await document.prepareFill(stroke, { cancelled: () => preparation.cancelled, progress });
       self.postMessage({ id, type: 'result', fill });
-    } else if (['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo', 'commitFill'].includes(action)) {
+    } else if (['paint', 'erase', 'fillSelection', 'eraseSelection', 'paste', 'undo', 'redo', 'commitFill', 'editObject'].includes(action)) {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const editState = document[action](stroke);
       self.postMessage({ id, type: 'result', editState });
@@ -45,6 +45,10 @@ self.addEventListener('message', async ({ data }) => {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const result = action === 'copy' ? document.copy(stroke) : document.prepareClipboard(stroke?.clipboard);
       self.postMessage({ id, type: 'result', ...result }, [result.image.buffer]);
+    } else if (action === 'listObjects' || action === 'readObject') {
+      if (!document) throw new WorldFileError('请先打开一个世界。');
+      const result = action === 'listObjects' ? { objects: document.listObjects(data.kind) } : { object: document.readObject(point) };
+      self.postMessage({ id, type: 'result', ...result });
     } else if (action === 'pick') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       self.postMessage({ id, type: 'result', tile: document.pick(point) });

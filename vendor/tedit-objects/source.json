@@ -1,0 +1,23 @@
+{
+  "repository": "https://github.com/TEdit/Terraria-Map-Editor",
+  "commit": "84e3fc3466d405675a09da763169774b82c22d4d",
+  "license": "MS-PL",
+  "files": [
+    "src/TEdit.Terraria/Data/items.json",
+    "src/TEdit.Terraria/Data/prefixes.json",
+    "src/TEdit.Terraria/Data/versions.json",
+    "src/TEdit.Terraria/Data/Localization/zh-Hans.json"
+  ],
+  "changes": "Extract item IDs, English search names/keys, required Chinese item/prefix display aliases, stack limits, prefixes and save-version item boundaries for existing-chest content editing. Include only labels used to identify selectable items, not complete localization resources. Catalogue items use itemFields tuples. Keep validation limits in a separate Worker table and lazy-load the display catalogue. Preserve unknown untouched content and object coordinates/slot counts. Domain history and strict expected-section verification are maintained by this project.",
+  "sourceSha256": {
+    "src/TEdit.Terraria/Data/items.json": "f63f2fdc64d708cd2d33df39156ae2ded7da1348f348bd5cbd25e5bd29467353",
+    "src/TEdit.Terraria/Data/prefixes.json": "7782f60b15538c064279afca6feedcd72c670cdd67880606cbe10481d869b935",
+    "src/TEdit.Terraria/Data/versions.json": "00c7bd1e1f91a1734a14799253b41c324e1ebdfda865d768cc548abafd473c37",
+    "src/TEdit.Terraria/Data/Localization/zh-Hans.json": "d5b5f79d801b3d5f26870976afd8817a054b849a510d004d1cf05edd081817f0"
+  },
+  "extracted": {
+    "items": 6170,
+    "chineseItems": 6163,
+    "prefixes": 98
+  }
+}

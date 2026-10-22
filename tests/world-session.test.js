@@ -263,3 +263,25 @@ test('queued fill cancellation leaves active render and other requests intact; l
   const rejected = assert.rejects(commit, /失效/); workers[0].reply({ type: 'error', recoverable: true, message: '预览失效' }); await rejected;
   assert.equal(session.loaded, true); session.close();
 });
+
+
+test('object reads, content writes and undo share the ordinary serialized request queue', async () => {
+  const { session, workers } = setup(); const opening = session.open({ name: 'objects.wld' });
+  workers[0].reply({ type: 'result', summary: {} }); await opening;
+  const list = session.listObjects('chest'), edit = session.edit('editObject', { kind: 'chest', index: 0, revision: 0, changes: { name: '中文箱子' } }), read = session.readObject({ kind: 'chest', index: 0 });
+  assert.equal(workers[0].message.action, 'listObjects'); workers[0].reply({ type: 'result', objects: [{ index: 0 }] }); await list;
+  assert.equal(workers[0].message.action, 'editObject'); assert.equal(workers[0].message.stroke.revision, 0);
+  workers[0].reply({ type: 'result', editState: { revision: 1 } }); await edit;
+  assert.equal(workers[0].message.action, 'readObject'); workers[0].reply({ type: 'result', object: { name: '中文箱子', revision: 1 } });
+  assert.equal((await read).object.revision, 1); session.close();
+});
+
+test('a rejected stale object save retains the loaded world and queued export still completes', async () => {
+  const { session, workers } = setup(); const opening = session.open({ name: 'objects.wld' });
+  workers[0].reply({ type: 'result', summary: {} }); await opening;
+  const editing = session.edit('editObject', { kind: 'chest', index: 0, revision: 99, changes: { name: '过时' } });
+  const rejected = assert.rejects(editing, /版本已变化/), output = session.export();
+  workers[0].reply({ type: 'error', recoverable: true, message: '世界版本已变化' }); await rejected;
+  assert.equal(session.loaded, true); assert.equal(workers[0].message.action, 'export');
+  workers[0].reply({ type: 'result', buffer: new ArrayBuffer(4), filename: 'objects-副本.wld' }); assert.equal((await output).buffer.byteLength, 4); session.close();
+});

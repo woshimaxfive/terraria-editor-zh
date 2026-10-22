@@ -304,3 +304,25 @@ summary { cursor: pointer; color: #c3cbd6; }
 .texture-controls summary { cursor: pointer; }
 .texture-errors { color: #ffad99; }
 .render-status { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Existing-object controls stay inside the established scrolling sidebar. */
+.object-editor { display: grid; gap: 12px; font-size: 12px; min-width: 0; }
+.object-editor h3 { margin: 0 0 4px; font-size: 14px; }
+.object-editor label { display: grid; gap: 6px; min-width: 0; }
+.object-editor input, .object-editor select, .object-editor textarea { width: 100%; min-width: 0; box-sizing: border-box; }
+.object-editor form { display: grid; gap: 12px; min-width: 0; }
+.object-editor textarea { resize: vertical; color: #dfe3e9; background: #171a20; border: 1px solid #3a404c; border-radius: 3px; padding: 7px; font: inherit; line-height: 1.7; }
+.object-editor textarea:focus-visible { outline: 2px solid #b6d6fa; outline-offset: 3px; }
+.object-editor fieldset { display: grid; gap: 10px; min-width: 0; margin: 0; border: 1px solid var(--line); padding: 10px; }
+.object-editor legend { max-width: 100%; overflow-wrap: anywhere; padding: 0 5px; }
+.object-location, .object-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.object-editor button { font-size: 11px; padding: 6px; }
+.object-caption { color: var(--muted); font-size: 11px; line-height: 1.7; margin: 0; }
+.object-slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.object-slots button { display: grid; gap: 3px; min-width: 0; min-height: 57px; padding: 4px 2px; text-align: center; }
+.object-slots button[aria-pressed="true"] { border-color: var(--accent); background: #303b3a; }
+.object-slots span, .object-slots small { color: var(--muted); font-size: 9px; }
+.object-slots strong { font-size: 10px; overflow-wrap: anywhere; }
+.object-item-results { display: grid; gap: 4px; max-height: 220px; overflow-y: auto; }
+.object-item-results button { justify-content: flex-start; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.object-editor .card-note { margin-top: 2px; }

@@ -6,21 +6,39 @@ function equalRange(a, startA, endA, b, startB, endB) {
   return true;
 }
 
-// Only the tile section and its following absolute pointers may change.
-export function preservesOtherSections(original, output) {
-  const a = new DataView(original), b = new DataView(output);
-  const count = a.getInt16(24, true);
-  const tableEnd = 26 + count * 4;
-  const oldTiles = a.getInt32(30, true), newTiles = b.getInt32(30, true);
-  const oldEnd = a.getInt32(34, true), newEnd = b.getInt32(34, true);
-  if (oldTiles !== newTiles || !equalRange(original, 0, 26, output, 0, 26) ||
-      !equalRange(original, tableEnd, oldTiles, output, tableEnd, newTiles) ||
-      !equalRange(original, oldEnd, original.byteLength, output, newEnd, output.byteLength)) return false;
-  const delta = newEnd - oldEnd;
+function sectionLayout(buffer) {
+  if (!(buffer instanceof ArrayBuffer) || buffer.byteLength < 66) return null;
+  const view = new DataView(buffer), count = view.getInt16(24, true);
+  if (![10, 11].includes(count) || 26 + count * 4 >= buffer.byteLength) return null;
+  const tableEnd = 26 + count * 4, pointers = [];
+  let previous = tableEnd;
   for (let i = 0; i < count; i++) {
-    const oldPointer = a.getInt32(26 + i * 4, true);
-    const newPointer = b.getInt32(26 + i * 4, true);
-    if (newPointer !== oldPointer + (i >= 2 && oldPointer ? delta : 0)) return false;
+    const pointer = view.getInt32(26 + i * 4, true);
+    if (!pointer && count === 10 && i === 9) continue;
+    if (pointer < previous || pointer >= buffer.byteLength) return null;
+    pointers.push(pointer); previous = pointer;
+  }
+  return { count, tableEnd, pointers };
+}
+
+// Only tiles may vary freely. Object sections must match independently tracked,
+// field-validated snapshots; every other section remains byte-identical.
+export function preservesEditedSections(original, output, expectedSections = new Map()) {
+  const a = sectionLayout(original), b = sectionLayout(output);
+  if (!a || !b || a.count !== b.count || a.pointers.length !== b.pointers.length ||
+      !(expectedSections instanceof Map) || [...expectedSections].some(([index, bytes]) => ![2, 3].includes(index) || !(bytes instanceof ArrayBuffer))) return false;
+  if (!equalRange(original, 0, 26, output, 0, 26) ||
+      !equalRange(original, a.tableEnd, a.pointers[0], output, b.tableEnd, b.pointers[0])) return false;
+  for (let i = 0; i < a.pointers.length; i++) {
+    if (i === 1) continue;
+    const start = b.pointers[i], end = b.pointers[i + 1] ?? output.byteLength;
+    const expected = expectedSections.get(i);
+    if (expected ? !equalRange(expected, 0, expected.byteLength, output, start, end) :
+      !equalRange(original, a.pointers[i], a.pointers[i + 1] ?? original.byteLength, output, start, end)) return false;
   }
   return true;
+}
+
+export function preservesOtherSections(original, output) {
+  return preservesEditedSections(original, output);
 }

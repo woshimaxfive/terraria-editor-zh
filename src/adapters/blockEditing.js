@@ -13,7 +13,7 @@ const solidIds = new Set(fillMetadata.solidIds), framedIds = new Set(fillMetadat
 // Read and restore every stored field, including dormant flags hidden by getTile.
 export const TILE_FIELDS = ['blockId', 'frameX', 'frameY', 'blockColor', 'wallId', 'wallColor', 'liquidAmount', 'liquidType', 'flags'];
 
-export function createBlockEditing(world, ensureWritable) {
+export function createBlockEditing(world, ensureWritable, objects = null) {
   const tiles = world.worldTiles.tiles;
   const important = index => tiles.hasBlock(index) && world.fileFormatHeader.importants[tiles.blockId[index]];
   const blockFlags = TileFlag.IS_BLOCK_ACTIVE | TileFlag.SLOPE_MASK | TileFlag.ACTUATOR | TileFlag.ACTUATED |
@@ -38,6 +38,7 @@ export function createBlockEditing(world, ensureWritable) {
     count: tiles.count,
     version: world.fileFormatHeader.version,
     ensureWritable,
+    writeObject: objects ? (kind, index, value) => objects.write(kind, index, value) : undefined,
     validateMaterial(layer, id) {
       if (layer === 'block' && id !== null && (id >= world.fileFormatHeader.importants.length || world.fileFormatHeader.importants[id])) {
         throw new EditError('此世界不支持将该材料作为普通方块放置，未修改世界。');

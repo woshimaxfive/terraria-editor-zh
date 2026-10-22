@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { constrainCamera, fitCamera, screenToWorld, visibleRegion, zoomCamera } from '../rendering/viewport.js';
 import { BRUSH_SIZES, BrushStroke, EditError } from '../editing/brush.js';
@@ -27,6 +27,8 @@ import Icon from '../app/Icon.jsx';
 import TextureControls from './TextureControls.jsx';
 import { TextureResources } from '../platform/files/TextureResources.js';
 import EditorMenu from '../app/EditorMenu.jsx';
+
+const ObjectEditor = lazy(() => import('./ObjectEditor.jsx'));
 
 const MAX_CANVAS_PIXELS = 4 * 1024 * 1024;
 const DISPLAY_LAYERS = [['block', '方块'], ['wall', '墙壁'], ['liquid', '液体'], ['wire', '电线'], ['actuator', '制动器']];
@@ -101,6 +103,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const templateInputRef = useRef(null);
   const thumbnailRef = useRef(null);
   const [panel, setPanel] = useState('materials');
+  const [objectDraft, setObjectDraft] = useState(false);
+  const objectDraftChange = useCallback(value => { setObjectDraft(value); onDraftChange(value); }, [onDraftChange]);
   const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 900);
   const panelToggleRef = useRef(null);
   pasteRef.current = tool === 'paste' ? pastePosition : null;
@@ -146,10 +150,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
 
   useEffect(() => {
     const narrow = window.matchMedia('(max-width: 900px)');
-    const collapse = event => { if (event.matches) setPanelOpen(false); };
+    const collapse = event => { if (event.matches && !objectDraft) setPanelOpen(false); };
     narrow.addEventListener('change', collapse);
     return () => narrow.removeEventListener('change', collapse);
-  }, []);
+  }, [objectDraft]);
 
   const changeCamera = useCallback(next => {
     current.current.camera = next;
@@ -666,7 +670,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     if (canvasRef.current.hasPointerCapture(event.pointerId)) canvasRef.current.releasePointerCapture(event.pointerId);
   }
 
-  const interacting = drafting || Boolean(selectionPreview) || placing || Boolean(fillState);
+  const interacting = objectDraft || drafting || Boolean(selectionPreview) || placing || Boolean(fillState);
   const panelLocked = interacting || (tool === 'paste' && window.innerWidth > 900);
   const displayedSelection = selectionPreview || selection;
   const showPanel = name => { setPanel(name); setPanelOpen(true); };
@@ -749,7 +753,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       <div className="canvas-surface">
     <canvas ref={canvasRef} className={`map-canvas${dragging ? ' dragging' : ''}${tool !== 'pan' ? ' painting' : ''}`} tabIndex="0" role="img" aria-label={`${world.name}的世界地图`} aria-describedby="map-help" aria-busy={drawing}
       onPointerDown={event => {
-        if (disabled || !camera || pointers.current.size >= 2 || (event.pointerType === 'mouse' && event.button !== 0)) return;
+        if (disabled || objectDraft || !camera || pointers.current.size >= 2 || (event.pointerType === 'mouse' && event.button !== 0)) return;
         canvasRef.current.focus({ preventScroll: true });
         pointers.current.set(event.pointerId, pointOf(event));
         canvasRef.current.setPointerCapture(event.pointerId);
@@ -803,7 +807,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       onPointerMove={move} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}
       onPointerLeave={() => { if (!pointers.current.size) { hoverRef.current = null; setCoordinates(null); redraw(); } }}
       onKeyDown={event => {
-        if (!camera || disabled) return;
+        if (!camera || disabled || objectDraft) return;
         if (event.key === 'Escape') {
           if (cadEnabled && ['paint', 'erase'].includes(tool)) { cancelStroke(); if (cadRef.current.anchor) clearCad(); else setCadMode('off'); return; }
           if (fillState) cancelFill();
@@ -869,9 +873,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
     <aside id="editor-sidebar" className="editor-sidebar" aria-label="编辑面板" hidden={!panelOpen} onKeyDown={event => {
       if (event.key === 'Escape' && !panelLocked) { event.stopPropagation(); closePanel(); }
     }}>
-      <div className="sidebar-heading"><strong>{ { materials: '材料与属性', templates: '建筑与模板', world: '世界信息', view: '图层与贴图', help: '操作帮助' }[panel]}</strong><button disabled={panelLocked} aria-label="关闭侧边面板" onClick={closePanel}><Icon name="close" size={16} /></button></div>
+      <div className="sidebar-heading"><strong>{ { materials: '材料与属性', templates: '建筑与模板', world: '世界信息', objects: '箱子与告示牌', view: '图层与贴图', help: '操作帮助' }[panel]}</strong><button disabled={panelLocked} aria-label="关闭侧边面板" onClick={closePanel}><Icon name="close" size={16} /></button></div>
       <div className="panel-nav" role="group" aria-label="面板分类">
-        {[['materials', '材料'], ['templates', '建筑'], ['world', '世界'], ['view', '显示'], ['help', '帮助']].map(([id, label]) => <button key={id} title={label} aria-label={label} aria-pressed={panel === id} aria-controls={`panel-${id}`} disabled={interacting} onClick={() => setPanel(id)}><Icon name={{ materials: 'paint', templates: 'template', world: 'world', view: 'layers', help: 'help' }[id]} /><span>{label}</span></button>)}
+        {[['materials', '材料'], ['templates', '建筑'], ['world', '世界'], ['objects', '对象'], ['view', '显示'], ['help', '帮助']].map(([id, label]) => <button key={id} title={label} aria-label={label} aria-pressed={panel === id} aria-controls={`panel-${id}`} disabled={interacting} onClick={() => setPanel(id)}><Icon name={{ materials: 'paint', templates: 'template', world: 'world', objects: 'template', view: 'layers', help: 'help' }[id]} /><span>{label}</span></button>)}
       </div>
       <div className="panel-scroll">
         <section id="panel-materials" hidden={panel !== 'materials'}>
@@ -944,6 +948,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     </div>
 
         </section>
+        <section id="panel-objects" hidden={panel !== 'objects'}>{panel === 'objects' && <Suspense fallback={<p role="status">正在读取对象编辑器…</p>}><ObjectEditor session={session} revision={editState.revision} version={world.formatVersion} disabled={disabled || drafting || Boolean(selectionPreview) || placing || Boolean(fillState)} onSave={onEdit} onDraftChange={objectDraftChange} onFailure={onError} onLocate={object => { clearChain(); clearCad(); setTool('pan'); changeCamera(constrainCamera({ x: object.x + 1, y: object.y + 1, zoom: Math.max(4, camera.zoom) }, size, world)); }} /></Suspense>}</section>
         <section id="panel-world" hidden={panel !== 'world'}>{worldDetails}</section>
         <section id="panel-help" hidden={panel !== 'help'}>
           <h3>地图操作</h3><dl className="shortcut-list"><div><dt>平移地图</dt><dd>拖动 / 方向键</dd></div><div><dt>缩放地图</dt><dd>滚轮 / 双指 / ＋ −</dd></div><div><dt>撤销 / 重做</dt><dd>Ctrl Z / Ctrl Y</dd></div><div><dt>复制 / 粘贴</dt><dd>Ctrl C / Ctrl V</dd></div><div><dt>确认 / 取消粘贴</dt><dd>Enter / Esc</dd></div></dl>
