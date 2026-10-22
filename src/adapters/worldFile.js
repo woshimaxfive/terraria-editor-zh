@@ -127,7 +127,7 @@ export async function openWorld(buffer, progress = () => {}) {
       }
       editable = true;
     }, { write: (kind, index, snapshot) => kind === 'world' ? properties.write(snapshot) : kind === 'npc' ? npcs.write(snapshot) :
-      kind === 'entities' ? furniture.write(snapshot) : objects.write(kind, index, snapshot) });
+      kind === 'entities' ? furniture.write(snapshot) : kind === 'pressure' ? furniture.writePressure(snapshot) : objects.write(kind, index, snapshot) });
     return {
       get summary() { return { ...summary, name: header.mapName, worldId: header.worldId, guid: guidText(header.guid),
         spawn: { x: header.spawnTileX, y: header.spawnTileY }, dungeon: { x: header.dungeonX, y: header.dungeonY }, points: [...properties.points(), ...npcs.points()], counts: { ...summary.counts, npcs: world.NPCs.townNPCs.length,
@@ -139,9 +139,9 @@ export async function openWorld(buffer, progress = () => {}) {
       inspectFurniture: point => furniture.inspect(point),
       previewFurniture: payload => {
         const prepared = furniture.prepare(payload, editing.state.revision);
-        const removed={chests:0,signs:0,entities:0,items:prepared.removedLegacyItems??0,texts:0,legacyItems:prepared.removedLegacyItems??0};
+        const removed={chests:0,signs:0,entities:0,pressurePlates:0,items:prepared.removedLegacyItems??0,texts:0,legacyItems:prepared.removedLegacyItems??0};
         for (const change of prepared.changes.filter(c=>c.kind)) {
-          const kind=change.kind==='collection:chest'?'chests':change.kind==='collection:sign'?'signs':change.kind==='entities'?'entities':null;
+          const kind=change.kind==='collection:chest'?'chests':change.kind==='collection:sign'?'signs':change.kind==='entities'?'entities':change.kind==='pressure'?'pressurePlates':null;
           if (!kind) continue;
           const retained=new Set(change.after.map(record=>JSON.stringify(record)));
           for(const record of change.before) if(!retained.has(JSON.stringify(record))) {

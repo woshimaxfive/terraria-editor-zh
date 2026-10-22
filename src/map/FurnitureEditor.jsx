@@ -58,7 +58,7 @@ export default function FurnitureEditor({ session, world, revision, disabled, po
     catch(value) {failure(value);}
     finally {if(mounted.current) setBusy(false);}
   }
-  const loss=preview && preview.removed.chests+preview.removed.signs+preview.removed.entities+(preview.removed.legacyItems??0)>0;
+  const loss=preview && preview.removed.chests+preview.removed.signs+preview.removed.entities+(preview.removed.pressurePlates??0)+(preview.removed.legacyItems??0)>0;
   return <div className="object-editor furniture-editor" onKeyDown={event=>{if(event.key==='Escape'&&preview&&!locked){event.stopPropagation();clear();}}}>
     <h3>家具与图格实体</h3>
     <label>家具操作<select aria-label="家具操作" value={mode} disabled={locked} onChange={event=>change(()=>setMode(event.target.value))}>
@@ -82,8 +82,9 @@ export default function FurnitureEditor({ session, world, revision, disabled, po
     {error&&<p role="alert">{error}</p>}
     {preview&&<div className="furniture-confirmation">
       <output aria-label="家具预览状态">预览影响 {preview.affected.length} 格；{preview.changes?'尚未写入世界。':'目标没有变化。'}</output>
-      {loss&&<><p role="alert">将移除 {preview.removed.chests} 个箱子、{preview.removed.signs} 个告示牌、{preview.removed.entities} 个实体，其中有 {preview.removed.items} 格物品、{preview.removed.texts} 份文字。</p>
+      {loss&&<>{preview.removed.chests+preview.removed.signs+preview.removed.entities+(preview.removed.legacyItems??0)>0&&<p role="alert">将移除 {preview.removed.chests} 个箱子、{preview.removed.signs} 个告示牌、{preview.removed.entities} 个实体，其中有 {preview.removed.items} 格物品、{preview.removed.texts} 份文字。</p>}
         {preview.removed.legacyItems>0&&<p role="alert">其中包含 {preview.removed.legacyItems} 件旧式帧内装备。</p>}
+        {preview.removed.pressurePlates>0&&<p role="alert">将一并移除 {preview.removed.pressurePlates} 条加重压力板按压记录。</p>}
         <label className="world-property-toggle"><input aria-label="确认家具内容删除" type="checkbox" checked={acknowledged} disabled={locked} onChange={event=>setAcknowledged(event.target.checked)} /><span>确认删除这些配套记录及内容</span></label></>}
       <div className="object-actions"><button disabled={locked||!preview.changes||(loss&&!acknowledged)} onClick={commit}>确认家具修改</button><button disabled={locked} onClick={clear}>取消家具预览</button></div>
     </div>}

@@ -1,5 +1,6 @@
 import BinarySaver from '../../vendor/terraria-world-file/src/BinarySaver.ts';
 import TileEntitiesIO from '../../vendor/terraria-world-file/src/section/TileEntities.ts';
+import WeightedPressurePlatesIO from '../../vendor/terraria-world-file/src/section/WeightedPressurePlates.ts';
 import { TileFlag } from '../../vendor/terraria-world-file/src/types.ts';
 import { TILE_FIELDS } from './blockEditing.js';
 import { furnitureType, furnitureFrames, furnitureLimit, furnitureCompanion, furnitureEntityType } from '../editing/furniture.js';
@@ -36,6 +37,7 @@ function newEntity(tileId, pattern, x, y, id, version) {
 export function createFurnitureEditing(world, objects) {
   const tiles = world.worldTiles.tiles, version = world.fileFormatHeader.version;
   let expectedEntities = clone(world.tileEntities.entities);
+  let expectedPressurePlates = clone(world.weightedPressurePlates.weightedPressurePlates);
   const indexes = new Map();
   const bounds = (x,y) => Number.isSafeInteger(x) && Number.isSafeInteger(y) && x >= 0 && y >= 0 && x < tiles.width && y < tiles.height;
   const read = index => TILE_FIELDS.map(field => tiles[field][index]);
@@ -118,7 +120,7 @@ export function createFurnitureEditing(world, objects) {
       (next.tileId===334 ? previous.tileId===334 : [128,269].includes(previous.tileId));
     if(preserveLegacy) next=legacyWithContents(next,previous.legacy);
     const removedLegacyItems=action==='content'?0:[...owners.values()].filter(owner=>!(preserveLegacy&&owner===previous)).reduce((count,owner)=>count+legacyItemCount(owner),0);
-    const data = {chest:objects.snapshot('chest'),sign:objects.snapshot('sign'),entity:clone(expectedEntities)};
+    const data = {chest:objects.snapshot('chest'),sign:objects.snapshot('sign'),entity:clone(expectedEntities),pressure:clone(expectedPressurePlates)};
     // Never silently repair unrelated orphan records or discard duplicate data.
     for (const [kind,list] of Object.entries(data)) {
       const seen = new Set();
@@ -126,17 +128,19 @@ export function createFurnitureEditing(world, objects) {
         const {x:rx,y:ry}=record.position;
         if (!bounds(rx,ry) || !affected.has(tiles.index(rx,ry))) continue;
         const owner = owners.get(key(rx,ry));
-        if (!owner || furnitureCompanion(owner.tileId) !== kind || seen.has(key(rx,ry)) ||
+        if (!owner || (kind==='pressure' ? owner.tileId!==428 : furnitureCompanion(owner.tileId) !== kind) || seen.has(key(rx,ry)) ||
           (kind==='entity' && record.type !== furnitureEntityType(owner.tileId))) fail('编辑区域存在重复或不匹配的配套记录，未修改世界。');
         seen.add(key(rx,ry));
       }
     }
-    if (world.weightedPressurePlates.weightedPressurePlates.some(p => bounds(p.position.x,p.position.y) && affected.has(tiles.index(p.position.x,p.position.y)))) fail('编辑区域包含压力板配套记录，尚不能整体替换。');
     const newKind = action!=='remove' ? furnitureCompanion(next.tileId) : null;
     const keep = newKind ? data[newKind].find(r => r.position.x===x && r.position.y===y &&
       (newKind!=='entity' || r.type===furnitureEntityType(next.tileId))) : null;
     for (const [kind,list] of Object.entries(data)) data[kind]=list.filter(record => {
       if (kind===newKind && record===keep) return true;
+      // This is the game's saved pressed-location set, not a registry of every
+      // placed plate. Recolouring/reframing the same plate retains its entry.
+      if (kind==='pressure' && action!=='remove' && next.tileId===428 && record.position.x===next.x && record.position.y===next.y) return true;
       return !owners.has(key(record.position.x,record.position.y));
     });
     if (newKind && !keep) {
@@ -173,6 +177,11 @@ export function createFurnitureEditing(world, objects) {
       const before=clone(expectedEntities),after=data.entity;
       const cost=Math.max(1,Math.ceil(new TextEncoder().encode(JSON.stringify(before)+JSON.stringify(after)).byteLength/64));
       changes.push({kind:'entities',index:0,before,after,cost});
+    }
+    if (!equal(expectedPressurePlates,data.pressure)) {
+      const before=clone(expectedPressurePlates),after=data.pressure;
+      const cost=Math.max(1,Math.ceil(new TextEncoder().encode(JSON.stringify(before)+JSON.stringify(after)).byteLength/64));
+      changes.push({kind:'pressure',index:0,before,after,cost});
     }
     return {changes,affected:[...affected.values()],placed:action!=='remove'?next:null,removedLegacyItems};
   }
@@ -217,9 +226,11 @@ export function createFurnitureEditing(world, objects) {
       return [{kind:'entities',index:0,before,after,cost}];
     },
     write(snapshot) {world.tileEntities.entities=clone(snapshot);expectedEntities=clone(snapshot);},
+    writePressure(snapshot) {world.weightedPressurePlates.weightedPressurePlates=clone(snapshot);expectedPressurePlates=clone(snapshot);},
     expectedSections() {
       const saver=new BinarySaver();new TileEntitiesIO().save(saver,{entities:expectedEntities},{version});saver.trimBuffer();
-      return new Map([[5,saver.getBuffer()]]);
+      const pressure=new BinarySaver();new WeightedPressurePlatesIO().save(pressure,{weightedPressurePlates:expectedPressurePlates},{version});pressure.trimBuffer();
+      return new Map([[5,saver.getBuffer()],[6,pressure.getBuffer()]]);
     },
   };
 }
