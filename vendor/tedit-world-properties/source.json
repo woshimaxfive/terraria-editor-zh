@@ -5,12 +5,20 @@
   "files": [
     "src/TEdit/View/Sidebar/WorldPropertiesView.xaml",
     "src/TEdit.Terraria/World.Properties.cs",
-    "src/TEdit/Converters/TerrariaTimeConverter.cs"
+    "src/TEdit/Converters/TerrariaTimeConverter.cs",
+    "src/TEdit.Terraria/Data/backgroundStyles.json",
+    "src/TEdit.Terraria/WorldConfiguration.cs",
+    "src/TEdit.Terraria/World.FileV2.cs"
   ],
   "sourceSha256": {
     "src/TEdit/View/Sidebar/WorldPropertiesView.xaml": "3c8a1bb3cdb09004b7a715180fa96907fd66644cb079fceae572eb79012ada99",
     "src/TEdit.Terraria/World.Properties.cs": "d79361eeff3c9c65e3526dfc6f1d11a387e6d63818bb705c9782bb8ab8636d9b",
-    "src/TEdit/Converters/TerrariaTimeConverter.cs": "f26ef51832babfef87d1a2cce4ff2b26507559af79faa99037224d8dfd7762ff"
+    "src/TEdit/Converters/TerrariaTimeConverter.cs": "f26ef51832babfef87d1a2cce4ff2b26507559af79faa99037224d8dfd7762ff",
+    "src/TEdit.Terraria/Data/backgroundStyles.json": "55341cee0680fa4834860df892c498889e8723aefcc0f0b01e0d6675316a3e1c",
+    "src/TEdit.Terraria/WorldConfiguration.cs": "5d951d8bed090ef43ae0f63297b51e0a38936abc2b3e20bebaac8d8cadaa756f",
+    "src/TEdit.Terraria/World.FileV2.cs": "2d45573ce1538b6f726d82f8fad38b09034c475a144e826b3a63cb6bdec7a893"
   },
-  "changes": "Adapt world property field semantics, format-aware difficulty, 4:30 dawn / 19:30 dusk clock, weather limits and derived mechanical boss progress. Browser implementation uses validated field patches, independent expected header/footer encoding, shared history and detached sidebar drafts. Preserve identity, generation data, coordinates, NPC records and all unrelated fields. Numeric events, biome/background styles, secret seeds, terrain levels and structural editing remain separate work."
+  "changes": "Adapt format-aware world fields, clock/weather/progress, numeric events and quests, actual background and tree/cave style IDs, ore choices, special seed flags, boundary setters, safe layer limits and layer-gap repair. Extract only selectable IDs and English/Chinese identification labels; no game texture or preview image data. Keep source names and unknown untouched values. Browser drafts use source-compatible coupled rules; validated final field patches share history and independently encoded expected header/footer checks. Identity/coordinate/NPC records and structural editing remain separate work. Read modern style values from the authoritative tree-top array and synchronize only explicitly edited legacy/tree-top slots, retaining unknown unedited and trailing entries.",
+  "labelSource": "../tedit-objects/source.json",
+  "questAlias": "Retain desktop quest 25 Amanitia Fungifin as the source name; identify canonical item 2475 Amanita Fungifin for its Chinese alias."
 }

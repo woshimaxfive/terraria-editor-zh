@@ -2,6 +2,8 @@ import BinarySaver from '../../vendor/terraria-world-file/src/BinarySaver.ts';
 import HeaderIO from '../../vendor/terraria-world-file/src/section/Header.ts';
 import FooterIO from '../../vendor/terraria-world-file/src/section/Footer.ts';
 import { EditError } from '../editing/brush.js';
+import catalogue from '../../vendor/tedit-world-properties/catalogue.json' with { type: 'json' };
+import { worldLayerLimits } from '../editing/worldPropertyRules.js';
 
 // Field semantics and limits follow the pinned desktop WorldPropertiesView.
 // Storage fields and third-party section objects stay inside this adapter.
@@ -88,37 +90,116 @@ for (const [id, storage, label, since] of [
   ['satchel', 'peddlersSatchelWasUsed', '已使用商贩背包', 269],
 ]) boolean(id, storage, label, '居民与增益', since);
 
+field('moonType', 'moonType', '月亮外观', '时间与天气', 'select', { options: ['灰色', '棕色', '星环', '蓝色大理石', '白色冰月', '绿色气态', '粉色', '橙色金星', '三重紫月'].map((label, id) => [id, label]) });
+boolean('crimson', 'crimson', '猩红世界', '矿物与邪恶');
+boolean('meteor', 'spawnMeteor', '生成陨石标记', '矿物与邪恶');
+boolean('orbSmashed', 'shadowOrbSmashed', '已破坏暗影珠或猩红之心', '矿物与邪恶');
+number('orbCount', 'shadowOrbCount', '暗影珠 / 猩红之心计数', '矿物与邪恶', 0, 3);
+number('altars', 'altarCount', '祭坛计数', '矿物与邪恶', 0, 3);
+for (const [id, storage, label, options, since] of [
+  ['copperOre', 'savedOreTierCopper', '铜 / 锡矿', [[7, '铜矿'], [166, '锡矿']], 225],
+  ['ironOre', 'savedOreTierIron', '铁 / 铅矿', [[6, '铁矿'], [167, '铅矿']], 225],
+  ['silverOre', 'savedOreTierSilver', '银 / 钨矿', [[9, '银矿'], [168, '钨矿']], 225],
+  ['goldOre', 'savedOreTierGold', '金 / 铂金矿', [[8, '金矿'], [169, '铂金矿']], 225],
+  ['cobaltOre', 'oreTier1', '钴 / 钯金矿', [[107, '钴矿'], [221, '钯金矿']], 194],
+  ['mythrilOre', 'oreTier2', '秘银 / 山铜矿', [[108, '秘银矿'], [222, '山铜矿']], 194],
+  ['adamantiteOre', 'oreTier3', '精金 / 钛金矿', [[111, '精金矿'], [223, '钛金矿']], 194],
+]) field(id, storage, label, '矿物与邪恶', 'select', { since, options: [[-1, '尚未确定'], ...options] });
+field('invasion', 'invasionType', '当前入侵类型', '事件参数', 'select', { options: [[0, '无入侵'], [1, '哥布林军队'], [2, '雪人军团'], [3, '海盗入侵'], [4, '火星暴乱']] });
+number('invasionSize', 'invasionSize', '入侵剩余数量', '事件参数', 0, 1000);
+number('invasionX', 'invasionX', '入侵位置 X', '事件参数', 0, null, { widthBound: true, integer: false });
+number('cultistDelay', 'tempCultistDelay', '邪教徒生成延迟', '事件参数', 0, 86400);
+number('lanternCooldown', 'lanternNightCooldown', '灯笼夜冷却计数', '事件参数', 0, 2147483647, { since: 225 });
+field('anglerQuest', 'anglerQuest', '当前渔夫任务', '居民与增益', 'select', { options: catalogue.quests.map(([id, name, label]) => [id, label]) });
+boolean('partyOfDoom', 'afterPartyOfDoom', '派对后的世界标记', '事件参数', 257);
+
+for (let index = 0; index < 3; index++) {
+  number('treeSplit' + index, 'treeX', `树木分界 ${index + 1} X`, '树木与洞穴', 0, null, { component: index, widthBound: true });
+  number('caveSplit' + index, 'caveBackX', `洞穴分界 ${index + 1} X`, '树木与洞穴', 0, null, { component: index, widthBound: true });
+}
+function style(id, storage, label, group, key, options = {}) {
+  field(id, storage, label, group, 'select', { options: catalogue.backgrounds[key].map(([id, name, label]) => [id, `${label} · ${id}`]), ...options });
+}
+for (let index = 0; index < 4; index++) {
+  style('treeStyle' + index, 'treeStyle', `树木区域 ${index + 1} 样式`, '树木与洞穴', 'treeStyles', { component: index });
+  style('caveStyle' + index, 'caveBackStyle', `洞穴区域 ${index + 1} 样式`, '树木与洞穴', 'caveBackgrounds', { component: index });
+}
+style('iceCave', 'iceBackStyle', '地下雪原样式', '树木与洞穴', 'iceBackgrounds');
+style('jungleCave', 'jungleBackStyle', '地下丛林样式', '树木与洞穴', 'jungleUndergroundBackgrounds');
+style('hellCave', 'hellBackStyle', '洞穴底部样式', '树木与洞穴', 'hellBackgrounds');
+for (const [id, storage, label, key, since] of [
+  ['forestBackground', 'setBG0', '森林背景 1', 'forestBackgrounds', 194],
+  ['corruptBackground', 'setBG1', '腐化背景', 'corruptionBackgrounds', 194],
+  ['jungleBackground', 'setBG2', '丛林背景', 'jungleBackgrounds', 194],
+  ['snowBackground', 'setBG3', '雪原背景', 'snowBackgrounds', 194],
+  ['hallowBackground', 'setBG4', '神圣背景', 'hallowBackgrounds', 194],
+  ['crimsonBackground', 'setBG5', '猩红背景', 'crimsonBackgrounds', 194],
+  ['desertBackground', 'setBG6', '沙漠背景', 'desertBackgrounds', 194],
+  ['oceanBackground', 'setBG7', '海洋背景', 'oceanBackgrounds', 194],
+  ['mushroomBackground', 'setBG8', '蘑菇背景', 'mushroomBackgrounds', 225],
+  ['underworldBackground', 'setBG9', '地狱背景', 'underworldBackgrounds', 225],
+  ['forestBackground2', 'setBG10', '森林背景 2', 'forestBackgrounds', 225],
+  ['forestBackground3', 'setBG11', '森林背景 3', 'forestBackgrounds', 225],
+  ['forestBackground4', 'setBG12', '森林背景 4', 'forestBackgrounds', 225],
+]) style(id, storage, label, '群系背景', key, { since });
+number('surfaceLevel', 'worldSurface', '地表层深度', '地层', 0, null, { integer: false, layer: 'surface' });
+number('rockLevel', 'rockLayer', '洞穴层深度', '地层', 0, null, { integer: false, layer: 'rock' });
+for (const [id, storage, label, since] of [
+  ['drunkSeed', 'drunkWorld', '醉酒世界', 225], ['worthySeed', 'getGoodWorld', '受尽折磨（for the worthy）', 227],
+  ['anniversarySeed', 'getTenthAnniversaryWorld', '十周年庆典', 238], ['starveSeed', 'dontStarveWorld', '永恒领域（饥荒联动）', 239],
+  ['beesSeed', 'notTheBeesWorld', '蜂蜜世界', 241], ['remixSeed', 'remixWorld', '颠倒世界', 249],
+  ['trapsSeed', 'noTrapsWorld', '机关世界（no traps）', 266], ['zenithSeed', 'zenithWorld', '天顶世界', 267],
+  ['skyblockSeed', 'skyblockWorld', '空岛世界', 302], ['vampireSeed', 'vampireSeed', '吸血鬼种子标记', 288],
+  ['infectedSeed', 'infectedSeed', '感染种子标记', 296], ['dualDungeonsSeed', 'dualDungeonsSeed', '双地牢种子标记', 304],
+  ['moreLightningSeed', 'moreLightningSeed', '更多闪电种子标记', 323], ['noLightningSeed', 'noLightningSeed', '无闪电种子标记', 323],
+]) boolean(id, storage, label, '特殊种子', since);
+
 const clone = value => structuredClone(value);
 const plain = value => value && typeof value === 'object' && [Object.prototype, null].includes(Object.getPrototypeOf(value));
 const fail = () => { throw new EditError('世界属性参数无效，未修改世界。'); };
+// World.FileV2 reverse-syncs these entries on load and syncs them on save.
+// Newer worlds use the tree-top array as the authoritative style values.
+const treeTopSlots = { setBG1: 4, jungleBackStyle: 5, setBG3: 6, setBG4: 7,
+  setBG5: 8, setBG6: 9, setBG7: 10, setBG8: 11, setBG9: 12 };
+const treeTopSlot = definition => definition.storage === 'treeStyle' ? definition.component : treeTopSlots[definition.storage];
 function encode(io, data, properties) {
   const saver = new BinarySaver(); io.save(saver, data, properties); saver.trimBuffer(); return saver.getBuffer();
 }
 
 export function createWorldProperties(world) {
   const version = world.fileFormatHeader.version;
-  let expected = clone(world.header);
+  const expected = clone(world.header);
+  const constraints = { width: expected.maxTilesX, height: expected.maxTilesY, layerMargin: catalogue.layerMargin };
   const fields = definitions.filter(definition => definition.since <= version).map(definition => ({ ...definition,
+    ...(definition.widthBound ? { max: constraints.width } : {}),
+    ...(definition.layer ? { max: worldLayerLimits(constraints, false)[definition.layer] } : {}),
     ...(definition.id === 'difficulty' && version < 225 ? { options: definition.options.slice(0, 2) } : {}) }));
   const byId = new Map(fields.map(definition => [definition.id, definition]));
   function value(definition) {
     if (definition.id === 'difficulty') return version < 225 ? Number(expected.expertMode) : expected.gameMode;
     if (definition.id === 'clock') return ((expected.tempTime + (expected.tempDayTime ? 0 : 54000) + 16200) % 86400 + 86400) % 86400;
-    return expected[definition.storage];
+    const slot = treeTopSlot(definition);
+    if (version >= 225 && slot !== undefined) return expected.treeTopsVariations[slot] ?? 0;
+    return definition.component === undefined ? expected[definition.storage] : expected[definition.storage][definition.component];
   }
   return {
     read() {
-      return { fields: fields.map(({ storage, float32, since, ...definition }) => clone(definition)),
+      return { constraints: clone(constraints), fields: fields.map(({ storage, component, float32, since, widthBound, ...definition }) => clone(definition)),
         values: Object.fromEntries(fields.map(definition => [definition.id, value(definition)])) };
     },
     prepare(payload, revision) {
-      if (!plain(payload) || Object.keys(payload).some(key => !['revision', 'changes'].includes(key)) || payload.revision !== revision) {
+      if (!plain(payload) || Object.keys(payload).some(key => !['revision', 'changes', 'options'].includes(key)) || payload.revision !== revision) {
         throw new EditError('世界属性或版本已变化，请重新读取后再保存。');
       }
       if (!plain(payload.changes) || !Object.keys(payload.changes).length) fail();
+      if (payload.options !== undefined && (!plain(payload.options) || Object.keys(payload.options).some(key => key !== 'safeLayers') || typeof payload.options.safeLayers !== 'boolean')) fail();
+      const layerLimits = worldLayerLimits(constraints, payload.options?.safeLayers ?? true);
       // History stores validated field patches, never a caller-supplied header.
       const before = {}, after = {};
-      const set = (key, next) => { if (!Object.is(expected[key], next)) { before[key] = clone(expected[key]); after[key] = clone(next); } };
+      const set = (key, next) => {
+        if (Object.is(expected[key], next) || (Array.isArray(next) && JSON.stringify(expected[key]) === JSON.stringify(next))) { delete before[key]; delete after[key]; }
+        else { before[key] = clone(expected[key]); after[key] = clone(next); }
+      };
       for (const [id, next] of Object.entries(payload.changes)) {
         const definition = byId.get(id); if (!definition) fail();
         if (definition.type === 'boolean') { if (typeof next !== 'boolean') fail(); }
@@ -127,17 +208,30 @@ export function createWorldProperties(world) {
               [...next].some(char => char.codePointAt(0) >= 0xd800 && char.codePointAt(0) <= 0xdfff) || new TextEncoder().encode(next).byteLength > 1024) fail();
         } else if (definition.type === 'select') { if (!definition.options.some(([option]) => option === next)) fail(); }
         else if (definition.type === 'clock') { if (!Number.isInteger(next) || next < 0 || next >= 86400) fail(); }
-        else if (!Number.isFinite(next) || next < definition.min || next > definition.max || (definition.integer && !Number.isInteger(next))) fail();
+        else if (!Number.isFinite(next) || next < definition.min || next > (definition.layer ? layerLimits[definition.layer] : definition.max) || (definition.integer && !Number.isInteger(next))) fail();
         if (id === 'difficulty') set(version < 225 ? 'expertMode' : 'gameMode', version < 225 ? Boolean(next) : next);
         else if (id === 'clock') {
           const continuous = (next - 16200 + 86400) % 86400;
           set('tempDayTime', continuous < 54000); set('tempTime', continuous < 54000 ? continuous : continuous - 54000);
+        } else if (definition.component !== undefined) {
+          const array = clone(after[definition.storage] ?? expected[definition.storage]); array[definition.component] = next; set(definition.storage, array);
         } else set(definition.storage, definition.float32 ? Math.fround(next) : next);
+        const slot = treeTopSlot(definition);
+        if (version >= 225 && slot !== undefined) {
+          const array = clone(after.treeTopsVariations ?? expected.treeTopsVariations);
+          while (array.length < 13) array.push(0);
+          array[slot] = next; set('treeTopsVariations', array);
+        }
       }
       if (['destroyer', 'twins', 'prime'].some(id => Object.hasOwn(payload.changes, id))) {
         const combined = { ...expected, ...after };
         set('downedMechBossAny', combined.downedMechBoss1 || combined.downedMechBoss2 || combined.downedMechBoss3);
       }
+      if (Object.hasOwn(payload.changes, 'orbCount') && !Object.hasOwn(payload.changes, 'orbSmashed')) set('shadowOrbSmashed', payload.changes.orbCount > 0);
+      for (const key of ['treeX', 'caveBackX']) if (Object.hasOwn(after, key) && after[key].some((value, index, array) => index > 0 && value < array[index - 1])) fail();
+      if ((Object.hasOwn(after, 'worldSurface') || Object.hasOwn(after, 'rockLayer')) &&
+          ((after.worldSurface ?? expected.worldSurface) >= (after.rockLayer ?? expected.rockLayer) ||
+           (after.worldSurface ?? expected.worldSurface) > layerLimits.surface || (after.rockLayer ?? expected.rockLayer) > layerLimits.rock)) fail();
       if (!Object.keys(after).length) return null;
       return { kind: 'world', index: 0, before, after, cost: Math.max(1, Math.ceil(new TextEncoder().encode(JSON.stringify(before) + JSON.stringify(after)).byteLength / 64)) };
     },

@@ -1,0 +1,772 @@
+{
+  "layerMargin": 478,
+  "backgrounds": {
+    "treeStyles": [
+      [
+        0,
+        "Oak",
+        "橡树"
+      ],
+      [
+        1,
+        "Boreal",
+        "针叶树"
+      ],
+      [
+        2,
+        "Jungle-like",
+        "丛林树"
+      ],
+      [
+        3,
+        "Sakura",
+        "樱花树"
+      ],
+      [
+        4,
+        "Willow",
+        "柳树"
+      ],
+      [
+        5,
+        "Palm-like",
+        "棕榈树"
+      ]
+    ],
+    "forestBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Variant 2",
+        "样式 2"
+      ],
+      [
+        3,
+        "Variant 3",
+        "样式 3"
+      ],
+      [
+        4,
+        "Mountains Only",
+        "仅山脉"
+      ],
+      [
+        5,
+        "Mountains + Tree",
+        "山脉与树木"
+      ],
+      [
+        6,
+        "Variant 6",
+        "样式 6"
+      ],
+      [
+        7,
+        "Variant 7",
+        "样式 7"
+      ],
+      [
+        8,
+        "Variant 8",
+        "样式 8"
+      ],
+      [
+        9,
+        "Variant 9",
+        "样式 9"
+      ],
+      [
+        10,
+        "Variant 10",
+        "样式 10"
+      ],
+      [
+        11,
+        "Variant 11",
+        "样式 11"
+      ],
+      [
+        12,
+        "Variant 12",
+        "样式 12"
+      ],
+      [
+        13,
+        "Variant 13",
+        "样式 13"
+      ],
+      [
+        31,
+        "Variant 3 Alt",
+        "样式 3变体"
+      ],
+      [
+        51,
+        "Mountains Alt",
+        "山脉变体"
+      ],
+      [
+        71,
+        "Variant 7 Alt A",
+        "样式 7变体 A"
+      ],
+      [
+        72,
+        "Variant 7 Alt B",
+        "样式 7变体 B"
+      ],
+      [
+        73,
+        "Variant 7 Alt C",
+        "样式 7变体 C"
+      ]
+    ],
+    "corruptionBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Variant 2",
+        "样式 2"
+      ],
+      [
+        3,
+        "Variant 3",
+        "样式 3"
+      ],
+      [
+        4,
+        "Variant 4",
+        "样式 4"
+      ],
+      [
+        51,
+        "Remix 1",
+        "颠倒变体 1"
+      ],
+      [
+        52,
+        "Remix 2",
+        "颠倒变体 2"
+      ]
+    ],
+    "jungleBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Variant 2",
+        "样式 2"
+      ],
+      [
+        3,
+        "Variant 3",
+        "样式 3"
+      ],
+      [
+        4,
+        "Variant 4",
+        "样式 4"
+      ],
+      [
+        5,
+        "Variant 5",
+        "样式 5"
+      ],
+      [
+        6,
+        "Variant 6",
+        "样式 6"
+      ]
+    ],
+    "snowBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Mountains Only A",
+        "仅山脉 A"
+      ],
+      [
+        3,
+        "Mountains Only B",
+        "仅山脉 B"
+      ],
+      [
+        4,
+        "Mountains Only C",
+        "仅山脉 C"
+      ],
+      [
+        5,
+        "Trees Only A",
+        "仅树木 A"
+      ],
+      [
+        6,
+        "Trees Only B",
+        "仅树木 B"
+      ],
+      [
+        7,
+        "Variant 7",
+        "样式 7"
+      ],
+      [
+        8,
+        "Variant 8",
+        "样式 8"
+      ],
+      [
+        21,
+        "Mnt 2 + Trees",
+        "山脉 2 与树木"
+      ],
+      [
+        22,
+        "Mnt 2 + Default Trees",
+        "山脉 2 与默认树木"
+      ],
+      [
+        31,
+        "Mnt 3 + Trees",
+        "山脉 3 与树木"
+      ],
+      [
+        32,
+        "Mnt 3 + Default Trees",
+        "山脉 3 与默认树木"
+      ],
+      [
+        41,
+        "Mnt 4 + Trees",
+        "山脉 4 与树木"
+      ],
+      [
+        42,
+        "Mnt 4 + Default Trees",
+        "山脉 4 与默认树木"
+      ]
+    ],
+    "hallowBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Variant 2",
+        "样式 2"
+      ],
+      [
+        3,
+        "Variant 3",
+        "样式 3"
+      ],
+      [
+        4,
+        "Variant 4",
+        "样式 4"
+      ],
+      [
+        5,
+        "Variant 5",
+        "样式 5"
+      ]
+    ],
+    "crimsonBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Variant 2",
+        "样式 2"
+      ],
+      [
+        3,
+        "Variant 3",
+        "样式 3"
+      ],
+      [
+        4,
+        "Variant 4",
+        "样式 4"
+      ],
+      [
+        5,
+        "Variant 5",
+        "样式 5"
+      ],
+      [
+        6,
+        "Variant 6",
+        "样式 6"
+      ]
+    ],
+    "desertBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Variant 2",
+        "样式 2"
+      ],
+      [
+        3,
+        "Variant 3",
+        "样式 3"
+      ],
+      [
+        4,
+        "Variant 4",
+        "样式 4"
+      ],
+      [
+        51,
+        "Multi-Biome A",
+        "多群系变体 A"
+      ],
+      [
+        52,
+        "Multi-Biome B",
+        "多群系变体 B"
+      ],
+      [
+        53,
+        "Multi-Biome C",
+        "多群系变体 C"
+      ]
+    ],
+    "oceanBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Variant 2",
+        "样式 2"
+      ],
+      [
+        3,
+        "Variant 3",
+        "样式 3"
+      ],
+      [
+        4,
+        "Variant 4",
+        "样式 4"
+      ],
+      [
+        5,
+        "Variant 5",
+        "样式 5"
+      ],
+      [
+        6,
+        "Variant 6",
+        "样式 6"
+      ],
+      [
+        7,
+        "Variant 7",
+        "样式 7"
+      ]
+    ],
+    "mushroomBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Variant 2",
+        "样式 2"
+      ],
+      [
+        3,
+        "Variant 3",
+        "样式 3"
+      ],
+      [
+        4,
+        "Variant 4",
+        "样式 4"
+      ]
+    ],
+    "underworldBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Variant 2",
+        "样式 2"
+      ]
+    ],
+    "caveBackgrounds": [
+      [
+        0,
+        "Stone",
+        "石质"
+      ],
+      [
+        1,
+        "Gray",
+        "灰色"
+      ],
+      [
+        2,
+        "Brown",
+        "棕色"
+      ],
+      [
+        3,
+        "Blue",
+        "蓝色"
+      ],
+      [
+        4,
+        "Blue Alt",
+        "蓝色变体"
+      ],
+      [
+        5,
+        "Green",
+        "绿色"
+      ],
+      [
+        6,
+        "Green Alt",
+        "绿色变体"
+      ],
+      [
+        7,
+        "Purple",
+        "紫色"
+      ]
+    ],
+    "iceBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Variant 2",
+        "样式 2"
+      ],
+      [
+        3,
+        "Variant 3",
+        "样式 3"
+      ]
+    ],
+    "jungleUndergroundBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ]
+    ],
+    "hellBackgrounds": [
+      [
+        0,
+        "Default",
+        "默认"
+      ],
+      [
+        1,
+        "Variant 1",
+        "样式 1"
+      ],
+      [
+        2,
+        "Variant 2",
+        "样式 2"
+      ]
+    ]
+  },
+  "quests": [
+    [
+      0,
+      "Batfish",
+      "蝙蝠鱼"
+    ],
+    [
+      1,
+      "Bumblebee Tuna",
+      "大黄蜂金枪鱼"
+    ],
+    [
+      2,
+      "Catfish",
+      "猫鱼"
+    ],
+    [
+      3,
+      "Cloudfish",
+      "云鱼"
+    ],
+    [
+      4,
+      "Cursedfish",
+      "诅咒鱼"
+    ],
+    [
+      5,
+      "Dirtfish",
+      "土鱼"
+    ],
+    [
+      6,
+      "Dynamite Fish",
+      "雷管鱼"
+    ],
+    [
+      7,
+      "Eater of Plankton",
+      "浮游噬鱼"
+    ],
+    [
+      8,
+      "Fallen Starfish",
+      "坠落星鱼"
+    ],
+    [
+      9,
+      "The Fish of Cthulhu",
+      "克苏鲁鱼"
+    ],
+    [
+      10,
+      "Fishotron",
+      "骷髅王鱼"
+    ],
+    [
+      11,
+      "Harpyfish",
+      "鸟妖鱼"
+    ],
+    [
+      12,
+      "Hungerfish",
+      "饿鬼鱼"
+    ],
+    [
+      13,
+      "Ichorfish",
+      "灵液鱼"
+    ],
+    [
+      14,
+      "Jewelfish",
+      "珠宝鱼"
+    ],
+    [
+      15,
+      "Mirage Fish",
+      "幻象鱼"
+    ],
+    [
+      16,
+      "Mutant Flinxfin",
+      "突变雪怪鱼"
+    ],
+    [
+      17,
+      "Pengfish",
+      "企鹅鱼"
+    ],
+    [
+      18,
+      "Pixiefish",
+      "妖精鱼"
+    ],
+    [
+      19,
+      "Spiderfish",
+      "蜘蛛鱼"
+    ],
+    [
+      20,
+      "Tundra Trout",
+      "苔原鳟鱼"
+    ],
+    [
+      21,
+      "Unicorn Fish",
+      "独角兽鱼"
+    ],
+    [
+      22,
+      "Guide Voodoo Fish",
+      "向导巫毒鱼"
+    ],
+    [
+      23,
+      "Wyverntail",
+      "飞龙尾"
+    ],
+    [
+      24,
+      "Zombie Fish",
+      "僵尸鱼"
+    ],
+    [
+      25,
+      "Amanitia Fungifin",
+      "毒菌鱼"
+    ],
+    [
+      26,
+      "Angelfish",
+      "天使鱼"
+    ],
+    [
+      27,
+      "Bloody Manowar",
+      "血腥战神"
+    ],
+    [
+      28,
+      "Bonefish",
+      "骷髅鱼"
+    ],
+    [
+      29,
+      "Bunnyfish",
+      "兔兔鱼"
+    ],
+    [
+      30,
+      "Cap'n Tunabeard",
+      "金枪鱼须船长"
+    ],
+    [
+      31,
+      "Clownfish",
+      "小丑鱼"
+    ],
+    [
+      32,
+      "Demonic Hellfish",
+      "恶魔地狱鱼"
+    ],
+    [
+      33,
+      "Derpfish",
+      "跳跳鱼"
+    ],
+    [
+      34,
+      "Fishron",
+      "猪龙鱼"
+    ],
+    [
+      35,
+      "Infected Scabbardfish",
+      "染病鞘鱼"
+    ],
+    [
+      36,
+      "Mudfish",
+      "泥鱼"
+    ],
+    [
+      37,
+      "Slimefish",
+      "史莱姆鱼"
+    ],
+    [
+      38,
+      "Tropical Barracuda",
+      "热带梭鱼"
+    ]
+  ]
+}
