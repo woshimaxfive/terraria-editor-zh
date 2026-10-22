@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 import { constrainCamera, fitCamera, screenToWorld, visibleRegion, zoomCamera } from '../rendering/viewport.js';
 import { BRUSH_SIZES, BrushStroke, EditError } from '../editing/brush.js';
-import { selectionFromPoints } from '../editing/selection.js';
+import { containsCell, selectionFromPoints } from '../editing/selection.js';
 import MaterialPicker from './MaterialPicker.jsx';
 import LiquidPicker from './LiquidPicker.jsx';
 import CircuitPicker from './CircuitPicker.jsx';
@@ -14,6 +14,8 @@ import { brushOutline, createBrushShape, maxLineThickness } from '../editing/bru
 import BrushShapeControls from './BrushShapeControls.jsx';
 import HollowBrushControls from './HollowBrushControls.jsx';
 import SprayBrushControls from './SprayBrushControls.jsx';
+import CadRoutingControls from './CadRoutingControls.jsx';
+import { cadWireCells } from '../editing/wireRouting.js';
 import { SprayStroke } from '../editing/SprayStroke.js';
 import { createOrderedBrushStamp } from '../editing/orderedBrushStamp.js';
 import { createHollowBrushShape } from '../editing/hollowBrush.js';
@@ -63,11 +65,18 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const setBrushSize = size => setBrushSettings(previous => ({ ...previous, width: size, height: size,
     thickness: Math.min(previous.thickness, maxLineThickness({ width: size, height: size })) }));
   const [strokeMode, setStrokeMode] = useState('freehand');
-  const sprayEnabled = Boolean(brushSettings.spray && strokeMode === 'freehand');
+  const [cadMode, setCadMode] = useState('off');
+  const [cadDirection, setCadDirection] = useState('auto');
+  const [cadChain, setCadChain] = useState(true);
+  const [cadStatus, setCadStatus] = useState(null);
+  const cadRef = useRef({ anchor: null, cursor: null, cells: null, issue: null });
+  const cadGeneration = useRef(0);
+  const cadEnabled = cadMode !== 'off';
+  const sprayEnabled = Boolean(!cadEnabled && brushSettings.spray && strokeMode === 'freehand');
   const orderedStamp = useMemo(() => sprayEnabled ? createOrderedBrushStamp(brushSettings) : null, [sprayEnabled, brushSettings]);
-  const footprint = useMemo(() => orderedStamp ? { ...orderedStamp.geometry, issue: orderedStamp.issue } : createBrushShape(brushSettings), [orderedStamp, brushSettings]);
+  const footprint = useMemo(() => cadEnabled ? createBrushShape({ width: 1, height: 1 }) : orderedStamp ? { ...orderedStamp.geometry, issue: orderedStamp.issue } : createBrushShape(brushSettings), [cadEnabled, orderedStamp, brushSettings]);
   const outline = useMemo(() => brushOutline(footprint), [footprint]);
-  const hollowEnabled = Boolean(!sprayEnabled && brushSettings.hollow && ['block', 'wall'].includes(layer));
+  const hollowEnabled = Boolean(!cadEnabled && !sprayEnabled && brushSettings.hollow && ['block', 'wall'].includes(layer));
   const strokeSettings = useMemo(() => ({ ...brushSettings, hollow: hollowEnabled, hollowBlock: layer === 'block' }), [brushSettings, hollowEnabled, layer]);
   const innerOutline = useMemo(() => hollowEnabled ? brushOutline(createHollowBrushShape(brushSettings).interior) : [], [hollowEnabled, brushSettings]);
   const [chainAnchor, setChainAnchor] = useState(null);
@@ -103,7 +112,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const hoverRef = useRef(null);
   const frameRef = useRef(0);
   const brush = useRef(null);
-  brush.current = { tool, blockId, settings: strokeSettings, outline, innerOutline, strokeMode };
+  brush.current = { tool, blockId, settings: strokeSettings, outline, innerOutline, strokeMode, cadEnabled };
   const current = useRef({ size, camera });
   current.current = { size, camera };
   const selectLayer = id => {
@@ -119,6 +128,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
     chainRef.current = null; chainGeneration.current++; setChainAnchor(null);
   }, []);
   useEffect(clearChain, [clearChain, tool, layer, strokeMode, brushSettings, blockId, wallId, liquidType, liquidAmount,
+    wireMask, actuator, actuated, slope, appearance, masks, masksEnabled]);
+  const clearCad = useCallback(() => {
+    cadRef.current = { anchor: null, cursor: null, cells: null, issue: null };
+    cadGeneration.current++; setCadStatus(null);
+  }, []);
+  useEffect(clearCad, [clearCad, tool, layer, blockId, wallId, liquidType, liquidAmount,
     wireMask, actuator, actuated, slope, appearance, masks, masksEnabled]);
   const cancelFill = useCallback(() => {
     if (fillJobRef.current) fillJobRef.current.cancelled = true;
@@ -146,8 +161,9 @@ export default function MapView({ session, world, disabled, onError, editState, 
     const observer = new ResizeObserver(([entry]) => {
       const next = { width: Math.round(entry.contentRect.width), height: Math.round(entry.contentRect.height) };
       if (next.width < 1 || next.height < 1) return;
-      clearChain();
+      clearChain(); clearCad();
       if (fillJobRef.current || fillRef.current) cancelFill();
+      if (pickRef.current?.tool === 'cad') { setDrafting(false); onDraftChange(false); }
       pickRef.current = null;
       pasteDragRef.current = null;
       setPlacing(false);
@@ -164,7 +180,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     });
     observer.observe(canvasRef.current);
     return () => observer.disconnect();
-  }, [world, changeCamera, onDraftChange, cancelFill, clearChain]);
+  }, [world, changeCamera, onDraftChange, cancelFill, clearChain, clearCad]);
 
   const draw = useCallback(() => {
     if (!camera || !size.width) return;
@@ -232,7 +248,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         context.fillRect(toX(Math.floor(index / world.height)), toY(index % world.height), camera.zoom, camera.zoom);
       }
     }
-    if (chainRef.current && brush.current.strokeMode === 'polyline' && ['paint', 'erase'].includes(brush.current.tool)) {
+    if (!brush.current.cadEnabled && chainRef.current && brush.current.strokeMode === 'polyline' && ['paint', 'erase'].includes(brush.current.tool)) {
       const anchor = chainRef.current;
       if (hoverRef.current && !strokeRef.current) {
         const preview = new BrushStroke(world, brush.current.settings, selectionRef.current, 'polyline', anchor);
@@ -247,6 +263,13 @@ export default function MapView({ session, world, disabled, onError, editState, 
       }
       context.strokeStyle = '#ffe199'; context.lineWidth = 2;
       context.strokeRect(toX(anchor.x) - 2, toY(anchor.y) - 2, camera.zoom + 4, camera.zoom + 4);
+    }
+    if (brush.current.cadEnabled && ['paint', 'erase'].includes(brush.current.tool) && cadRef.current.anchor) {
+      const cad = cadRef.current;
+      context.fillStyle = brush.current.tool === 'erase' ? '#ff927960' : '#ffe19960';
+      for (const index of cad.cells || []) context.fillRect(toX(Math.floor(index / world.height)), toY(index % world.height), camera.zoom, camera.zoom);
+      context.strokeStyle = cad.issue ? '#ff9279' : '#ffe199'; context.lineWidth = 2;
+      context.strokeRect(toX(cad.anchor.x) - 2, toY(cad.anchor.y) - 2, camera.zoom + 4, camera.zoom + 4);
     }
     if (fillRef.current) {
       context.fillStyle = '#ffe19980';
@@ -294,7 +317,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     return () => cancelAnimationFrame(frame);
   }, [draw]);
 
-  useEffect(() => { draw(); }, [tool, brushSettings, chainAnchor, draw]);
+  useEffect(() => { draw(); }, [tool, brushSettings, chainAnchor, cadMode, cadDirection, cadStatus, draw]);
   useEffect(() => { draw(); }, [pastePosition, draw]);
   useEffect(() => { draw(); }, [fillState, draw]);
 
@@ -360,6 +383,32 @@ export default function MapView({ session, world, disabled, onError, editState, 
     frameRef.current = requestAnimationFrame(draw);
   };
 
+  const previewCad = cell => {
+    const cad = cadRef.current;
+    if (!cadEnabled || !['paint', 'erase'].includes(tool) || !cad.anchor || !cell) return;
+    const key = [cell.x, cell.y, brushSettings.width, brushSettings.height, cadMode, cadDirection, selection].join(':');
+    if (cad.key === key) return;
+    cad.key = key; cad.cursor = cell;
+    try {
+      cad.cells = cadWireCells(world, cad.anchor, cell, { ...brushSettings, routingMode: cadMode, routingDirection: cadDirection }, selectionRef.current);
+      cad.issue = null;
+    } catch (error) { if (!(error instanceof EditError)) throw error; cad.cells = null; cad.issue = error.message; }
+    setCadStatus({ anchor: cad.anchor, count: cad.cells?.size ?? 0, issue: cad.issue });
+    redraw();
+  };
+  useEffect(() => { if (cadRef.current.cursor) { cadRef.current.key = null; previewCad(cadRef.current.cursor); } }, [cadMode, cadDirection, brushSettings.width, brushSettings.height, selection]);
+  const commitCad = async pick => {
+    const generation = cadGeneration.current, anchored = Boolean(cadRef.current.anchor), cell = pick.cell;
+    try {
+      const cells = anchored ? cadWireCells(world, cadRef.current.anchor, cell, { ...brushSettings, routingMode: cadMode, routingDirection: cadDirection }, selectionRef.current)
+        : new Set(containsCell(selectionRef.current, cell.x, cell.y) ? [cell.x * world.height + cell.y] : []);
+      const result = cells.size ? await onEdit(pick.action, { ...pick.parameters, cells: [...cells] }) : { changed: 0 };
+      if (!result || !mountedRef.current || generation !== cadGeneration.current) return;
+      const anchor = !anchored || cadChain ? cell : null;
+      cadRef.current = { anchor, cursor: null, cells: null, issue: null };
+      setCadStatus(anchor ? { anchor, count: 0, issue: null } : null); redraw();
+    } catch (error) { if (mountedRef.current) setHint(error.message); }
+  };
   const pointOf = event => {
     const rect = canvasRef.current.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
@@ -367,10 +416,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const showCoordinates = (point, view = current.current.camera, clamp = false) => {
     if (!view) return;
     const position = screenToWorld(point, view, current.current.size);
+    clamp ||= cadEnabled && ['paint', 'erase'].includes(tool);
     const x = clamp ? Math.max(0, Math.min(world.width - 1, Math.floor(position.x))) : Math.floor(position.x);
     const y = clamp ? Math.max(0, Math.min(world.height - 1, Math.floor(position.y))) : Math.floor(position.y);
     const cell = x >= 0 && y >= 0 && x < world.width && y < world.height ? { x, y } : null;
     hoverRef.current = cell;
+    previewCad(cell);
     setCoordinates(cell);
     redraw();
     return cell;
@@ -540,6 +591,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         showCoordinates(point);
         return;
       }
+      if (pickRef.current.tool === 'cad') { setDrafting(false); onDraftChange(false); }
       pickRef.current = null;
     }
     if (strokeRef.current && strokeRef.current.pointerId === event.pointerId && !disabled) {
@@ -584,10 +636,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
     }
     const pick = pickRef.current;
     pickRef.current = null;
+    if (pick?.tool === 'cad') { setDrafting(false); onDraftChange(false); }
     if (pick?.pointerId === event.pointerId && event.type === 'pointerup' && !disabled) {
       const point = pointOf(event);
       if (Math.hypot(point.x - pick.start.x, point.y - pick.start.y) <= 6) {
         if (pick.tool === 'fill') startFill(pick.cell);
+        else if (pick.tool === 'cad') commitCad(pick);
         else pickBlock({ ...pick.cell, layer: pick.layer, ...pick.appearance });
       }
     }
@@ -618,7 +672,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const showPanel = name => { setPanel(name); setPanelOpen(true); };
   const closePanel = () => { setPanelOpen(false); panelToggleRef.current?.focus({ preventScroll: true }); };
   const trajectoryName = { freehand: '', line: '直线', polyline: '折线', constrain: '约束' }[strokeMode];
-  const toolName = { pan: '平移', paint: trajectoryName + (sprayEnabled ? '喷枪' : hollowEnabled ? '空心画笔' : '画笔'), erase: trajectoryName + (sprayEnabled ? '喷枪橡皮' : hollowEnabled ? '空心橡皮' : '橡皮'), pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
+  const toolName = { pan: '平移', paint: (cadEnabled ? 'CAD画笔' : trajectoryName + (sprayEnabled ? '喷枪' : hollowEnabled ? '空心画笔' : '画笔')), erase: cadEnabled ? 'CAD橡皮' : trajectoryName + (sprayEnabled ? '喷枪橡皮' : hollowEnabled ? '空心橡皮' : '橡皮'), pick: '吸管', select: '框选', paste: '粘贴', fill: '连通填充' }[tool];
   const usesBrush = tool === 'paint' || tool === 'erase';
   const usesLayer = usesBrush || tool === 'fill' || tool === 'pick' || tool === 'select' || (selection && tool !== 'paste');
   return <section className={`map-view${panelOpen ? ' panel-open' : ''}`} aria-labelledby="map-title" onKeyDownCapture={event => {
@@ -700,8 +754,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
         pointers.current.set(event.pointerId, pointOf(event));
         canvasRef.current.setPointerCapture(event.pointerId);
         setDragging(true);
-        const cell = showCoordinates(pointOf(event), current.current.camera, sprayEnabled && ['paint', 'erase'].includes(tool));
-        if (pointers.current.size === 2) { cancelStroke(); if (fillState) cancelFill(); if (tool === 'paste') cancelPaste(); return; }
+        const cell = showCoordinates(pointOf(event), current.current.camera, (sprayEnabled || cadEnabled) && ['paint', 'erase'].includes(tool));
+        if (pointers.current.size === 2) { cancelStroke(); clearCad(); if (fillState) cancelFill(); if (tool === 'paste') cancelPaste(); return; }
         if (fillState) return;
         if (tool !== 'pan' && cell) {
           if (camera.zoom < 2) { setHint('请先放大到 200% 以上，或点击“出生点”后操作。'); return; }
@@ -727,6 +781,10 @@ export default function MapView({ session, world, disabled, onError, editState, 
           if (['paint', 'erase'].includes(tool) && hollowEnabled && layer === 'block' && brushSettings.fillWall && !layers.wall) { setHint('空心填墙需要显示墙壁图层，请先勾选墙壁显示。'); return; }
           if (!masksValid) { setHint('匹配条件无效，请先修正条件数值。'); return; }
           if (['paint', 'erase'].includes(tool) && footprint.issue) { setHint(footprint.issue); return; }
+          if (cadEnabled && ['paint', 'erase'].includes(tool)) {
+            pickRef.current = { tool: 'cad', action: tool, parameters, pointerId: event.pointerId, cell, start: pointOf(event) };
+            setDrafting(true); onDraftChange(true); return;
+          }
           if (tool === 'fill') {
             if (layer === 'wire') { setHint('原版连通填充不支持电线，请选择其他图层。'); return; }
             pickRef.current = { tool, pointerId: event.pointerId, cell, start: pointOf(event) };
@@ -741,15 +799,23 @@ export default function MapView({ session, world, disabled, onError, editState, 
           redraw();
         }
       }}
+      onContextMenu={event => { if (cadEnabled) { event.preventDefault(); cancelStroke(); clearCad(); } }}
       onPointerMove={move} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}
       onPointerLeave={() => { if (!pointers.current.size) { hoverRef.current = null; setCoordinates(null); redraw(); } }}
       onKeyDown={event => {
         if (!camera || disabled) return;
         if (event.key === 'Escape') {
+          if (cadEnabled && ['paint', 'erase'].includes(tool)) { cancelStroke(); if (cadRef.current.anchor) clearCad(); else setCadMode('off'); return; }
           if (fillState) cancelFill();
           else if (tool === 'paste') cancelPaste();
           else if (strokeRef.current || selectionDraftRef.current || pickRef.current || chainRef.current) cancelStroke();
           else clearSelection();
+          return;
+        }
+        if (!interacting && event.shiftKey && !event.ctrlKey && !event.metaKey && ['w', 'q'].includes(event.key.toLowerCase())) {
+          event.preventDefault();
+          if (event.key.toLowerCase() === 'w') setCadMode(previous => ({ off: 'elbow90', elbow90: 'miter45', miter45: 'off' })[previous]);
+          else setCadDirection(previous => ({ auto: 'horizontal', horizontal: 'vertical', vertical: 'auto' })[previous]);
           return;
         }
         if (fillState) { if (!fillState.preparing && event.key === 'Enter') { event.preventDefault(); confirmFill(); } return; }
@@ -790,8 +856,8 @@ export default function MapView({ session, world, disabled, onError, editState, 
 
       </div>
     <p className={`tool-hint${hint ? ' has-hint' : ''}`} role="status">{hint || {
-      paint: `${sprayEnabled ? '喷枪' : '画笔'}${trajectoryName}模式：放大到 200% 以上绘制${layerName}。${strokeMode === 'line' ? '拖动预览起终点直线，抬起提交，Esc 取消。' : strokeMode === 'polyline' ? '点击续接上一端点；拖动超过 2 格结束续接，Esc 清除锚点。' : strokeMode === 'constrain' ? '开始移动后锁定水平、竖直或45°方向；Esc 取消。' : '每次拖动为一步，双指可平移缩放。'}${masksEnabled ? '条件过滤已启用。' : ''}`,
-      erase: `${sprayEnabled ? '喷枪橡皮' : '橡皮'}${trajectoryName}模式：放大到 200% 以上擦除${layerName}；${hollowEnabled ? '空心按启用的内部填墙设置处理相关层' : '只修改当前层，电线仅移除选中颜色'}。${masksEnabled ? '条件过滤已启用。' : ''}`,
+      paint: cadEnabled ? 'CAD画笔：点按先写一格并设置锚点，再点按提交预览。每段一步历史，Esc 或右键清锚点。' : `${sprayEnabled ? '喷枪' : '画笔'}${trajectoryName}模式：放大到 200% 以上绘制${layerName}。${strokeMode === 'line' ? '拖动预览起终点直线，抬起提交，Esc 取消。' : strokeMode === 'polyline' ? '点击续接上一端点；拖动超过 2 格结束续接，Esc 清除锚点。' : strokeMode === 'constrain' ? '开始移动后锁定水平、竖直或45°方向；Esc 取消。' : '每次拖动为一步，双指可平移缩放。'}${masksEnabled ? '条件过滤已启用。' : ''}`,
+      erase: cadEnabled ? 'CAD橡皮：先点按一格，再按预览路径擦除当前层；电线只移除选中颜色。Esc 或右键清锚点。' : `${sprayEnabled ? '喷枪橡皮' : '橡皮'}${trajectoryName}模式：放大到 200% 以上擦除${layerName}；${hollowEnabled ? '空心按启用的内部填墙设置处理相关层' : '只修改当前层，电线仅移除选中颜色'}。${masksEnabled ? '条件过滤已启用。' : ''}`,
       pick: `吸管模式：放大到 200% 以上点击，读取${layerName}和图格属性。`,
       select: '框选模式：放大到 200% 以上拖动选择矩形。填充和擦除每次最多 10000 格；选区内才会应用画笔和橡皮。',
       fill: '连通填充：点击起点，预览四方向连通区域后确认；Esc、双指或尺寸变化取消。最多 10000 格，可先框选限制范围。条件只过滤写入，不阻断连通路径；不支持电线。',
@@ -813,12 +879,13 @@ export default function MapView({ session, world, disabled, onError, editState, 
             {EDIT_LAYERS.map(([id, name]) => <button key={id} aria-label={`${name}材料`} aria-pressed={layer === id} disabled={disabled || interacting} onClick={() => selectLayer(id)}>{name}</button>)}
           </div>
     {['slope', 'paint'].includes(layer) ? <AppearancePicker layer={layer} version={world.formatVersion} slope={slope} onSlope={setSlope} value={appearance} onChange={setAppearance} disabled={disabled || interacting} /> : ['wire', 'actuator'].includes(layer) ? <CircuitPicker layer={layer} mask={wireMask} onMask={setWireMask} actuator={actuator} actuated={actuated} onActuator={setActuator} onActuated={setActuated} disabled={disabled || interacting} /> : layer === 'liquid' ? <LiquidPicker version={world.formatVersion} type={liquidType} amount={liquidAmount} onType={setLiquidType} onAmount={setLiquidAmount} disabled={disabled || interacting} /> : <MaterialPicker key={layer} layer={layer} version={world.formatVersion} value={layer === 'wall' ? wallId : blockId} onChange={layer === 'wall' ? setWallId : setBlockId} disabled={disabled || interacting} />}
-          <div className="stroke-options"><label>画笔轨迹<select aria-label="画笔轨迹" value={strokeMode} disabled={disabled || interacting} onChange={event => setStrokeMode(event.target.value)}><option value="freehand">自由绘制</option><option value="line">起终点直线</option><option value="polyline">连续折线</option><option value="constrain">方向约束</option></select></label>
+          <div className="stroke-options"><label>画笔轨迹<select aria-label="画笔轨迹" value={strokeMode} disabled={disabled || interacting || cadEnabled} onChange={event => setStrokeMode(event.target.value)}><option value="freehand">自由绘制</option><option value="line">起终点直线</option><option value="polyline">连续折线</option><option value="constrain">方向约束</option></select></label>
+          <CadRoutingControls mode={cadMode} direction={cadDirection} chain={cadChain} onMode={setCadMode} onDirection={setCadDirection} onChain={setCadChain} status={cadStatus} disabled={disabled || interacting} />
           <BrushShapeControls value={brushSettings} geometry={footprint} onChange={setBrushSettings} disabled={disabled || interacting} />
-          <SprayBrushControls value={brushSettings} onChange={setBrushSettings} mode={strokeMode} disabled={disabled || interacting} />
-          <HollowBrushControls value={brushSettings} onChange={setBrushSettings} layer={layer} version={world.formatVersion} wallId={wallId} onWallChange={setWallId} disabled={disabled || interacting || sprayEnabled} />
-          {strokeMode === 'polyline' && <p className="card-note">点击续接上一端点，每段一步历史；拖动超过 2 格后结束续接。Esc、双指、尺寸或参数变化清除锚点。</p>}
-          {strokeMode === 'constrain' && <p className="card-note">开始移动后锁定水平、竖直或 45° 方向，按原版整数规则吸附。每次拖动为一步，Esc 取消。</p>}</div>
+          <SprayBrushControls value={brushSettings} onChange={setBrushSettings} mode={cadEnabled ? 'cad' : strokeMode} disabled={disabled || interacting} />
+          <HollowBrushControls value={brushSettings} onChange={setBrushSettings} layer={layer} version={world.formatVersion} wallId={wallId} onWallChange={setWallId} disabled={disabled || interacting || sprayEnabled || cadEnabled} />
+          {!cadEnabled && strokeMode === 'polyline' && <p className="card-note">点击续接上一端点，每段一步历史；拖动超过 2 格后结束续接。Esc、双指、尺寸或参数变化清除锚点。</p>}
+          {!cadEnabled && strokeMode === 'constrain' && <p className="card-note">开始移动后锁定水平、竖直或 45° 方向，按原版整数规则吸附。每次拖动为一步，Esc 取消。</p>}</div>
           <MaskControls enabled={masksEnabled} onEnabled={setMasksEnabled} rules={masks} onRules={setMasks} sample={sample} disabled={disabled || interacting} />
           <details className="inspector-details" open={sample ? true : undefined}><summary>图格属性</summary>
     <div className="tile-inspector" aria-label="图格属性" aria-live="polite">

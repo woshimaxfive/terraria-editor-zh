@@ -160,8 +160,9 @@ Source: https://github.com/TEdit/Terraria-Map-Editor/tree/84e3fc3466d405675a09da
 Browser adaptations: src/editing/masks.js, src/editing/floodFill.js,
 src/editing/constraints.js, src/editing/brushShape.js, src/editing/complexBrushShape.js,
 src/editing/brushSpans.js, src/editing/brushTransform.js, src/editing/hollowBrush.js,
-src/editing/orderedBrushStamp.js, src/editing/SprayStroke.js
+src/editing/orderedBrushStamp.js, src/editing/SprayStroke.js, src/editing/wireRouting.js
 and line/polyline/stamp/hollow classification geometry in src/editing/brush.js.
+CAD routing input and anchor behavior are adapted in src/map/MapView.jsx.
 Connectivity metadata: vendor/tedit-editing-rules/fill-metadata.json.
 Pinned source references and full license: vendor/tedit-editing-rules/source.json and LICENSE.
 
