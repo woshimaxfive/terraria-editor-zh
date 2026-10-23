@@ -35,6 +35,6 @@ export default function TextureControls({ resources, cache, mode, onModeChange, 
     <p role="status" aria-label="贴图加载状态">{status}</p>
     {cache && <p aria-label="贴图缓存状态">{cache.loading ? cache.message || '正在加载可见贴图…' : `已缓存 ${resources.images.size} 张 · ${(resources.bytes / 1024 / 1024).toFixed(2)} / 12 MiB`}</p>}
     {[...errors,...(cache?.failures || [])].length > 0 && <p className="texture-errors" role="alert">{[...errors,...(cache?.failures || [])].join('；')}</p>}
-    <details><summary>资源与显示范围</summary><p>从 Terraria 的 Content/Images 目录多选图格、树木、物品及装备的 XNB 文件，也接受同名 PNG。可再次选择以追加资源；同名贴图会替换。身体装备位于 Images/Armor 子目录，可分次选择。圣物、滴管和圣诞树还需对应的 Extra、Gore 和 Xmas 资源。文件保留在本机，关闭世界后释放。</p><p>当前覆盖 341 种普通地形、376 种通用家具和植物、13 类树木，以及 20 类专用家具与内容。物品框、人体模型、武器架、帽架、食物盘和物品瓶可显示物品或装备，修改内容及撤销重做后同步刷新。树木随土壤及世界背景变化；按可见区域加载，贴图缓存最多 12 MiB。缩小、缺图、未收敛接缝、平台、轨道、仙人掌、坡面和涂料等使用色块；装备染料与饰品尚未显示。</p></details>
+    <details><summary>资源与显示范围</summary><p>从 Terraria 的 Content/Images 目录多选图格、树木、物品及装备的 XNB 文件，也接受同名 PNG。可再次选择以追加资源；同名贴图会替换。身体装备位于 Images/Armor 子目录，可分次选择。圣物、滴管和圣诞树还需对应的 Extra、Gore 和 Xmas 资源；仙人掌变种需 Good_Cactus、Evil_Cactus 和 Crimson_Cactus。文件保留在本机，关闭世界后释放。</p><p>当前覆盖 341 种普通地形、376 种通用家具和植物、13 类树木，以及 20 类专用家具与内容，并支持普通平台、轨道、仙人掌和训练假人。物品框、人体模型、武器架、帽架、食物盘和物品瓶可显示物品或装备，修改内容及撤销重做后同步刷新。树木随土壤及世界背景变化，仙人掌按整株邻接和根部沙地选图；按可见区域加载，贴图缓存最多 12 MiB。缩小、缺图、未收敛接缝、坡面和涂料等使用色块；装备染料与饰品尚未显示。</p></details>
   </section>;
 }

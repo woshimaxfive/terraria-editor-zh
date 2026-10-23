@@ -54,7 +54,7 @@ test('framed sprites retain offscreen overhangs, view-independent parity, select
  const records=image=>{const raw=new Int32Array(image.sprites);return Array.from({length:raw.length/SPRITE_STRIDE},(_,i)=>[...raw.slice(i*SPRITE_STRIDE,(i+1)*SPRITE_STRIDE)]);};
  const a=records(crop),b=records(full);assert.ok(a.some(r=>r[0]===73&&r[6]===-1),'Plant above viewport retains its visible lower sprite');
  for(const r of a){const match=b.find(q=>q[0]===r[0]&&q[5]===r[5]+region.x&&q[6]===r[6]+region.y);assert.ok(match);assert.deepEqual(r.slice(0,5),match.slice(0,5));assert.deepEqual(r.slice(7),match.slice(7));}
- assert.ok(crop.requiredTextures.includes(73));assert.ok(!crop.requiredTextures.includes(19));assert.deepEqual(tiles,before);
+ assert.ok(crop.requiredTextures.includes(73));assert.ok(crop.requiredTextures.includes(19));assert.deepEqual(tiles,before);
  tiles.delete('4,4');assert.notDeepEqual(rasterizeRegion(source,region).sprites,crop.sprites);tiles.set('4,4',before.get('4,4'));assert.deepEqual(rasterizeRegion(source,region).sprites,crop.sprites);
  assert.equal(rasterizeRegion(source,{...region,layers:{block:false}}).sprites.byteLength,0);
  assert.equal(rasterizeRegion(source,{...region,step:2}).sprites.byteLength,0);

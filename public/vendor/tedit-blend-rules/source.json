@@ -15,7 +15,10 @@
     "src/TEdit.Terraria/TileEntityType.cs",
     "src/TEdit/Render/GeometryUtils.cs",
     "src/TEdit.Terraria/Data/globalColors.json",
-    "src/TEdit.Terraria/Objects/ItemProperty.cs"
+    "src/TEdit.Terraria/Objects/ItemProperty.cs",
+    "src/TEdit.Terraria/WorldConfiguration.cs",
+    "src/TEdit.Terraria/TerrariaDataStore.cs",
+    "src/TEdit.Terraria/Tile.cs"
   ],
   "license": "MS-PL",
   "hashes": {
@@ -32,14 +35,18 @@
     "src/TEdit.Terraria/TileEntityType.cs": "ab641a41e23dd28842a1119b529fb31a944d725294fe73f35aebf234a9a8e181",
     "src/TEdit/Render/GeometryUtils.cs": "e108ee643247e85bd2a04870a90764bbd4a94b6c0df0564596e1ddb7d7bc4690",
     "src/TEdit.Terraria/Data/globalColors.json": "2d369ced16b4d2d4a18a707de42e1680b8c210e469e3ac279d4d14646b68a0fc",
-    "src/TEdit.Terraria/Objects/ItemProperty.cs": "9b1fa8d8b4c9853da125a2d59fba71e605833cd7d4863dc938215ee675d69481"
+    "src/TEdit.Terraria/Objects/ItemProperty.cs": "9b1fa8d8b4c9853da125a2d59fba71e605833cd7d4863dc938215ee675d69481",
+    "src/TEdit.Terraria/WorldConfiguration.cs": "5d951d8bed090ef43ae0f63297b51e0a38936abc2b3e20bebaac8d8cadaa756f",
+    "src/TEdit.Terraria/TerrariaDataStore.cs": "aa62a91b566bc1dcb25e5bfec72e87fdf18b47e02452ca7bbb8e8fa7f34f178c",
+    "src/TEdit.Terraria/Tile.cs": "8ed73771567a7744f9656770bd79403f8b11628845dd22379fd54de32f1e9364"
   },
   "changes": [
     "JavaScript mask and bounded reciprocal-merge adaptation; no world-cache writes.",
     "Compact tile merge metadata, original SelfFrame8Way lookup and coordinate variants.",
     "General framed UV wrapping, exact anchors, independent zoom truncation, offsets and alternating plant flip are adapted in framedRules.js; compact metadata in framed.json.",
     "Tree trunk/foliage selection and geometry, forest and background styles, palm lean and mushroom crowns are adapted in treeRules.js; world data remains read-only.",
-    "Platform, cactus and track branches remain deferred; browser sprites use transferable geometry or read-only dedicated scene DTOs and measured visible-region overscan.",
-    "Read-only modern entity, legacy equipment, item frame, food platter, display jar, Christmas tree, relic and dropper recipes are adapted in entityDraws.js, tileContentDraws.js and contentFrames.js; compact item scale/equipment/food/rarity metadata in itemDraws.json and rarityColors.json. Draw overload, float32 arithmetic, origin, depth, RGBA and actual missing-resource behavior are retained before browser transport."
+    "TrackUV, switch-track back layers, endcaps and sloped slices are adapted in tileContentDraws.js. Platforms and target dummies use the earlier IsFramed stored-frame dispatch from the original tile definitions and loader; the later IsPlatform adjacency branch is not used for those definitions. Browser sprites use transferable geometry or read-only dedicated scene DTOs and measured visible-region overscan.",
+    "Read-only modern entity, legacy equipment, item frame, food platter, display jar, Christmas tree, relic and dropper recipes are adapted in entityDraws.js, tileContentDraws.js and contentFrames.js; compact item scale/equipment/food/rarity metadata in itemDraws.json and rarityColors.json. Draw overload, float32 arithmetic, origin, depth, RGBA and actual missing-resource behavior are retained before browser transport.",
+    "The original IsCactus body and cold-cache initialization are adapted in cactusRules.js. cactusFrames.js computes complete eight-neighbor connected plants in original y/x cold-pass order and selects the warm-pass biome atlas in a bounded, temporary snapshot. This intentionally avoids view-history-dependent first-frame atlas selection and never writes render caches to world data. Original edge exceptions and cache-budget failures use palette fallback. Good_Cactus, Evil_Cactus and Crimson_Cactus are local-only resources; source rule, whole-plant and world-file regression do not claim desktop GPU pixel equivalence."
   ]
 }

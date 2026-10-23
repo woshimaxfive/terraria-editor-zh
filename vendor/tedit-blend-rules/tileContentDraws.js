@@ -10,8 +10,15 @@ const f=Math.fround,t=Math.trunc;
 const add=(a,b)=>f(f(a)+f(b)),mul=(a,b)=>f(f(a)*f(b)),div=(a,b)=>f(f(a)/f(b));
 const depth=f(1-f(.04)),track=f(1-f(.05));
 const empty=Object.freeze({name:null,width:1,height:1});
-const supported=new Set([128,269,334,395,520,698,751,752,171]);
+const supported=new Set([128,269,334,395,520,698,751,752,171,314]);
 export const contentTileIds=Object.freeze([...supported]);
+
+const trackFrames=[
+  [0,0],[1,0],[2,1],[3,1],[0,2],[1,2],[0,1],[1,1],[0,3],[1,3],
+  [4,1],[5,1],[6,1],[7,1],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],
+  [0,4],[1,4],[0,5],[1,5],[2,2],[3,2],[4,2],[5,2],[6,2],[7,2],
+  [2,3],[3,3],[4,3],[5,3],[6,3],[7,3],[0,6],[1,6],[0,7],[1,7]
+];
 
 export function tileContentDraws(tile,x,y,entity,atlases,view,readTile=()=>({}),bounds={width:10000,height:10000}) {
   const type=tile.blockId,u=tile.frameX??0,v=tile.frameY??0;
@@ -99,6 +106,21 @@ export function tileContentDraws(tile,x,y,entity,atlases,view,readTile=()=>({}),
       rect(base,[(type===751?12:2)+ox*16,(type===751?7:3)+oy*16,16,16],unit);
     }
     return calls;
+  } else if(type===314){
+    const uv=frame=>trackFrames[frame]??trackFrames[0];
+    const trackSource=frame=>{const[c,r]=uv(frame);return[c*18,r*18,16,16];};
+    if(v>=0)rect(base,trackSource(v),unit,color,f(1-f(.03)));
+    if(u>=2&&u<=3 || u>=10&&u<=13)
+      rect(base,[0,126,16,16],[unit[0],point(sy,y,-1),unit[2],unit[3]],color,track);
+    if(u>=24&&u<=29)
+      rect(base,[18,126,16,16],[unit[0],point(sy,y,-1),unit[2],unit[3]],color,track);
+    if([4,9,10,16,26,33,35].includes(u)||v===4)
+      for(let slice=0;slice<6;slice++)
+        vector(base,[slice*2,108,2,12-slice*2],t(add(unit[0],div(mul(slice,z),8)))||0,point(sy,y,1),0,0,1);
+    if([5,8,11,17,27,32,34].includes(u)||v===5)
+      for(let slice=2;slice<8;slice++)
+        vector(base,[18+slice*2,108,2,slice*2-2],t(add(unit[0],div(mul(slice,z),8)))||0,point(sy,y,1),0,0,1);
+    source=trackSource(u);dest=unit;
   } else if(type===171){
     if(u>=10){
       source=[0,0,64,128];dest=[unit[0],unit[1],t(z)*4,t(z)*8];

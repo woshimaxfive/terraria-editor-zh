@@ -3,6 +3,7 @@ import itemMetadata from '../../vendor/tedit-blend-rules/itemDraws.json' with {t
 import {tileContentDraws} from '../../vendor/tedit-blend-rules/tileContentDraws.js';
 import {contentBaseFrame} from '../../vendor/tedit-blend-rules/contentFrames.js';
 import {parseTextureName,textureName} from './textureKeys.js';
+import {createCactusFrames} from './cactusFrames.js';
 
 // Only entity anchors use this large coarse bound, never a rectangular tile
 // scan. The limit follows the existing 4096px image limit and pinned scales.
@@ -17,6 +18,7 @@ export {contentBaseFrame};
 export function createContentScene(source,region,selected,required){
   const named=Object.fromEntries(Object.entries(region.atlases).map(([id,atlas])=>[textureName(Number(id)),atlas]));
   const candidates=new Set([...selected].map(textureName));
+  const cactusSelected=['Tiles_80','Good_Cactus','Evil_Cactus','Crimson_Cactus'].some(name=>candidates.has(name)||named[name]);
   const placeholder={width:4096,height:4096};
   let requested=new Set();
   const probe=new Proxy(named,{get(target,name){
@@ -24,7 +26,7 @@ export function createContentScene(source,region,selected,required){
     if(candidates.has(name)){requested.add(keyOf(name));return target[name]??placeholder;}
     return target[name];
   }});
-  const tiles=[],entities=[],seen=new Map();
+  const tiles=[],entities=[],seen=new Map(),cactusFrame=createCactusFrames(source);
   const read=(x,y)=>x>=0&&y>=0&&x<source.width&&y<source.height?source.readTile(x,y):{};
   const flush=()=>{for(const key of requested)required.set(key,(required.get(key)||0)+1);requested=new Set();};
   function inspect(x,y,tile){
@@ -34,7 +36,11 @@ export function createContentScene(source,region,selected,required){
     // female/body texture is not mistaken for an absent one during fallback.
     const tested=tileContentDraws(props,x,y,entity,probe,unitView,read,source);
     let frame=null,resource=null,recipe=null;
-    if(tested===null){
+    if(props.blockId===80){
+      const base=cactusSelected?cactusFrame(x,y):null,name=base?.resource??'Tiles_80';resource=keyOf(name);
+      if(candidates.has(name))requested.add(resource);
+      frame=base?.frame??null;
+    }else if(tested===null){
       const base=contentBaseFrame(props,x,probe);resource=keyOf(base.resource);
       if(candidates.has(base.resource))requested.add(resource);
       frame=contentBaseFrame(props,x,named).frame;
