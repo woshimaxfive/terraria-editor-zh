@@ -41,10 +41,11 @@ self.addEventListener('message', async ({ data }) => {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const editState = document[action](stroke);
       self.postMessage({ id, type: 'result', editState, summary: document.summary });
-    } else if (action === 'inspectFurniture' || action === 'previewFurniture' || action === 'readEntities') {
+    } else if (action === 'inspectFurniture' || action === 'previewFurniture' || action === 'previewPaste' || action === 'readEntities') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       const result = action === 'inspectFurniture' ? { furniture: document.inspectFurniture(point) } :
-        action === 'previewFurniture' ? { preview: document.previewFurniture(stroke) } : { entities: document.readEntities() };
+        action === 'previewFurniture' ? { preview: document.previewFurniture(stroke) } :
+        action === 'previewPaste' ? { preview: document.previewPaste(stroke) } : { entities: document.readEntities() };
       self.postMessage({ id, type: 'result', ...result });
     } else if (action === 'readNpcs') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
@@ -52,9 +53,9 @@ self.addEventListener('message', async ({ data }) => {
     } else if (action === 'readWorldProperties') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
       self.postMessage({ id, type: 'result', properties: document.readWorldProperties() });
-    } else if (action === 'copy' || action === 'prepareClipboard') {
+    } else if (action === 'copy' || action === 'prepareClipboard' || action === 'transformClipboard') {
       if (!document) throw new WorldFileError('请先打开一个世界。');
-      const result = action === 'copy' ? document.copy(stroke) : document.prepareClipboard(stroke?.clipboard);
+      const result = action === 'copy' ? document.copy(stroke) : action === 'transformClipboard' ? document.transformClipboard(stroke?.clipboard, stroke?.operation) : document.prepareClipboard(stroke?.clipboard);
       self.postMessage({ id, type: 'result', ...result }, [result.image.buffer]);
     } else if (action === 'listObjects' || action === 'readObject') {
       if (!document) throw new WorldFileError('请先打开一个世界。');

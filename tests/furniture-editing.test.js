@@ -148,13 +148,13 @@ test('duplicate and orphan companion records reject, unrelated unknown records r
   assert.deepEqual((await parse(doc.serialize())).tileEntities,world.tileEntities);
 });
 
-test('current structural records and undo immediately update existing clipboard protection',async()=>{
+test('structure removal and undo immediately update complete clipboard recognition and partial-structure rejection',async()=>{
   const doc=await openWorld(await input('v1.4.5.5'));
   edit(doc,{action:'place',tileId:21,styleIndex:0,x:10,y:10});
-  assert.throws(()=>doc.copy({selection:{x:9,y:9,width:1,height:1}}),/家具或实体/);
-  edit(doc,{action:'remove',x:11,y:11});assert.doesNotThrow(()=>doc.copy({selection:{x:9,y:9,width:1,height:1}}));
-  doc.undo();assert.throws(()=>doc.copy({selection:{x:9,y:9,width:1,height:1}}),/家具或实体/);
-  doc.redo();assert.doesNotThrow(()=>doc.copy({selection:{x:9,y:9,width:1,height:1}}));
+  assert.throws(()=>doc.copy({selection:{x:10,y:10,width:1,height:1}}),/完整范围/);
+  edit(doc,{action:'remove',x:11,y:11});assert.equal(doc.copy({selection:{x:10,y:10,width:1,height:1}}).clipboard.schema,1);
+  doc.undo();assert.throws(()=>doc.copy({selection:{x:10,y:10,width:1,height:1}}),/完整范围/);
+  doc.redo();assert.equal(doc.copy({selection:{x:10,y:10,width:1,height:1}}).clipboard.schema,1);
 });
 
 test('entity section changes require the independent expected collection; wrong contents, IDs, coordinates and other sections still fail export verification',async()=>{

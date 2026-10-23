@@ -34,7 +34,8 @@ for (const fixture of fixtures) {
     equalBytes(document.serialize(), bytes); assert.equal(document.editState.undoCount, 0);
     document.paste({ clipboard: prepared.clipboard, position: { x: 30, y: 10 } });
     // Independent clockwise coordinate and expected file slope values.
-    const expectedSlopes = [0, 4, 2, 5, 3, 0];
+    // Original desktop Rotate is FlipY followed by a transpose.
+    const expectedSlopes = [0, 4, 5, 2, 3, 0];
     for (let x = 0; x < 3; x++) for (let y = 0; y < 2; y++) {
       const from = (10 + x) * 1200 + 10 + y, to = (31 - y) * 1200 + 10 + x;
       for (const field of TILE_FIELDS) tiles[field][to] = field === 'flags' ?
@@ -118,7 +119,7 @@ test('same-format cross-world copy retains every coating, while different format
   assert.equal(old.editState.undoCount, 0);
 });
 
-test('copy and paste atomically reject furniture, nearby supports and entity anchors, even after earlier safe cells', async () => {
+test('partial or malformed furniture and orphan companions reject atomically; ordinary adjacent supports can be copied', async () => {
   const world = await parse(await input()), tiles = world.worldTiles.tiles;
   const { x, y } = world.chests.chests[0].position;
   const original = await openWorld(await input());
@@ -130,12 +131,13 @@ test('copy and paste atomically reject furniture, nearby supports and entity anc
   world.tileEntities.entities.push({ type: 7, id: 999, position: { x: 60, y: 60 } });
   const bytes = new FileSaver().save(world), document = await openWorld(bytes);
   const { clipboard } = document.copy({ selection: { x: 20, y: 10, width: 2, height: 2 } });
-  for (const position of [{ x: 10, y: 10 }, { x: 40, y: 40 }, { x: 50, y: 50 }, { x: 60, y: 60 }]) {
-    assert.throws(() => document.paste({ clipboard, position }), /家具|实体/);
+  for (const position of [{ x: 11, y: 11 }, { x: 40, y: 40 }, { x: 50, y: 50 }, { x: 60, y: 60 }]) {
+    assert.throws(() => document.paste({ clipboard, position }), /家具|配套/);
   }
   for (const position of [{ x: 40, y: 40 }, { x: 50, y: 50 }, { x: 60, y: 60 }]) {
-    assert.throws(() => document.copy({ selection: { ...position, width: 1, height: 1 } }), /实体/);
+    assert.throws(() => document.copy({ selection: { ...position, width: 1, height: 1 } }), /配套/);
   }
+  assert.equal(document.previewPaste({ clipboard, position:{x:10,y:10} }).changes,1);
   equalBytes(document.serialize(), bytes);
   assert.equal(document.editState.undoCount, 0);
   clipboard.tiles[3][0] = 21;

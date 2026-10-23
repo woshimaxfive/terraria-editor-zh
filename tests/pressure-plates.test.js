@@ -91,18 +91,18 @@ for(const fixture of fixtures) test(fixture.name+': derived pressure records sur
   tilesMatch(before,replaced,[[10,10,{blockId:21,frameX:0,frameY:0}],[10,11,{blockId:21,frameX:0,frameY:18,flags:1}],
     [11,10,{blockId:21,frameX:18,frameY:0}],[11,11,{blockId:21,frameX:18,frameY:18,flags:1}]]);
   assert.deepEqual(replaced.chests.chests.at(-1).position,{x:10,y:10});
-  assert.throws(()=>doc.copy({selection:{x:13,y:9,width:1,height:1}}),/家具或实体/);
+  assert.equal(doc.copy({selection:{x:12,y:10,width:1,height:1}}).clipboard.schema,2);
   assert.equal(doc.previewFurniture({revision:doc.editState.revision,action:'remove',x:12,y:10}).removed.pressurePlates,1);
   edit(doc,{action:'remove',x:12,y:10});snapshots.push(doc.serialize());
   const removed=await parse(snapshots.at(-1));same(section(snapshots.at(-1),6),reference(remaining.slice(0,-1)));
   tilesMatch(replaced,removed,[[12,10,{blockId:0,frameX:0,frameY:0,blockColor:0,flags:0}]]);unchanged(replaced,removed,['weightedPressurePlates']);
-  assert.doesNotThrow(()=>doc.copy({selection:{x:13,y:9,width:1,height:1}}));
+  assert.equal(doc.copy({selection:{x:12,y:10,width:1,height:1}}).clipboard.schema,1);
   doc.editObject({kind:'chest',index:before.chests.chests.length,revision:doc.editState.revision,changes:{name:'压力板替换后的箱子'}});
   snapshots.push(doc.serialize());
   for(const snapshot of snapshots.slice(0,-1).reverse()) {doc.undo();same(doc.serialize(),snapshot);}
   for(const snapshot of snapshots.slice(1)) {doc.redo();same(doc.serialize(),snapshot);}
-  doc.undo();doc.undo();assert.throws(()=>doc.copy({selection:{x:13,y:9,width:1,height:1}}),/家具或实体/);
-  doc.redo();doc.redo();assert.doesNotThrow(()=>doc.copy({selection:{x:13,y:9,width:1,height:1}}));
+  doc.undo();doc.undo();assert.equal(doc.copy({selection:{x:12,y:10,width:1,height:1}}).clipboard.schema,2);
+  doc.redo();doc.redo();assert.equal(doc.copy({selection:{x:12,y:10,width:1,height:1}}).clipboard.schema,1);
 });
 
 test('all configured plate frames can be placed and changed without fabricating saved pressed locations',async()=>{

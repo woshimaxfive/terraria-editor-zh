@@ -126,6 +126,16 @@ export class WorldSession {
     return this.request('prepareClipboard', { stroke: { clipboard } });
   }
 
+  transformClipboard(clipboard, operation) {
+    if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
+    return this.request('transformClipboard', { stroke:{ clipboard, operation } });
+  }
+
+  previewPaste(stroke) {
+    if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
+    return this.request('previewPaste', { stroke });
+  }
+
   prepareFill(stroke, onProgress) {
     if (!this.loaded) return Promise.reject(new Error('请先打开一个世界。'));
     return this.request('prepareFill', { stroke }, onProgress);

@@ -506,7 +506,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   };
   const confirmPaste = async () => {
     if (disabled || placing || tool !== 'paste' || !pasteFits(clipboard?.data, pastePosition, world) || !['block', 'wall', 'liquid'].every(id => layers[id])) return;
-    const result = await onEdit('paste', { clipboard: clipboard.data, position: pastePosition });
+    const result = await onEdit('paste', { clipboard: clipboard.data, position: pastePosition, revision:editState.revision });
     if (result && mountedRef.current) cancelPaste();
   };
   const startFill = async point => {
@@ -993,7 +993,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
           <p className="panel-description">框选区域后复制，或导入已有的建筑模板。</p>
     <div className="clipboard-controls" role="group" aria-label="复制粘贴">
       <canvas ref={thumbnailRef} className="clipboard-thumbnail" role="img" aria-label="建筑模板色块预览" hidden={!clipboard} />
-      <output aria-label="复制内容">{clipboard ? `${clipboard.data.width} × ${clipboard.data.height} 格 · ${clipboard.source} · 格式 ${clipboard.data.formatVersion}${clipboard.data.formatVersion !== world.formatVersion ? '（与当前世界不同，不能粘贴）' : ''}` : '尚未复制；先框选普通图格区域'}</output>
+      <output aria-label="复制内容">{clipboard ? `${clipboard.data.width} × ${clipboard.data.height} 格 · ${clipboard.source} · 格式 ${clipboard.data.formatVersion}${clipboard.data.formatVersion !== world.formatVersion ? '（与当前世界不同，不能粘贴）' : ''}` : '尚未复制；先框选完整建筑区域'}</output>
       <button disabled={disabled || interacting || !clipboard || tool === 'paste' || clipboard.data.formatVersion !== world.formatVersion} onClick={startPaste}>粘贴预览</button>
       <label>X<input type="number" aria-label="粘贴 X" value={Number.isFinite(pastePosition?.x) ? pastePosition.x : ''} disabled={disabled || interacting || tool !== 'paste'} onChange={event => setPastePosition(previous => ({ ...previous, x: event.target.valueAsNumber }))} /></label>
       <label>Y<input type="number" aria-label="粘贴 Y" value={Number.isFinite(pastePosition?.y) ? pastePosition.y : ''} disabled={disabled || interacting || tool !== 'paste'} onChange={event => setPastePosition(previous => ({ ...previous, y: event.target.valueAsNumber }))} /></label>
@@ -1008,7 +1008,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         <button disabled={disabled || interacting || !clipboard} onClick={() => onEdit('exportTemplate')}>导出模板</button>
       </div>
       <details className="panel-help"><summary>模板格式与粘贴规则</summary><p>完整替换目标矩形的所有图层，含空格；不受旧选区限制。确认前仅预览，最多 10000 格。</p>
-      <p>半砖仅支持左右翻转。模板为本项目的 JSON 格式（最多 2 MiB），导入需与当前世界格式相同，不支持桌面 .TEditSch。</p></details>
+      <p>家具须完整框选，箱子、告示牌和实体内容随建筑复制。镜像保留完整结构，旋转按原版规则清除家具与配套内容，确认前显示损失。模板为本项目的 JSON 格式（最多 2 MiB），兼容旧版普通图格模板；需与当前世界格式相同，不支持桌面 .TEditSch。</p></details>
       <output className="paste-state" aria-label="粘贴目标状态">{tool !== 'paste' ? '未开始粘贴' : !pasteFits(clipboard?.data, pastePosition, world) ? '目标超出地图或坐标无效。' : !['block', 'wall', 'liquid'].every(id => layers[id]) ? '请显示方块、墙壁和液体后确认。' : '预览中，确认后写入世界；家具及实体检查在确认时执行。'}</output>
     </div>
 

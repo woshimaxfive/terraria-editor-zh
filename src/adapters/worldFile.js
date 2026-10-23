@@ -14,6 +14,7 @@ import { findLiquid } from '../editing/liquids.js';
 import { WIRES, wireMaskOf } from '../editing/circuits.js';
 import { PAINTS, SHAPES, supportsSlope } from '../editing/appearance.js';
 import { clipboardPreview } from './clipboardPreview.js';
+import { copyFurnitureRegion, validateFurnitureClipboard, transformFurnitureClipboard, prepareFurniturePaste } from './furnitureClipboard.js';
 
 export const MAX_WORLD_BYTES = 128 * 1024 * 1024;
 const MIN_VERSION = 194;
@@ -128,6 +129,25 @@ export async function openWorld(buffer, progress = () => {}) {
       editable = true;
     }, { write: (kind, index, snapshot) => kind === 'world' ? properties.write(snapshot) : kind === 'npc' ? npcs.write(snapshot) :
       kind === 'entities' ? furniture.write(snapshot) : kind === 'pressure' ? furniture.writePressure(snapshot) : objects.write(kind, index, snapshot) });
+    function contentLoss(prepared) {
+      const removed={chests:0,signs:0,entities:0,pressurePlates:0,items:prepared.removedLegacyItems??0,texts:0,legacyItems:prepared.removedLegacyItems??0};
+      for (const change of prepared.changes.filter(c=>c.kind)) {
+        const kind=change.kind==='collection:chest'?'chests':change.kind==='collection:sign'?'signs':change.kind==='entities'?'entities':change.kind==='pressure'?'pressurePlates':null;
+        if (!kind) continue;
+        const retained=new Set(change.after.map(record=>JSON.stringify(record)));
+        for(const record of change.before) if(!retained.has(JSON.stringify(record))) {
+          removed[kind]++;if(record.text) removed.texts++;
+          removed.items += [record.item,...(record.items??[]),...(record.dyes??[]),...(record.misc??[])].filter(item=>item?.stack>0).length;
+        }
+      }
+      return removed;
+    }
+    function preparePaste(payload) {
+      const revision = payload?.revision ?? editing.state.revision;
+      const prepared = prepareFurniturePaste(world, furniture, objects, editing, { ...payload, revision });
+      return { prepared, preview:{ affected:prepared.affected, removed:{ ...contentLoss(prepared), furniture:prepared.removedFurniture },
+        changes:prepared.changes.length, revision:editing.state.revision } };
+    }
     return {
       get summary() { return { ...summary, name: header.mapName, worldId: header.worldId, guid: guidText(header.guid),
         spawn: { x: header.spawnTileX, y: header.spawnTileY }, dungeon: { x: header.dungeonX, y: header.dungeonY }, points: [...properties.points(), ...npcs.points()], counts: { ...summary.counts, npcs: world.NPCs.townNPCs.length,
@@ -139,16 +159,7 @@ export async function openWorld(buffer, progress = () => {}) {
       inspectFurniture: point => furniture.inspect(point),
       previewFurniture: payload => {
         const prepared = furniture.prepare(payload, editing.state.revision);
-        const removed={chests:0,signs:0,entities:0,pressurePlates:0,items:prepared.removedLegacyItems??0,texts:0,legacyItems:prepared.removedLegacyItems??0};
-        for (const change of prepared.changes.filter(c=>c.kind)) {
-          const kind=change.kind==='collection:chest'?'chests':change.kind==='collection:sign'?'signs':change.kind==='entities'?'entities':change.kind==='pressure'?'pressurePlates':null;
-          if (!kind) continue;
-          const retained=new Set(change.after.map(record=>JSON.stringify(record)));
-          for(const record of change.before) if(!retained.has(JSON.stringify(record))) {
-            removed[kind]++;if(record.text) removed.texts++;
-            removed.items += [record.item,...(record.items??[]),...(record.dyes??[]),...(record.misc??[])].filter(item=>item?.stack>0).length;
-          }
-        }
+        const removed = contentLoss(prepared);
         return { affected: prepared.affected, placed: prepared.placed, removed, changes: prepared.changes.length, revision: editing.state.revision };
       },
       editFurniture: payload => editing.commit(furniture.prepare(payload, editing.state.revision).changes),
@@ -173,14 +184,29 @@ export async function openWorld(buffer, progress = () => {}) {
       fillSelection: region => editing.paint({ ...region, cells: selectionCells(region?.selection, summary) }),
       eraseSelection: region => editing.paint({ ...eraser(region), cells: selectionCells(region?.selection, summary) }),
       copy(payload) {
-        const clipboard = editing.copy(payload?.selection);
+        const clipboard = copyFurnitureRegion(world, furniture, payload?.selection);
+        if (clipboard.schema === 2) validateFurnitureClipboard(world, editing, clipboard);
+        else editing.validateClipboard(clipboard);
         return { clipboard, image: clipboardPreview(clipboard) };
       },
       prepareClipboard(clipboard) {
-        editing.validateClipboard(clipboard);
+        if (clipboard?.schema === 2) clipboard = validateFurnitureClipboard(world, editing, clipboard);
+        else { editing.validateClipboard(clipboard); clipboard = structuredClone(clipboard); }
         return { clipboard, image: clipboardPreview(clipboard) };
       },
-      paste: payload => editing.paste(payload),
+      transformClipboard(clipboard, operation) {
+        const result = transformFurnitureClipboard(world, editing, clipboard, operation);
+        return { ...result, image:clipboardPreview(result.clipboard) };
+      },
+      previewPaste: payload => preparePaste(payload).preview,
+      paste(payload) {
+        const { prepared, preview } = preparePaste(payload);
+        if (Object.values(preview.removed).some(Boolean) &&
+            (payload?.confirmed !== true || payload.revision !== preview.revision)) {
+          throw new EditError('粘贴会替换完整家具或其内容，请查看损失预览后确认。');
+        }
+        return editing.commit(prepared.changes);
+      },
       pick(point) {
         const { x, y, layer = 'block' } = point || {};
         if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y) || x < 0 || y < 0 || x >= summary.width || y >= summary.height) {

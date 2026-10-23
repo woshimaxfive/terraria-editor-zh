@@ -325,3 +325,19 @@ test('NPC reads and writes queue with export and recoverable stale edits retain 
   workers[0].reply({ type: 'error', recoverable: true, message: '版本已变化' }); await rejected; assert.equal(session.loaded, true);
   workers[0].reply({ type: 'result', buffer: new ArrayBuffer(4) }); await exporting; session.close();
 });
+
+
+test('furniture clipboard transformations and target previews remain in the serialized queue and recover after rejection', async () => {
+  const {session,workers}=setup();
+  await assert.rejects(session.transformClipboard({},'horizontal'),/先打开/);
+  await assert.rejects(session.previewPaste({}),/先打开/);
+  const opening=session.open({name:'world.wld'});workers[0].reply({type:'result',summary:{}});await opening;
+  const clipboard={schema:2,width:3,height:2,structures:[],objects:{chests:[],signs:[],entities:[]}},payload={clipboard,position:{x:10,y:10},revision:1};
+  const transform=session.transformClipboard(clipboard,'horizontal'),previewing=session.previewPaste(payload),exporting=session.export();
+  assert.equal(workers[0].message.action,'transformClipboard');assert.deepEqual(workers[0].message.stroke,{clipboard,operation:'horizontal'});
+  workers[0].reply({type:'result',clipboard,removed:null});assert.deepEqual((await transform).clipboard,clipboard);
+  assert.equal(workers[0].message.action,'previewPaste');assert.deepEqual(workers[0].message.stroke,payload);
+  const rejected=assert.rejects(previewing,/变化/);workers[0].reply({type:'error',recoverable:true,message:'世界已变化。'});await rejected;
+  assert.equal(session.loaded,true);assert.equal(workers[0].message.action,'export');workers[0].reply({type:'result',buffer:new ArrayBuffer(1)});await exporting;
+  const pending=session.transformClipboard(clipboard,'vertical'),cancelled=assert.rejects(pending,error=>error.name==='AbortError');session.close();await cancelled;
+});

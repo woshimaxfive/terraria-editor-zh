@@ -6,11 +6,9 @@ import { readTemplate } from '../src/platform/files/templateFile.js';
 
 const make = () => ({ schema: 1, formatVersion: 326, width: 3, height: 2,
   tiles: [0, 2, 3, 4, 5, 0].map((slope, i) => [1, i, i ? -i : 0, i + 1, 4, i + 2, 127, 1, 2047 | slope << 11]) });
-// Independent geometric oracle: solid halves of the file's four triangle shapes.
-function solid(slope, x, y) {
-  return slope === 0 || (slope === 1 ? y >= .5 : slope === 2 ? y >= x :
-    slope === 3 ? y >= 1 - x : slope === 4 ? y <= 1 - x : y <= x);
-}
+// Golden mappings from unmodified desktop ClipboardBuffer.Flip executed in .NET.
+const desktopSlopes = { clockwise:[0,1,4,5,2,3], counterclockwise:[0,1,4,5,2,3],
+  horizontal:[0,1,3,2,5,4], vertical:[0,1,4,5,2,3] };
 const operations = {
   clockwise: (x, y, w, h) => [h - 1 - y, x],
   counterclockwise: (x, y, w, h) => [y, w - 1 - x],
@@ -19,7 +17,7 @@ const operations = {
 };
 
 for (const [operation, position] of Object.entries(operations)) {
-  test(`${operation}: non-square positions, triangle geometry and all other fields survive without aliasing`, () => {
+  test(`${operation}: non-square positions, desktop slope styles and all other fields survive without aliasing`, () => {
     const source = make(), before = structuredClone(source), result = transformClipboard(source, operation);
     assert.equal(result.width * result.height, 6);
     for (let x = 0; x < 3; x++) for (let y = 0; y < 2; y++) {
@@ -27,12 +25,7 @@ for (const [operation, position] of Object.entries(operations)) {
       const tile = result.tiles[nx * result.height + ny];
       assert.deepEqual(tile.slice(0, 8), original.slice(0, 8));
       assert.equal(tile[8] & 2047, original[8] & 2047);
-      for (let px = 0; px < 7; px++) for (let py = 0; py < 7; py++) {
-        const u = (px + .25) / 8, v = (py + .6) / 8;
-        // Square samples use the same transform, centred on the unit tile.
-        const [tx, ty] = position(u, v, 2, 2);
-        assert.equal(solid(tile[8] >> 11, tx, ty), solid(original[8] >> 11, u, v));
-      }
+      assert.equal((tile[8] >> 11) & 7, desktopSlopes[operation][(original[8] >> 11) & 7]);
     }
     assert.deepEqual(source, before);
     result.tiles[0][0] = 30;
@@ -49,16 +42,24 @@ test('inverse rotations, four quarter turns and two mirrors restore every snapsh
   for (const operation of ['horizontal', 'vertical']) assert.deepEqual(transformClipboard(transformClipboard(source, operation), operation), source);
 });
 
-test('half blocks only mirror horizontally; failed late-cell transforms preserve the entire source', () => {
+test('half bricks retain desktop style on all transforms; invalid operations leave the source intact', () => {
   const source = make(); source.tiles[5][8] = 2047 | 1 << 11;
-  const before = structuredClone(source), mirrored = transformClipboard(source, 'horizontal');
-  assert.deepEqual(mirrored.tiles[1], source.tiles[5]);
-  for (let x = 0; x < 7; x++) for (let y = 0; y < 7; y++) {
-    assert.equal(solid(1, x / 7, y / 7), solid(1, 1 - x / 7, y / 7));
+  const before = structuredClone(source);
+  for (const [operation, position] of Object.entries(operations)) {
+    const result = transformClipboard(source, operation), [x,y] = position(2,1,3,2);
+    assert.deepEqual(result.tiles[x*result.height+y], source.tiles[5]);
   }
-  for (const operation of ['clockwise', 'counterclockwise', 'vertical']) assert.throws(() => transformClipboard(source, operation), /半砖/);
   for (const operation of [null, '__proto__', 'toString', ['clockwise'], '']) assert.throws(() => transformClipboard(source, operation), /无法识别/);
   assert.deepEqual(source, before);
+});
+
+test('active conveyor belts exchange direction on both mirrors and retain IDs on rotations', () => {
+  for (const operation of Object.keys(operations)) for (const active of [0,1]) for (const id of [421,422]) {
+    const source={schema:1,formatVersion:326,width:1,height:1,tiles:[[id,0,0,0,0,0,0,0,active]]};
+    const result=transformClipboard(source,operation);
+    assert.equal(result.tiles[0][0],active && ['horizontal','vertical'].includes(operation) ? 843-id : id);
+    assert.equal(source.tiles[0][0],id);
+  }
 });
 
 test('template round-trip is UTF-8 without BOM, canonical, independent and bounded at 10000 cells', async () => {

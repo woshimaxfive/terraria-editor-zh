@@ -19,7 +19,10 @@
     "src/TEdit.Terraria/World.cs",
     "src/TEdit/View/WorldRenderXna.xaml.cs",
     "src/TEdit.Terraria/Data/items.json",
-    "src/TEdit.Terraria/Objects/ItemProperty.cs"
+    "src/TEdit.Terraria/Objects/ItemProperty.cs",
+    "src/TEdit.Editor/Clipboard/ClipboardBuffer.cs",
+    "src/TEdit.Terraria/Tile.cs",
+    "src/TEdit.Terraria/BrickStyle.cs"
   ],
   "sourceSha256": {
     "src/TEdit.Terraria/Data/tiles.json": "b6aabb95d380e26852eaede2bb1a00cce522f05dd00012b02ab746938040a990",
@@ -38,9 +41,12 @@
     "src/TEdit.Terraria/World.cs": "a4dd168af3278687610edc0868c9bc416e2f497e8ef091254eac6810479a98ee",
     "src/TEdit/View/WorldRenderXna.xaml.cs": "418341a4cce9d27a0288ee2543342959587026bbeb581ef2b2af841145d7bd1b",
     "src/TEdit.Terraria/Data/items.json": "f63f2fdc64d708cd2d33df39156ae2ded7da1348f348bd5cbd25e5bd29467353",
-    "src/TEdit.Terraria/Objects/ItemProperty.cs": "9b1fa8d8b4c9853da125a2d59fba71e605833cd7d4863dc938215ee675d69481"
+    "src/TEdit.Terraria/Objects/ItemProperty.cs": "9b1fa8d8b4c9853da125a2d59fba71e605833cd7d4863dc938215ee675d69481",
+    "src/TEdit.Editor/Clipboard/ClipboardBuffer.cs": "cfe4ca365a30ea3742d52b1d84997c0414fda431ed8aa91acff1d5e88ccacee4",
+    "src/TEdit.Terraria/Tile.cs": "8ed73771567a7744f9656770bd79403f8b11628845dd22379fd54de32f1e9364",
+    "src/TEdit.Terraria/BrickStyle.cs": "008eff2e65d8660b7c837a61741afe35fe2150b82b12790b82257584ad20af58"
   },
-  "changes": "Extract 412 framed tile identities and 9546 style definitions, dimensions, frame intervals, UV wrap configuration, save-version tile limits and exact DisplayDollPoseID/LeashedKites/LeashedCritters enums. Adapt SpriteItem.GetTiles, TileProperty.GetWorldUV, SpritePlacer Christmas-tree rules and companion record defaults. Chinese identification labels reuse the separately attributed tedit-objects catalogue where exact names match. No game textures or preview images are included. Extract legacy armor texture indices and rackable item IDs; adapt embedded legacy equipment frames without creating modern tile entities.",
+  "changes": "Extract 412 framed tile identities and 9546 style definitions, dimensions, frame intervals, UV wrap configuration, save-version tile limits and exact DisplayDollPoseID/LeashedKites/LeashedCritters enums. Adapt SpriteItem.GetTiles, TileProperty.GetWorldUV, SpritePlacer Christmas-tree rules and companion record defaults. Chinese identification labels reuse the separately attributed tedit-objects catalogue where exact names match. No game textures or preview images are included. Extract legacy armor texture indices and rackable item IDs; adapt embedded legacy equipment frames without creating modern tile entities. Adapt ClipboardBuffer.Flip style/anchor matching, framed origins, BrickStyle slope mappings, conveyor mirroring and Tile.ClearTile. Browser clipboard schema 2 preserves detached companion payloads and embedded legacy equipment. Mirrors use complete recognized dimensions and canonical frames for variable-size furniture and Christmas trees instead of reproducing broken or unrecognized desktop origin frames. Dresser companions use their actual three-cell width.",
   "legacy": {
     "repository": "https://github.com/TEdit/Terraria-Map-Editor",
     "commit": "2d82b59158de75b08d5af3199b41034f9853a776",

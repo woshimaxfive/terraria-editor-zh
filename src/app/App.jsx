@@ -3,7 +3,6 @@ import { WorldSession } from '../world/WorldSession.js';
 import { downloadWorld } from '../platform/files/downloadWorld.js';
 import { readTemplate } from '../platform/files/templateFile.js';
 import { encodeTemplate, TEMPLATE_EXTENSION } from '../editing/template.js';
-import { transformClipboard } from '../editing/clipboard.js';
 import MapView from '../map/MapView.jsx';
 import Icon from './Icon.jsx';
 import EditorMenu from './EditorMenu.jsx';
@@ -11,6 +10,12 @@ import './App.css';
 
 const modes = ['经典', '专家', '大师', '旅行'];
 const emptyEditState = { revision: 0, dirty: false, undoCount: 0, redoCount: 0 };
+
+function lossDescription(removed) {
+  return [['furniture','处家具'],['chests','个箱子'],['signs','块告示牌'],['entities','个图格实体'],
+    ['pressurePlates','条压力板按压记录'],['items','个非空物品槽'],['texts','段告示牌文字']]
+    .filter(([key]) => removed?.[key] > 0).map(([key,label]) => `${removed[key]} ${label}`).join('、');
+}
 
 export default function App() {
   const session = useRef(null);
@@ -75,12 +80,17 @@ export default function App() {
         setClipboard({ data: result.clipboard, image: result.image, source: summary.name });
         setNotice(`已复制 ${result.clipboard.width} × ${result.clipboard.height} 格，可预览后确认粘贴。`);
       } else if (action === 'transformClipboard' || action === 'importTemplate') {
-        const data = action === 'importTemplate' ? await readTemplate(file) : transformClipboard(clipboard.data, file);
+        const imported = action === 'importTemplate' ? await readTemplate(file) : null;
         if (current !== operation.current) return;
-        const result = await session.current.prepareClipboard(data);
+        const result = action === 'importTemplate'
+          ? await session.current.prepareClipboard(imported)
+          : await session.current.transformClipboard(clipboard.data, file);
         if (current !== operation.current) return;
+        if (result.removed?.furniture && !window.confirm(`按桌面原版规则，旋转会从复制内容中清除 ${lossDescription(result.removed)}。墙壁、液体和电线保留。仍要旋转吗？`)) {
+          setNotice('已取消旋转，原复制内容和世界保持不变。'); return;
+        }
         setClipboard({ data: result.clipboard, image: result.image, source: action === 'importTemplate' ? file.name : clipboard.source });
-        setNotice(`${action === 'importTemplate' ? '已导入模板' : '已变换复制内容'}：${data.width} × ${data.height} 格；确认粘贴前不会修改世界。`);
+        setNotice(`${action === 'importTemplate' ? '已导入模板' : '已变换复制内容'}：${result.clipboard.width} × ${result.clipboard.height} 格；确认粘贴前不会修改世界。`);
       } else if (action === 'exportTemplate') {
         const bytes = encodeTemplate(clipboard.data);
         downloadWorld(bytes, `建筑模板-${clipboard.data.width}x${clipboard.data.height}${TEMPLATE_EXTENSION}`);
@@ -92,13 +102,26 @@ export default function App() {
         setEditState(result.editState);
         setNotice('已生成世界副本，原文件未被覆盖。');
       } else {
+        if (action === 'paste') {
+          const { preview } = await session.current.previewPaste(file);
+          if (current !== operation.current) return;
+          const description = lossDescription(preview.removed);
+          if (description) {
+            const bounds = preview.affected.reduce((b,p) => ({left:Math.min(b.left,p.x),top:Math.min(b.top,p.y),right:Math.max(b.right,p.x),bottom:Math.max(b.bottom,p.y)}),
+              {left:Infinity,top:Infinity,right:-Infinity,bottom:-Infinity});
+            if (!window.confirm(`粘贴会替换 ${description}。完整影响范围：${bounds.left}, ${bounds.top} 至 ${bounds.right}, ${bounds.bottom}（${preview.affected.length} 格），可能包含预览矩形之外的原家具。可整步撤销。确认粘贴吗？`)) {
+              setNotice('已取消确认，粘贴预览保留，世界未修改。'); return;
+            }
+          }
+          file = { ...file, revision:preview.revision, confirmed:true };
+        }
         const result = await session.current.edit(action, file);
         if (current !== operation.current) return;
         if (result.summary) setSummary(previous => JSON.stringify(previous) === JSON.stringify(result.summary) ? previous : result.summary);
         setEditState(result.editState);
         const { changed, skipped, filtered } = result.editState;
         const verb = { undo: '已撤销', redo: '已重做', erase: '已擦除', eraseSelection: '已擦除', fillSelection: '已填充', commitFill: '已填充', paint: '已绘制', paste: '已粘贴' }[action];
-        setNotice(`${action === 'editFurniture' ? '已修改家具' : action === 'editEntity' ? '已保存图格实体' : action === 'editNpc' ? '已保存 NPC' : action === 'editWorldProperties' ? '已保存世界属性' : action === 'editObject' ? '已保存对象' : verb} ${changed} ${['editFurniture', 'editEntity', 'editNpc', 'editWorldProperties', 'editObject', 'undo', 'redo'].includes(action) ? '项' : '格'}。${skipped ? `跳过 ${skipped} 格受保护图格。` : ''}${filtered ? `${filtered} 格不符合匹配条件。` : ''}`);
+        setNotice(`${action === 'editFurniture' ? '已修改家具' : action === 'editEntity' ? '已保存图格实体' : action === 'editNpc' ? '已保存 NPC' : action === 'editWorldProperties' ? '已保存世界属性' : action === 'editObject' ? '已保存对象' : verb} ${changed} ${['paste', 'editFurniture', 'editEntity', 'editNpc', 'editWorldProperties', 'editObject', 'undo', 'redo'].includes(action) ? '项' : '格'}。${skipped ? `跳过 ${skipped} 格受保护图格。` : ''}${filtered ? `${filtered} 格不符合匹配条件。` : ''}`);
         return result.editState;
       }
     } catch (failure) {
