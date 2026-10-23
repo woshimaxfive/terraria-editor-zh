@@ -6,7 +6,9 @@
     "src/TEdit.Terraria/Render/TileFraming.cs",
     "src/TEdit/View/WorldRenderXna.xaml.cs",
     "src/TEdit.Terraria/Objects/TileProperty.cs",
-    "src/TEdit.Terraria/Data/tiles.json"
+    "src/TEdit.Terraria/Data/tiles.json",
+    "src/TEdit.Terraria/Objects/FrameProperty.cs",
+    "src/TEdit.Terraria/TileType.cs"
   ],
   "license": "MS-PL",
   "hashes": {
@@ -14,11 +16,14 @@
     "src/TEdit.Terraria/Render/TileFraming.cs": "c1d12f05e30e0203279ce2cc8a3ed0294a953681bd8a67401a5c6defb136d21c",
     "src/TEdit/View/WorldRenderXna.xaml.cs": "418341a4cce9d27a0288ee2543342959587026bbeb581ef2b2af841145d7bd1b",
     "src/TEdit.Terraria/Objects/TileProperty.cs": "ad407f5d3e3f7e156a8817def31bff7d21c507e9b1d123013bc71a3513ff870b",
-    "src/TEdit.Terraria/Data/tiles.json": "b6aabb95d380e26852eaede2bb1a00cce522f05dd00012b02ab746938040a990"
+    "src/TEdit.Terraria/Data/tiles.json": "b6aabb95d380e26852eaede2bb1a00cce522f05dd00012b02ab746938040a990",
+    "src/TEdit.Terraria/Objects/FrameProperty.cs": "2e311c7065101c51ef7c9ccace1fb382bd0a6c7765dff30b0d63d459e1beaf34",
+    "src/TEdit.Terraria/TileType.cs": "47c3628e32bb0057b5bfd8430a572950effca40439d5fa4af19043b87643dc68"
   },
   "changes": [
     "JavaScript mask and bounded reciprocal-merge adaptation; no world-cache writes.",
     "Compact tile merge metadata, original SelfFrame8Way lookup and coordinate variants.",
-    "Only ordinary renderer branch and existing short plants are eligible; other sprites remain separate."
+    "General framed UV wrapping, exact anchors, independent zoom truncation, offsets and alternating plant flip are adapted in framedRules.js; compact metadata in framed.json.",
+    "Dedicated tree, platform, track and special content-overlay branches remain deferred; browser sprites use a transferable geometry record and visible-region overscan."
   ]
 }

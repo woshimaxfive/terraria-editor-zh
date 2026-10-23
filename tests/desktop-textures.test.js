@@ -54,7 +54,7 @@ test('detail rendering leaves data unchanged; no resources, hidden blocks and ou
   const image = rasterizeRegion(world, { ...region, atlases });
   assert.ok(image.textureStats.drawn >= 2);
   const commands = new Int32Array(image.sprites);
-  assert.deepEqual([...commands.slice(-8)], [3, 0, 0, 16, 20, 2, 0, -4]);
+  assert.deepEqual([...commands.slice(-14)], [3,0,0,16,20,2,0,16,20,0,-4,0,0,3]);
   assert.deepEqual(tiles, snapshot);
   assert.deepEqual(rasterizeRegion(world, { ...region, atlases: { 0: { width: 1, height: 1 } } }).buffer, color.buffer);
   const hidden = { ...region, layers: { block: false } };
@@ -82,7 +82,7 @@ test('recreated region frames respond to neighboring edits and undo, independent
   assert.deepEqual(before, createDesktopFrames(world, full)(6, 6, world.readTile(6, 6)));
   changed = true; assert.notDeepEqual(frame(), before);
   changed = false; assert.deepEqual(frame(), before);
-  for (const tile of [{ blockId: 0, slope: 1 }, { blockId: 2, blockColor: 1 }, { blockId: 3, invisibleBlock: true }, { blockId: 1, liquidAmount: 20 }, { blockId: 99 }]) {
+  for (const tile of [{ blockId: 0, slope: 1 }, { blockId: 2, blockColor: 1 }, { blockId: 3, invisibleBlock: true }, { blockId: 1, liquidAmount: 20 }, { blockId: 5 }]) {
     assert.equal(desktopFrameAt(source(1, 1, () => tile), 0, 0), null);
   }
 });

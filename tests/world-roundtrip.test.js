@@ -3,6 +3,7 @@ import { after, test } from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'vite';
 import { fixtures, fixtureRoot } from './worldFixtures.js';
+import { SPRITE_STRIDE } from '../src/rendering/spriteCommands.js';
 
 const server = await createServer({ configFile: false, server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
 after(() => server.close());
@@ -31,7 +32,8 @@ for (const fixture of fixtures) {
     const detail = document.render({ x: document.summary.spawn.x - 40, y: document.summary.spawn.y - 25, width: 80, height: 56, step: 1, atlases });
     assert.ok(detail.textureStats.drawn > 0);
     const sprites = new Int32Array(detail.sprites);
-    for (let i = 0; i < sprites.length; i += 8) {
+    assert.equal(sprites.length % SPRITE_STRIDE,0);
+    for (let i = 0; i < sprites.length; i += SPRITE_STRIDE) {
       const atlas = atlases[sprites[i]];
       assert.ok(sprites[i + 1] >= 0 && sprites[i + 1] + sprites[i + 3] <= atlas.width);
       assert.ok(sprites[i + 2] >= 0 && sprites[i + 2] + sprites[i + 4] <= atlas.height);

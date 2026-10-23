@@ -5,6 +5,7 @@ import {getUVForMasks} from '../vendor/tedit-blend-rules/blendRules.js';
 import {ordinaryTileIds,tileRule,blendMasks,frameVariant,gemSparkFrame,tilesMerge} from '../vendor/tedit-blend-rules/terrainRules.js';
 import {createDesktopFrames,desktopFrameAt,SUPPORTED_TEXTURE_IDS} from '../src/rendering/desktopTerrain.js';
 import {rasterizeRegion} from '../src/rendering/worldRaster.js';
+import {SPRITE_STRIDE} from '../src/rendering/spriteCommands.js';
 
 const digest=bytes=>createHash('sha256').update(Buffer.from(bytes)).digest('hex');
 const offsets=[[1,0],[0,-1],[-1,0],[0,1],[1,-1],[-1,-1],[-1,1],[1,1]];
@@ -43,7 +44,7 @@ test('SelfFrame8Way matches 30000 original C# cases with every center slope and 
 });
 
 test('ordinary eligibility excludes dedicated sprites, platforms and cactus and retains broad terrain families',()=>{
- assert.equal(ordinaryTileIds.length,341);assert.equal(SUPPORTED_TEXTURE_IDS.length,342);
+ assert.equal(ordinaryTileIds.length,341);assert.equal(SUPPORTED_TEXTURE_IDS.length,717);
  for(const id of [0,1,2,30,41,53,57,59,60,147,161,255,273,274,409,719,749])assert.ok(ordinaryTileIds.includes(id),String(id));
  for(const id of [3,5,19,21,80,88,128,470])assert.ok(!ordinaryTileIds.includes(id),String(id));
  assert.ok(SUPPORTED_TEXTURE_IDS.includes(3));assert.ok(!SUPPORTED_TEXTURE_IDS.includes(754));
@@ -79,7 +80,7 @@ test('all ordinary families produce bounded terrain commands, preserve inputs an
   const color=rasterizeRegion(world,region),image=rasterizeRegion(world,{...region,atlases:{[id]:{width:4096,height:4096}}});
   assert.equal(image.textureStats.drawn,9,String(id));assert.equal(image.textureStats.fallback,0,String(id));
   const sprites=new Int32Array(image.sprites);
-  for(let i=0;i<sprites.length;i+=8){assert.equal(sprites[i],id);assert.ok(sprites[i+1]>=0&&sprites[i+2]>=0);assert.equal(sprites[i+3],16);assert.equal(sprites[i+4],16);}
+  for(let i=0;i<sprites.length;i+=SPRITE_STRIDE){assert.equal(sprites[i],id);assert.ok(sprites[i+1]>=0&&sprites[i+2]>=0);assert.equal(sprites[i+3],16);assert.equal(sprites[i+4],16);}
   assert.deepEqual(tile,snapshot);
   assert.deepEqual(rasterizeRegion(world,{...region,atlases:{}}).buffer,color.buffer);
  }

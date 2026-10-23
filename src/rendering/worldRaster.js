@@ -2,6 +2,8 @@ import palette from '../../vendor/tedit-map-colors/palette.json' with { type: 'j
 import { atlasSupports, createDesktopFrames, MAX_DETAIL_TILES, supportsTexture } from './desktopTerrain.js';
 import { circuitFlags } from './circuitOverlay.js';
 import { appearanceColor } from './appearance.js';
+import { framedFrameAt, isFramedTexture, FRAMED_OVERSCAN } from '../../vendor/tedit-blend-rules/framedRules.js';
+import { spriteCommand } from './spriteCommands.js';
 
 export const MAX_RASTER_PIXELS = 1024 * 1024;
 const UNKNOWN = [255, 0, 255];
@@ -30,7 +32,7 @@ export function rasterizeRegion(source, region) {
   const pixels = new Uint8ClampedArray(imageWidth * imageHeight * 4);
   const detailed = Boolean(region.atlases) && step === 1 && width * height <= MAX_DETAIL_TILES;
   const frameAt = detailed && layers.block && Object.keys(region.atlases).length ? createDesktopFrames(source, region) : null;
-  const sprites = [], plants = [], circuits = [], shapes = [];
+  const sprites = [], circuits = [], shapes = [];
   const selectedTextures = new Set(region.textureIds || []), requiredTextures = new Map();
   let fallbackCount = 0;
   for (let row = 0; row < imageHeight; row++) {
@@ -62,10 +64,11 @@ export function rasterizeRegion(source, region) {
       }
       if (detailed && layers.block && tile.blockId !== undefined) {
         const atlas = region.atlases[tile.blockId];
-        const frame = atlas ? frameAt(x + column, tileY, tile) : null;
+        const frame = atlas && supportsTexture(tile) ? isFramedTexture(tile.blockId) ?
+          framedFrameAt(tile,x+column,atlas) : frameAt(x+column,tileY,tile) : null;
         if (frame && atlasSupports(atlas, frame)) {
           color = wallColor;
-          (tile.blockId === 3 ? plants : sprites).push(tile.blockId, frame.sourceX, frame.sourceY, frame.width, frame.height, column, row, frame.offsetY);
+          sprites.push(spriteCommand(tile.blockId,frame,column,row));
         } else fallbackCount++;
       }
       const offset = (row * imageWidth + column) * 4;
@@ -79,9 +82,28 @@ export function rasterizeRegion(source, region) {
   if (shapes.length) result.shapes = new Int32Array(shapes).buffer;
   if (layers.wire || layers.actuator) result.circuits = new Int32Array(circuits).buffer;
   if (region.atlases) {
-    const commands = new Int32Array([...sprites, ...plants]);
+    // Frame sprites can overhang their origin tile. Include nearby offscreen
+    // origins without allocating background pixels or touching world data.
+    if (detailed && layers.block) {
+      for (let ty = Math.max(0,y-FRAMED_OVERSCAN); ty < Math.min(source.height,y+height+FRAMED_OVERSCAN); ty++) {
+        for (let tx = Math.max(0,x-FRAMED_OVERSCAN); tx < Math.min(source.width,x+width+FRAMED_OVERSCAN); tx++) {
+          if (tx >= x && tx < x+width && ty >= y && ty < y+height) continue;
+          const tile = source.readTile(tx,ty);
+          if (!isFramedTexture(tile.blockId) || !supportsTexture(tile)) continue;
+          const atlas = region.atlases[tile.blockId], frame = framedFrameAt(tile,tx,atlas);
+          if (!frame || tx+(frame.anchorX+frame.shiftX+frame.destWidth)/16 < x-1 ||
+              tx+(frame.anchorX+frame.shiftX)/16 > x+width+1 ||
+              ty+(frame.anchorY+frame.shiftY+frame.destHeight)/16 < y-1 ||
+              ty+(frame.anchorY+frame.shiftY)/16 > y+height+1) continue;
+          if (selectedTextures.has(tile.blockId)) requiredTextures.set(tile.blockId,(requiredTextures.get(tile.blockId)||0)+1);
+          if (atlasSupports(atlas,frame)) sprites.push(spriteCommand(tile.blockId,frame,tx-x,ty-y));
+        }
+      }
+    }
+    sprites.sort((a,b) => a[6]-b[6] || a[5]-b[5]);
+    const commands = new Int32Array(sprites.flat());
     result.sprites = commands.buffer;
-    result.textureStats = { detailed, drawn: commands.length / 8, fallback: fallbackCount };
+    result.textureStats = { detailed, drawn:sprites.length, fallback: fallbackCount };
     if (region.textureIds) result.requiredTextures = [...requiredTextures].sort((a,b) => b[1]-a[1] || a[0]-b[0]).map(([id]) => id);
   }
   return result;

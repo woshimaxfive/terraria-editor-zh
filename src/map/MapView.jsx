@@ -27,6 +27,7 @@ import { pasteFits } from '../editing/clipboard.js';
 import Icon from '../app/Icon.jsx';
 import TextureControls from './TextureControls.jsx';
 import { TextureResources } from '../platform/files/TextureResources.js';
+import { drawSprites } from '../rendering/spriteCommands.js';
 import EditorMenu from '../app/EditorMenu.jsx';
 
 const ObjectEditor = lazy(() => import('./ObjectEditor.jsx'));
@@ -232,14 +233,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       context.clip();
       context.drawImage(image.canvas, x, y, image.imageWidth * image.step * camera.zoom, image.imageHeight * image.step * camera.zoom);
       if (image.sprites) {
-        const commands = image.sprites;
-        for (let i = 0; i < commands.length; i += 8) {
-          const atlas = resourcesRef.current.images.get(commands[i]);
-          if (!atlas) continue;
-          context.drawImage(atlas, commands[i + 1], commands[i + 2], commands[i + 3], commands[i + 4],
-            x + commands[i + 5] * camera.zoom, y + (commands[i + 6] + commands[i + 7] / 16) * camera.zoom,
-            commands[i + 3] / 16 * camera.zoom, commands[i + 4] / 16 * camera.zoom);
-        }
+        drawSprites(context,image.sprites,resourcesRef.current.images,x,y,camera.zoom);
       }
       if (image.shapes && camera.zoom >= 2) drawShapes(context, image.shapes, x, y, camera.zoom);
       if (image.circuits && camera.zoom >= 2) drawCircuitOverlay(context, image.circuits, x, y, camera.zoom);
