@@ -26,10 +26,10 @@ export function framedFrameAt(tile, x, atlas = { width:32768, height:32768 }) {
   return isFramedTexture(tile.blockId) ? storedFrameAt(tile,x,atlas) : null;
 }
 
-export function storedFrameAt(tile, x, atlas = { width:32768, height:32768 }) {
+export function storedFrameAt(tile, x, atlas = { width:32768, height:32768 }, sourceUV = null) {
   const rule = rules.get(tile.blockId), u = tile.frameX ?? 0, v = tile.frameY ?? 0;
   if (!rule || !atlas || ![u,v].every(n => Number.isSafeInteger(n) && n >= -32768 && n <= 32767)) return null;
-  let [sourceX,sourceY] = renderUV(tile.blockId,u,v);
+  let [sourceX,sourceY] = sourceUV ?? renderUV(tile.blockId,u,v);
   const [gridWidth,gridHeight] = rule.grid;
   let width = gridWidth > 0 ? gridWidth : 16, height = gridHeight > 0 ? gridHeight : 16;
   if (tile.blockId === 406) {

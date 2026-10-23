@@ -15,6 +15,7 @@ import { WIRES, wireMaskOf } from '../editing/circuits.js';
 import { PAINTS, SHAPES, supportsSlope } from '../editing/appearance.js';
 import { clipboardPreview } from './clipboardPreview.js';
 import { copyFurnitureRegion, validateFurnitureClipboard, transformFurnitureClipboard, prepareFurniturePaste } from './furnitureClipboard.js';
+import {contentEntityIndex} from './contentEntities.js';
 
 export const MAX_WORLD_BYTES = 128 * 1024 * 1024;
 const MIN_VERSION = 194;
@@ -130,6 +131,12 @@ export async function openWorld(buffer, progress = () => {}) {
     }, { write: (kind, index, snapshot) => kind === 'world' ? properties.write(snapshot) : kind === 'npc' ? npcs.write(snapshot) :
       kind === 'entities' ? furniture.write(snapshot) : kind === 'pressure' ? furniture.writePressure(snapshot) : objects.write(kind, index, snapshot) });
     let palmMargins = null;
+    let contentIndex = null;
+    function renderContent() {
+      const revision=editing.state.revision;
+      if(contentIndex?.revision!==revision)contentIndex={revision,...contentEntityIndex(world.tileEntities.entities)};
+      return contentIndex;
+    }
     function palmPadding() {
       const revision = editing.state.revision;
       if (palmMargins?.revision === revision) return palmMargins;
@@ -275,6 +282,7 @@ export async function openWorld(buffer, progress = () => {}) {
           surface: header.worldSurface, rock: header.rockLayer,
           tree: {x:header.treeX,styles:header.treeStyle,jungleBackground:header.setBG2,snowBackground:header.setBG3},
           palmPadding,
+          get content(){return renderContent();},
           readTile: (x, y) => world.worldTiles.tiles.getTile(x, y),
         }, region);
       },

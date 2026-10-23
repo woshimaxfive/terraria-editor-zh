@@ -21,10 +21,10 @@ const deferred={defer:true};
 test('registering every supported local file decodes nothing until the visible IDs are requested',async()=>{
  const {resources,decoded,closed}=harness();
  const result=await resources.load(files(SUPPORTED_TEXTURE_IDS),()=>{},deferred);
- assert.equal(result.selected,730);assert.equal(result.loaded,0);assert.deepEqual(decoded,[]);
+ assert.equal(result.selected,750);assert.equal(result.loaded,0);assert.deepEqual(decoded,[]);
  await resources.ensure([57,161,57,9999]);
  assert.deepEqual(decoded,[57,161]);assert.deepEqual([...resources.images.keys()],[57,161]);
- assert.equal(resources.bytes,8*1024*1024);assert.equal(resources.files.size,730);
+ assert.equal(resources.bytes,8*1024*1024);assert.equal(resources.files.size,750);
  resources.clear();assert.deepEqual(closed,[57,161]);assert.equal(resources.files.size,0);assert.equal(resources.bytes,0);
 });
 
@@ -82,9 +82,9 @@ test('a superseded view or file selection cannot install a late bitmap and cance
 });
 
 test('visible texture requests are frequency ordered, exclude unsupported shapes and do not allocate overview images',()=>{
- const values=[{blockId:57},{blockId:161},{blockId:57},{blockId:1},{blockId:161},{blockId:57},{blockId:0,slope:1},{blockId:2,blockColor:1},{blockId:128}];
+ const values=[{blockId:57},{blockId:161},{blockId:57},{blockId:1},{blockId:161},{blockId:57},{blockId:0,slope:1},{blockId:2,blockColor:1},{blockId:19}];
  const source={width:9,height:1,surface:1,rock:1,readTile:x=>values[x]};
- const region={x:0,y:0,width:9,height:1,step:1,atlases:{},textureIds:[0,1,2,57,161,128]};
+ const region={x:0,y:0,width:9,height:1,step:1,atlases:{},textureIds:[0,1,2,57,161,19]};
  const image=rasterizeRegion(source,region);assert.deepEqual(image.requiredTextures,[57,161,1]);
  assert.deepEqual(image.buffer,rasterizeRegion(source,{x:0,y:0,width:9,height:1,step:1}).buffer);
  assert.deepEqual(rasterizeRegion(source,{...region,layers:{block:false}}).requiredTextures,[]);

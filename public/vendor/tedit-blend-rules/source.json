@@ -10,7 +10,12 @@
     "src/TEdit.Terraria/Objects/FrameProperty.cs",
     "src/TEdit.Terraria/TileType.cs",
     "src/TEdit.Terraria/World.cs",
-    "src/TEdit/Render/Textures.cs"
+    "src/TEdit/Render/Textures.cs",
+    "src/TEdit.Terraria/Data/items.json",
+    "src/TEdit.Terraria/TileEntityType.cs",
+    "src/TEdit/Render/GeometryUtils.cs",
+    "src/TEdit.Terraria/Data/globalColors.json",
+    "src/TEdit.Terraria/Objects/ItemProperty.cs"
   ],
   "license": "MS-PL",
   "hashes": {
@@ -22,13 +27,19 @@
     "src/TEdit.Terraria/Objects/FrameProperty.cs": "2e311c7065101c51ef7c9ccace1fb382bd0a6c7765dff30b0d63d459e1beaf34",
     "src/TEdit.Terraria/TileType.cs": "47c3628e32bb0057b5bfd8430a572950effca40439d5fa4af19043b87643dc68",
     "src/TEdit.Terraria/World.cs": "a4dd168af3278687610edc0868c9bc416e2f497e8ef091254eac6810479a98ee",
-    "src/TEdit/Render/Textures.cs": "76b8dacfcd954fc32f67aabc9a325ec8dadee19ed4a32df0a765cedbd2860ec7"
+    "src/TEdit/Render/Textures.cs": "76b8dacfcd954fc32f67aabc9a325ec8dadee19ed4a32df0a765cedbd2860ec7",
+    "src/TEdit.Terraria/Data/items.json": "f63f2fdc64d708cd2d33df39156ae2ded7da1348f348bd5cbd25e5bd29467353",
+    "src/TEdit.Terraria/TileEntityType.cs": "ab641a41e23dd28842a1119b529fb31a944d725294fe73f35aebf234a9a8e181",
+    "src/TEdit/Render/GeometryUtils.cs": "e108ee643247e85bd2a04870a90764bbd4a94b6c0df0564596e1ddb7d7bc4690",
+    "src/TEdit.Terraria/Data/globalColors.json": "2d369ced16b4d2d4a18a707de42e1680b8c210e469e3ac279d4d14646b68a0fc",
+    "src/TEdit.Terraria/Objects/ItemProperty.cs": "9b1fa8d8b4c9853da125a2d59fba71e605833cd7d4863dc938215ee675d69481"
   },
   "changes": [
     "JavaScript mask and bounded reciprocal-merge adaptation; no world-cache writes.",
     "Compact tile merge metadata, original SelfFrame8Way lookup and coordinate variants.",
     "General framed UV wrapping, exact anchors, independent zoom truncation, offsets and alternating plant flip are adapted in framedRules.js; compact metadata in framed.json.",
     "Tree trunk/foliage selection and geometry, forest and background styles, palm lean and mushroom crowns are adapted in treeRules.js; world data remains read-only.",
-    "Platform, cactus, track and special content-overlay branches remain deferred; browser sprites use a transferable geometry record and measured visible-region overscan."
+    "Platform, cactus and track branches remain deferred; browser sprites use transferable geometry or read-only dedicated scene DTOs and measured visible-region overscan.",
+    "Read-only modern entity, legacy equipment, item frame, food platter, display jar, Christmas tree, relic and dropper recipes are adapted in entityDraws.js, tileContentDraws.js and contentFrames.js; compact item scale/equipment/food/rarity metadata in itemDraws.json and rarityColors.json. Draw overload, float32 arithmetic, origin, depth, RGBA and actual missing-resource behavior are retained before browser transport."
   ]
 }

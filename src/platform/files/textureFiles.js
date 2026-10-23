@@ -15,7 +15,7 @@ export function selectTextureFiles(files) {
     if (!file.size || file.size > MAX_TEXTURE_FILE_BYTES) throw new Error(`${file.name} 超过单张 4 MiB 限制，或文件为空。`);
     selected.set(id, file);
   }
-  if (!selected.size) throw new Error('请选择 Terraria Content/Images 中已支持的地形、家具、植物或树木贴图（XNB 或同名 PNG）。');
+  if (!selected.size) throw new Error('请选择 Terraria Content/Images 中已支持的地形、家具、树木、物品或装备贴图（XNB 或同名 PNG）。');
   return selected;
 }
 

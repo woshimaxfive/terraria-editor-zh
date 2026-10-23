@@ -28,6 +28,7 @@ import Icon from '../app/Icon.jsx';
 import TextureControls from './TextureControls.jsx';
 import { TextureResources } from '../platform/files/TextureResources.js';
 import { drawSprites } from '../rendering/spriteCommands.js';
+import {ContentPainter,contentDrawCalls} from '../rendering/contentPainter.js';
 import EditorMenu from '../app/EditorMenu.jsx';
 
 const ObjectEditor = lazy(() => import('./ObjectEditor.jsx'));
@@ -43,6 +44,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
   const resourcesRef = useRef(null);
+  const contentPainterRef = useRef(null);
   if (!resourcesRef.current) resourcesRef.current = new TextureResources();
   const [displayMode, setDisplayMode] = useState('color');
   const [resourceRevision, setResourceRevision] = useState(0);
@@ -224,6 +226,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
     context.fillRect(0, 0, size.width, size.height);
     context.imageSmoothingEnabled = false;
     const image = imageRef.current;
+    if(!resourcesRef.current.files.size)contentPainterRef.current?.clear();
     if (image) {
       const x = (image.x - camera.x) * camera.zoom + size.width / 2;
       const y = (image.y - camera.y) * camera.zoom + size.height / 2;
@@ -232,7 +235,12 @@ export default function MapView({ session, world, disabled, onError, editState, 
       context.rect(x, y, image.width * camera.zoom, image.height * camera.zoom);
       context.clip();
       context.drawImage(image.canvas, x, y, image.imageWidth * image.step * camera.zoom, image.imageHeight * image.step * camera.zoom);
-      if (image.sprites) {
+      if (image.contentScene) {
+        const painter=contentPainterRef.current??(contentPainterRef.current=new ContentPainter());
+        const view={scrollX:-camera.x+(size.width/2-1)/camera.zoom,scrollY:-camera.y+(size.height/2-1)/camera.zoom,zoom:camera.zoom};
+        const calls=contentDrawCalls(image.contentScene,image.sprites,resourcesRef.current.images,image,x,y,camera.zoom,view);
+        painter.paint(context,calls,resourcesRef.current.images);
+      } else if (image.sprites) {
         drawSprites(context,image.sprites,resourcesRef.current.images,x,y,camera.zoom);
       }
       if (image.shapes && camera.zoom >= 2) drawShapes(context, image.shapes, x, y, camera.zoom);
@@ -430,6 +438,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
       if (fillJobRef.current) fillJobRef.current.cancelled = true;
       session.cancelPrepareFill();
       resourcesRef.current.clear();
+      contentPainterRef.current?.clear();
       if (imageRef.current) imageRef.current.canvas.width = 0;
       imageRef.current = null;
       pointers.current.clear();

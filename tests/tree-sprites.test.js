@@ -45,9 +45,9 @@ test('tree atlas families retain distinct numeric identities, exact filenames an
  for(const name of Object.keys(sizes))assert.equal(textureName(parseTextureName(name).key),name.slice(0,-4));
  assert.notEqual(textureKey('tile',5),textureKey('tree',5));assert.notEqual(textureKey('treeTop',3),textureKey('treeBranch',3));
  for(const name of ['Tiles_5_7.xnb','Tree_Tops_32.png','Tree_Branches_-1.xnb','Shroom_Tops_1.xnb','Tiles_65536.xnb','../Tree_Tops_0.xnb'])assert.equal(parseTextureName(name),null);
- for(const key of [-1,NaN,327680,1.5])assert.equal(textureName(key),null);
+ for(const key of [-1,NaN,15*65536,1.5])assert.equal(textureName(key),null);
  const files=[...SUPPORTED_TEXTURE_IDS.map(id=>({name:`Tiles_${id}.xnb`,size:100})),...Object.keys(sizes).filter(name=>!/^Tiles_\d+\.xnb$/.test(name)).map(name=>({name,size:100}))];
- assert.equal(selectTextureFiles(files).size,802);
+ assert.equal(selectTextureFiles(files).size,822);
  assert.throws(()=>selectTextureFiles([{name:'Tree_Tops_3.xnb',size:100},{name:'tree_tops_3.PNG',size:100}]),/重复/);
  assert.throws(()=>selectTextureFiles([{name:'Tree_Branches_3.xnb',size:4*1024*1024+1}]),/4 MiB/);
 });

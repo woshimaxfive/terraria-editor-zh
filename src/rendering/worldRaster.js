@@ -5,6 +5,8 @@ import { appearanceColor } from './appearance.js';
 import { framedFrameAt, isFramedTexture, FRAMED_OVERSCAN } from '../../vendor/tedit-blend-rules/framedRules.js';
 import { spriteCommand } from './spriteCommands.js';
 import { treeFrameAt, isTreeTexture, TREE_OVERSCAN } from '../../vendor/tedit-blend-rules/treeRules.js';
+import {createContentScene,CONTENT_TILE_PADDING} from './contentScene.js';
+import {isContentTexture} from './contentTypes.js';
 
 export const MAX_RASTER_PIXELS = 1024 * 1024;
 const UNKNOWN = [255, 0, 255];
@@ -35,8 +37,11 @@ export function rasterizeRegion(source, region) {
   const frameAt = detailed && layers.block && Object.keys(region.atlases).length ? createDesktopFrames(source, region) : null;
   const sprites = [], circuits = [], shapes = [];
   const selectedTextures = new Set(region.textureIds || []), requiredTextures = new Map();
-  const treeResources = detailed && [...selectedTextures,...Object.keys(region.atlases).map(Number)].some(id => id >= 65536 || isTreeTexture(id));
-  let fallbackCount = 0;
+  const resourceIds=[...selectedTextures,...Object.keys(region.atlases??{}).map(Number)];
+  const treeResources = detailed && resourceIds.some(id => id>=65536&&id<327680 || isTreeTexture(id));
+  const content=detailed&&layers.block&&resourceIds.some(id=>id>=327680||isContentTexture(id))?
+    createContentScene(source,region,selectedTextures,requiredTextures):null;
+  let fallbackCount = 0, contentDrawn = 0;
   for (let row = 0; row < imageHeight; row++) {
     const tileY = y + row * step;
     const base = background(tileY, source);
@@ -62,6 +67,14 @@ export function rasterizeRegion(source, region) {
         color = wallColor;
       }
       if (detailed && layers.block && tile.blockId !== undefined) {
+        const dedicated=content&&isContentTexture(tile.blockId)&&supportsTexture(tile)?content.inspect(x+column,tileY,tile):null;
+        if(dedicated){
+          if(dedicated.covered){
+            color=wallColor;
+            if(dedicated.frame)sprites.push(spriteCommand(dedicated.resource,dedicated.frame,column,row));
+            else contentDrawn++;
+          }else fallbackCount++;
+        }else{
         const tree = treeResources && isTreeTexture(tile.blockId) && supportsTexture(tile) ? treeFrameAt(source,x+column,tileY,tile,region.atlases) : null;
         const resource = tree?.resource ?? tile.blockId, atlas = region.atlases[resource];
         if (selectedTextures.has(resource) && supportsTexture(tile)) requiredTextures.set(resource,(requiredTextures.get(resource)||0)+1);
@@ -71,6 +84,7 @@ export function rasterizeRegion(source, region) {
           color = wallColor;
           sprites.push(spriteCommand(resource,frame,column,row));
         } else fallbackCount++;
+        }
       }
       const offset = (row * imageWidth + column) * 4;
       for (let channel = 0; channel < 3; channel++) {
@@ -86,7 +100,7 @@ export function rasterizeRegion(source, region) {
     // Frame sprites can overhang their origin tile. Include nearby offscreen
     // origins without allocating background pixels or touching world data.
     if (detailed && layers.block) {
-      const overscan = treeResources ? TREE_OVERSCAN : FRAMED_OVERSCAN;
+      const overscan = Math.max(treeResources ? TREE_OVERSCAN : FRAMED_OVERSCAN,content?CONTENT_TILE_PADDING:0);
       const palm = treeResources && [323,131087].some(id => selectedTextures.has(id) || region.atlases[id]);
       // Palm V stores horizontal lean, rather than a texture row. Production
       // supplies measured world margins; standalone sources retain full Int16 coverage.
@@ -95,6 +109,11 @@ export function rasterizeRegion(source, region) {
         for (let tx = Math.max(0,x-overscan-lean.left); tx < Math.min(source.width,x+width+overscan+lean.right); tx++) {
           if (tx >= x && tx < x+width && ty >= y && ty < y+height) continue;
           const tile = source.readTile(tx,ty);
+          if(content && isContentTexture(tile.blockId) && supportsTexture(tile)){
+            const dedicated=content.inspect(tx,ty,tile);
+            if(dedicated.covered&&dedicated.frame)sprites.push(spriteCommand(dedicated.resource,dedicated.frame,tx-x,ty-y));
+            continue;
+          }
           if (!(isFramedTexture(tile.blockId) || treeResources && isTreeTexture(tile.blockId)) || !supportsTexture(tile)) continue;
           const tree = isTreeTexture(tile.blockId) ? treeFrameAt(source,tx,ty,tile,region.atlases) : null;
           const resource = tree?.resource ?? tile.blockId, atlas = region.atlases[resource];
@@ -111,7 +130,8 @@ export function rasterizeRegion(source, region) {
     sprites.sort((a,b) => a[6]-b[6] || a[5]-b[5]);
     const commands = new Int32Array(sprites.flat());
     result.sprites = commands.buffer;
-    result.textureStats = { detailed, drawn:sprites.length, fallback: fallbackCount };
+    result.textureStats = { detailed, drawn:sprites.length+contentDrawn, fallback: fallbackCount };
+    if(content){const scene=content.finish();if(scene)result.contentScene=scene;}
     if (region.textureIds) result.requiredTextures = [...requiredTextures].sort((a,b) => b[1]-a[1] || a[0]-b[0]).map(([id]) => id);
   }
   return result;

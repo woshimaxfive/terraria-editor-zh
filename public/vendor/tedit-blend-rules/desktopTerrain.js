@@ -6,9 +6,10 @@ import { getUVForMasks, lazyMergeValidation } from '../../vendor/tedit-blend-rul
 import { ordinaryTileIds, tileRule, isGemSpark, blendMasks, frameVariant, gemSparkFrame } from '../../vendor/tedit-blend-rules/terrainRules.js';
 import { framedTileIds, isFramedTexture, framedFrameAt } from '../../vendor/tedit-blend-rules/framedRules.js';
 import { treeTileIds, isTreeTexture, treeFrameAt } from '../../vendor/tedit-blend-rules/treeRules.js';
+import {CONTENT_TEXTURE_IDS,isContentTexture} from './contentTypes.js';
 
 const offsets = [[1,0],[0,-1],[-1,0],[0,1],[1,-1],[-1,-1],[-1,1],[1,1]];
-export const SUPPORTED_TEXTURE_IDS = Object.freeze([...ordinaryTileIds, ...framedTileIds, ...treeTileIds].sort((a,b) => a-b));
+export const SUPPORTED_TEXTURE_IDS = Object.freeze([...ordinaryTileIds, ...framedTileIds, ...treeTileIds,...CONTENT_TEXTURE_IDS].sort((a,b) => a-b));
 export const MAX_DETAIL_TILES = 65_536;
 
 function shapeSupported(tile) {
@@ -16,7 +17,7 @@ function shapeSupported(tile) {
 }
 
 export function supportsTexture(tile) {
-  return shapeSupported(tile) && (isFramedTexture(tile.blockId) || isTreeTexture(tile.blockId) || Boolean(tileRule(tile.blockId)?.ordinary));
+  return shapeSupported(tile) && (isFramedTexture(tile.blockId) || isTreeTexture(tile.blockId) || isContentTexture(tile.blockId) || Boolean(tileRule(tile.blockId)?.ordinary));
 }
 
 // The five-cell halo isolates four reciprocal passes plus the final convergence

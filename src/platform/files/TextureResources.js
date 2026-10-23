@@ -11,11 +11,18 @@ export class TextureResources {
     this.worker = null; this.cancelDecode = null; this.generation = 0; this.request = 0; this.bytes = 0;
   }
 
-  async load(files, onProgress = () => {}, { defer = false } = {}) {
+  async load(files, onProgress = () => {}, { defer = false, append = false } = {}) {
     const selected = selectTextureFiles(files);
-    this.clear();
-    this.files = selected;
-    if (defer) return { selected:selected.size, loaded:0, bytes:0, failures:[] };
+    if (!append) { this.clear(); this.files = selected; }
+    else {
+      this.generation++; this.cancel();
+      for(const [id,file]of selected){
+        const previous=this.images.get(id);
+        if(previous){previous.close();this.images.delete(id);this.bytes-=this.sizes.get(id);}
+        this.sizes.delete(id);this.errors.delete(id);this.files.set(id,file);
+      }
+    }
+    if (defer) return { selected:this.files.size, loaded:this.images.size, bytes:this.bytes, failures:[] };
     return this.ensure([...selected.keys()], onProgress);
   }
 
