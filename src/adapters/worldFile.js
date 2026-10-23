@@ -129,6 +129,18 @@ export async function openWorld(buffer, progress = () => {}) {
       editable = true;
     }, { write: (kind, index, snapshot) => kind === 'world' ? properties.write(snapshot) : kind === 'npc' ? npcs.write(snapshot) :
       kind === 'entities' ? furniture.write(snapshot) : kind === 'pressure' ? furniture.writePressure(snapshot) : objects.write(kind, index, snapshot) });
+    let palmMargins = null;
+    function palmPadding() {
+      const revision = editing.state.revision;
+      if (palmMargins?.revision === revision) return palmMargins;
+      const tiles = world.worldTiles.tiles;
+      let minimum = 0, maximum = 0;
+      for (let i = 0; i < tiles.blockId.length; i++) if (tiles.blockId[i] === 323 && (tiles.flags[i]&1)) {
+        minimum = Math.min(minimum,tiles.frameY[i]); maximum = Math.max(maximum,tiles.frameY[i]);
+      }
+      palmMargins = {revision,left:Math.ceil(maximum/16),right:Math.ceil(-minimum/16)};
+      return palmMargins;
+    }
     function contentLoss(prepared) {
       const removed={chests:0,signs:0,entities:0,pressurePlates:0,items:prepared.removedLegacyItems??0,texts:0,legacyItems:prepared.removedLegacyItems??0};
       for (const change of prepared.changes.filter(c=>c.kind)) {
@@ -261,6 +273,8 @@ export async function openWorld(buffer, progress = () => {}) {
         return rasterizeRegion({
           width: summary.width, height: summary.height,
           surface: header.worldSurface, rock: header.rockLayer,
+          tree: {x:header.treeX,styles:header.treeStyle,jungleBackground:header.setBG2,snowBackground:header.setBG3},
+          palmPadding,
           readTile: (x, y) => world.worldTiles.tiles.getTile(x, y),
         }, region);
       },

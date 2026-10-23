@@ -81,7 +81,7 @@ export default function WorldPropertiesEditor({ session, revision, disabled, onS
               onChange={event => update(field.id, ['text', 'guid'].includes(field.type) ? event.target.value : field.type === 'clock' ? clockValue(event.target.value) : event.target.value === '' ? '' : Number(event.target.value))} />}</>}
         </label>)}
       </fieldset>
-      {['群系背景', '树木与洞穴'].includes(group) && <p className="object-caption">背景与样式设置在游戏中生效；当前地图使用已有的图格预览。</p>}
+      {['群系背景', '树木与洞穴'].includes(group) && <p className="object-caption">树木贴图会随树木样式及相关背景设置更新；群系背景画面以游戏内效果为准。</p>}
       {group === '地层' && <p className="object-caption">两层相碰时联动调整 6 格；修复背景间距会将层间距调整为 6 的倍数。</p>}
       <p className="object-caption">修改进度或出生点不会重新生成地形、移动建筑或居民。世界种子见上方信息。</p>
     </form>}

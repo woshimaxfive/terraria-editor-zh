@@ -35,6 +35,6 @@ export default function TextureControls({ resources, cache, mode, onModeChange, 
     <p role="status" aria-label="贴图加载状态">{status}</p>
     {cache && <p aria-label="贴图缓存状态">{cache.loading ? cache.message || '正在加载可见贴图…' : `已缓存 ${resources.images.size} 张 · ${(resources.bytes / 1024 / 1024).toFixed(2)} / 12 MiB`}</p>}
     {[...errors,...(cache?.failures || [])].length > 0 && <p className="texture-errors" role="alert">{[...errors,...(cache?.failures || [])].join('；')}</p>}
-    <details><summary>资源与显示范围</summary><p>从 Terraria 的 Content/Images 目录多选 Tiles_编号.xnb，也接受同名 PNG。文件保留在本机，关闭世界后释放。</p><p>当前覆盖 341 种普通地形和 376 种通用家具、植物图格，按可见区域加载，缓存最多 12 MiB。缩小、缺图、未收敛接缝、坡面、涂料、树木和需专用叠加的家具等使用色块。</p></details>
+    <details><summary>资源与显示范围</summary><p>从 Terraria 的 Content/Images 目录多选 Tiles_编号、Tiles_5_编号、Tree_Tops_编号、Tree_Branches_编号和 Shroom_Tops 的 XNB 文件，也接受同名 PNG。文件保留在本机，关闭世界后释放。</p><p>当前覆盖 341 种普通地形、376 种通用家具和植物，以及普通、宝石、观赏、白蜡、棕榈和蘑菇树。树木外观随土壤及世界背景变化；按可见区域加载，缓存最多 12 MiB。缩小、缺图、未收敛接缝、坡面、涂料和需专用叠加的家具等使用色块。</p></details>
   </section>;
 }

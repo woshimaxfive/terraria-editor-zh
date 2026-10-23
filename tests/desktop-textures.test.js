@@ -82,7 +82,7 @@ test('recreated region frames respond to neighboring edits and undo, independent
   assert.deepEqual(before, createDesktopFrames(world, full)(6, 6, world.readTile(6, 6)));
   changed = true; assert.notDeepEqual(frame(), before);
   changed = false; assert.deepEqual(frame(), before);
-  for (const tile of [{ blockId: 0, slope: 1 }, { blockId: 2, blockColor: 1 }, { blockId: 3, invisibleBlock: true }, { blockId: 1, liquidAmount: 20 }, { blockId: 5 }]) {
+  for (const tile of [{ blockId: 0, slope: 1 }, { blockId: 2, blockColor: 1 }, { blockId: 3, invisibleBlock: true }, { blockId: 1, liquidAmount: 20 }, { blockId: 128 }]) {
     assert.equal(desktopFrameAt(source(1, 1, () => tile), 0, 0), null);
   }
 });

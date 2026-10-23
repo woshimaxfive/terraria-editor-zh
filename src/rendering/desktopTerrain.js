@@ -5,9 +5,10 @@
 import { getUVForMasks, lazyMergeValidation } from '../../vendor/tedit-blend-rules/blendRules.js';
 import { ordinaryTileIds, tileRule, isGemSpark, blendMasks, frameVariant, gemSparkFrame } from '../../vendor/tedit-blend-rules/terrainRules.js';
 import { framedTileIds, isFramedTexture, framedFrameAt } from '../../vendor/tedit-blend-rules/framedRules.js';
+import { treeTileIds, isTreeTexture, treeFrameAt } from '../../vendor/tedit-blend-rules/treeRules.js';
 
 const offsets = [[1,0],[0,-1],[-1,0],[0,1],[1,-1],[-1,-1],[-1,1],[1,1]];
-export const SUPPORTED_TEXTURE_IDS = Object.freeze([...ordinaryTileIds, ...framedTileIds].sort((a,b) => a-b));
+export const SUPPORTED_TEXTURE_IDS = Object.freeze([...ordinaryTileIds, ...framedTileIds, ...treeTileIds].sort((a,b) => a-b));
 export const MAX_DETAIL_TILES = 65_536;
 
 function shapeSupported(tile) {
@@ -15,7 +16,7 @@ function shapeSupported(tile) {
 }
 
 export function supportsTexture(tile) {
-  return shapeSupported(tile) && (isFramedTexture(tile.blockId) || Boolean(tileRule(tile.blockId)?.ordinary));
+  return shapeSupported(tile) && (isFramedTexture(tile.blockId) || isTreeTexture(tile.blockId) || Boolean(tileRule(tile.blockId)?.ordinary));
 }
 
 // The five-cell halo isolates four reciprocal passes plus the final convergence
@@ -55,6 +56,7 @@ export function createDesktopFrames(source, region) {
   }
   return (x,y,tile) => {
     if (!shapeSupported(tile)) return null;
+    if (isTreeTexture(tile.blockId)) return treeFrameAt(source,x,y,tile)?.frame ?? null;
     if (isFramedTexture(tile.blockId)) return framedFrameAt(tile,x);
     const state = states.get(index(x,y));
     if (!state || unsettled.has(index(x,y)) || offsets.some(([dx,dy]) => x+dx >= 0 && y+dy >= 0 && x+dx < source.width && y+dy < source.height && unsettled.has(index(x+dx,y+dy)))) return null;
@@ -65,6 +67,7 @@ export function createDesktopFrames(source, region) {
 
 export function desktopFrameAt(source,x,y,tile=source.readTile(x,y)) {
   if (!shapeSupported(tile) || !SUPPORTED_TEXTURE_IDS.includes(tile.blockId)) return null;
+  if (isTreeTexture(tile.blockId)) return treeFrameAt(source,x,y,tile)?.frame ?? null;
   if (isFramedTexture(tile.blockId)) return framedFrameAt(tile,x);
   return createDesktopFrames(source,{x,y,width:1,height:1})(x,y,tile);
 }

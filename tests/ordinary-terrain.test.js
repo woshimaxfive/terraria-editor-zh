@@ -44,7 +44,7 @@ test('SelfFrame8Way matches 30000 original C# cases with every center slope and 
 });
 
 test('ordinary eligibility excludes dedicated sprites, platforms and cactus and retains broad terrain families',()=>{
- assert.equal(ordinaryTileIds.length,341);assert.equal(SUPPORTED_TEXTURE_IDS.length,717);
+ assert.equal(ordinaryTileIds.length,341);assert.equal(SUPPORTED_TEXTURE_IDS.length,730);
  for(const id of [0,1,2,30,41,53,57,59,60,147,161,255,273,274,409,719,749])assert.ok(ordinaryTileIds.includes(id),String(id));
  for(const id of [3,5,19,21,80,88,128,470])assert.ok(!ordinaryTileIds.includes(id),String(id));
  assert.ok(SUPPORTED_TEXTURE_IDS.includes(3));assert.ok(!SUPPORTED_TEXTURE_IDS.includes(754));

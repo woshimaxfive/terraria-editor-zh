@@ -1,4 +1,5 @@
 import { SUPPORTED_TEXTURE_IDS } from '../../rendering/desktopTerrain.js';
+import { parseTextureName, textureName } from '../../rendering/textureKeys.js';
 
 export const MAX_TEXTURE_FILE_BYTES = 4 * 1024 * 1024;
 export const MAX_TEXTURE_RGBA_BYTES = 8 * 1024 * 1024;
@@ -7,14 +8,14 @@ export const MAX_TEXTURE_TOTAL_BYTES = 12 * 1024 * 1024;
 export function selectTextureFiles(files) {
   const selected = new Map();
   for (const file of files) {
-    const match = /^Tiles_(\d+)\.(xnb|png)$/i.exec(file.name);
-    if (!match || !SUPPORTED_TEXTURE_IDS.includes(Number(match[1]))) continue;
-    const id = Number(match[1]);
-    if (selected.has(id)) throw new Error(`Tiles_${id} 重复，请每种贴图只选择一个文件。`);
+    const match = parseTextureName(file.name);
+    if (!match || match.kind === 'tile' && !SUPPORTED_TEXTURE_IDS.includes(match.id)) continue;
+    const id = match.key;
+    if (selected.has(id)) throw new Error(`${textureName(id)} 重复，请每种贴图只选择一个文件。`);
     if (!file.size || file.size > MAX_TEXTURE_FILE_BYTES) throw new Error(`${file.name} 超过单张 4 MiB 限制，或文件为空。`);
     selected.set(id, file);
   }
-  if (!selected.size) throw new Error('请选择 Terraria Content/Images 中已支持的地形、家具或植物 Tiles_编号.xnb，或对应 PNG。');
+  if (!selected.size) throw new Error('请选择 Terraria Content/Images 中已支持的地形、家具、植物或树木贴图（XNB 或同名 PNG）。');
   return selected;
 }
 
