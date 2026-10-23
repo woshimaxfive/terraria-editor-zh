@@ -8,5 +8,17 @@
     "src/TEdit.Terraria/Objects/TileProperty.cs",
     "src/TEdit.Terraria/Data/tiles.json"
   ],
-  "license": "MS-PL"
+  "license": "MS-PL",
+  "hashes": {
+    "src/TEdit/Render/BlendRules.cs": "58a57d96459bec7c22e3adea94b8ce8ab0882f121e21e4904a1fb9be33aa6a54",
+    "src/TEdit.Terraria/Render/TileFraming.cs": "c1d12f05e30e0203279ce2cc8a3ed0294a953681bd8a67401a5c6defb136d21c",
+    "src/TEdit/View/WorldRenderXna.xaml.cs": "418341a4cce9d27a0288ee2543342959587026bbeb581ef2b2af841145d7bd1b",
+    "src/TEdit.Terraria/Objects/TileProperty.cs": "ad407f5d3e3f7e156a8817def31bff7d21c507e9b1d123013bc71a3513ff870b",
+    "src/TEdit.Terraria/Data/tiles.json": "b6aabb95d380e26852eaede2bb1a00cce522f05dd00012b02ab746938040a990"
+  },
+  "changes": [
+    "JavaScript mask and bounded reciprocal-merge adaptation; no world-cache writes.",
+    "Compact tile merge metadata, original SelfFrame8Way lookup and coordinate variants.",
+    "Only ordinary renderer branch and existing short plants are eligible; other sprites remain separate."
+  ]
 }

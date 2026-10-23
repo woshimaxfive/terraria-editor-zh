@@ -1,7 +1,7 @@
 import { SUPPORTED_TEXTURE_IDS } from '../../rendering/desktopTerrain.js';
 
 export const MAX_TEXTURE_FILE_BYTES = 4 * 1024 * 1024;
-export const MAX_TEXTURE_RGBA_BYTES = 4 * 1024 * 1024;
+export const MAX_TEXTURE_RGBA_BYTES = 8 * 1024 * 1024;
 export const MAX_TEXTURE_TOTAL_BYTES = 12 * 1024 * 1024;
 
 export function selectTextureFiles(files) {
@@ -14,13 +14,13 @@ export function selectTextureFiles(files) {
     if (!file.size || file.size > MAX_TEXTURE_FILE_BYTES) throw new Error(`${file.name} 超过单张 4 MiB 限制，或文件为空。`);
     selected.set(id, file);
   }
-  if (!selected.size) throw new Error('请选择 Terraria Content/Images 中的 Tiles_0、1、2、3.xnb，或对应 PNG。');
+  if (!selected.size) throw new Error('请选择 Terraria Content/Images 中的普通地形 Tiles_编号.xnb，或对应 PNG。');
   return selected;
 }
 
 export function validateTextureSize(width, height) {
   if (![width, height].every(n => Number.isSafeInteger(n) && n > 0 && n <= 4096) || width * height * 4 > MAX_TEXTURE_RGBA_BYTES) {
-    throw new Error('贴图尺寸超过限制：单边最多 4096，解码后每张最多 4 MiB。');
+    throw new Error('贴图尺寸超过限制：单边最多 4096，解码后每张最多 8 MiB。');
   }
 }
 

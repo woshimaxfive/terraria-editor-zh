@@ -1,38 +1,80 @@
 import { selectTextureFiles, MAX_TEXTURE_TOTAL_BYTES, validateTextureSize } from './textureFiles.js';
 
-// A resource request owns at most one decoder worker. Old loads and bitmaps
-// are released on replacement, cancellation and world close.
+const cancelled = () => new DOMException('资源加载已取消。', 'AbortError');
+
+// Files remain local references. A single decoder fills a bounded bitmap cache;
+// visible IDs are supplied in priority order and already accepted IDs are pinned.
 export class TextureResources {
   constructor(workerFactory = () => new Worker(new URL('../../workers/texture.worker.js', import.meta.url), { type: 'module' }), timeoutMs = 5000) {
     this.workerFactory = workerFactory; this.timeoutMs = timeoutMs;
-    this.images = new Map(); this.worker = null; this.cancelDecode = null; this.generation = 0;
+    this.images = new Map(); this.files = new Map(); this.sizes = new Map(); this.errors = new Map();
+    this.worker = null; this.cancelDecode = null; this.generation = 0; this.request = 0; this.bytes = 0;
   }
 
-  async load(files, onProgress = () => {}) {
+  async load(files, onProgress = () => {}, { defer = false } = {}) {
     const selected = selectTextureFiles(files);
     this.clear();
-    const generation = this.generation;
-    let total = 0;
-    const failures = [];
-    for (const [id, file] of selected) {
-      if (generation !== this.generation) throw new DOMException('资源加载已取消。', 'AbortError');
-      onProgress(`正在读取 ${file.name}…`);
+    this.files = selected;
+    if (defer) return { selected:selected.size, loaded:0, bytes:0, failures:[] };
+    return this.ensure([...selected.keys()], onProgress);
+  }
+
+  cancel() {
+    this.request++;
+    this.cancelDecode?.();
+  }
+
+  async ensure(ids, onProgress = () => {}) {
+    this.cancel();
+    const generation = this.generation, request = this.request, pinned = new Set(), failures = [];
+    let changed = false;
+    const current = () => {
+      if (generation !== this.generation || request !== this.request) throw cancelled();
+    };
+    const wanted = [...new Set(ids)].filter(id => this.files.has(id));
+    for (const id of wanted) {
+      current();
+      const file = this.files.get(id);
+      if (this.errors.has(id)) { failures.push(this.errors.get(id)); continue; }
+      if (this.images.has(id)) {
+        const bitmap = this.images.get(id);
+        this.images.delete(id); this.images.set(id, bitmap); pinned.add(id);
+        continue;
+      }
+      const protectedBytes = [...pinned].reduce((total,key) => total + this.sizes.get(key), 0);
+      if (this.sizes.has(id) && protectedBytes + this.sizes.get(id) > MAX_TEXTURE_TOTAL_BYTES) {
+        failures.push(file.name + '：当前可见贴图超过 12 MiB，优先显示较常见的材料。');
+        continue;
+      }
+      onProgress('正在读取 ' + file.name + '…');
+      let bitmap;
       try {
-        const bitmap = await this.decode(file);
-        if (generation !== this.generation) { bitmap.close(); throw new DOMException('资源加载已取消。', 'AbortError'); }
-        try {
-          validateTextureSize(bitmap.width, bitmap.height);
-          const bytes = bitmap.width * bitmap.height * 4;
-          if (total + bytes > MAX_TEXTURE_TOTAL_BYTES) throw new Error('贴图总内存超过 12 MiB。');
-          total += bytes;
-        } catch (error) { bitmap.close(); throw error; }
-        this.images.set(id, bitmap);
+        bitmap = await this.decode(file);
+        current();
+        validateTextureSize(bitmap.width, bitmap.height);
+        const bytes = bitmap.width * bitmap.height * 4;
+        this.sizes.set(id, bytes);
+        if (protectedBytes + bytes > MAX_TEXTURE_TOTAL_BYTES) {
+          bitmap.close(); bitmap = null;
+          failures.push(file.name + '：当前可见贴图超过 12 MiB，优先显示较常见的材料。');
+          continue;
+        }
+        while (this.bytes + bytes > MAX_TEXTURE_TOTAL_BYTES) {
+          const remove = [...this.images.keys()].find(key => !pinned.has(key));
+          const previous = this.images.get(remove);
+          previous.close(); this.images.delete(remove); this.bytes -= this.sizes.get(remove); changed = true;
+        }
+        this.images.set(id, bitmap); this.bytes += bytes; pinned.add(id); bitmap = null; changed = true;
       } catch (error) {
+        bitmap?.close();
+        current();
         if (error.name === 'AbortError') throw error;
-        failures.push(`${file.name}：${error.message}`);
+        const message = file.name + '：' + error.message;
+        this.errors.set(id, message); failures.push(message);
       }
     }
-    return { loaded: this.images.size, bytes: total, failures };
+    current();
+    return { selected:this.files.size, loaded:this.images.size, bytes:this.bytes, changed, failures };
   }
 
   decode(file) {
@@ -57,12 +99,13 @@ export class TextureResources {
     });
   }
 
-  get atlases() { return Object.fromEntries([...this.images].map(([id, image]) => [id, { width: image.width, height: image.height }])); }
+  get selectedIds() { return [...this.files.keys()]; }
+  get atlases() { return Object.fromEntries([...this.images].map(([id, image]) => [id, { width:image.width, height:image.height }])); }
 
   clear() {
     this.generation++;
-    this.cancelDecode?.();
+    this.cancel();
     for (const image of this.images.values()) image.close();
-    this.images.clear();
+    this.images.clear(); this.files.clear(); this.sizes.clear(); this.errors.clear(); this.bytes = 0;
   }
 }

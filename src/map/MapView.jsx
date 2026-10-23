@@ -46,6 +46,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
   const [displayMode, setDisplayMode] = useState('color');
   const [resourceRevision, setResourceRevision] = useState(0);
   const [textureStats, setTextureStats] = useState(null);
+  const [textureCache, setTextureCache] = useState({ loading:false, failures:[] });
   const pointers = useRef(new Map());
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [camera, setCamera] = useState(null);
@@ -390,9 +391,25 @@ export default function MapView({ session, world, disabled, onError, editState, 
     setDrawing(true);
     const timer = setTimeout(async () => {
       try {
-        const { image } = await session.render({ ...visibleRegion(camera, size, world), detailShapes: camera.zoom >= 2, layers: { ...layers, wire: layers.wire && camera.zoom >= 2, actuator: layers.actuator && camera.zoom >= 2 },
-          ...(displayMode === 'texture' && camera.zoom >= 4 ? { atlases: resourcesRef.current.atlases } : {}) });
+        const resources = resourcesRef.current;
+        const textured = displayMode === 'texture' && camera.zoom >= 4;
+        const region = { ...visibleRegion(camera, size, world), detailShapes: camera.zoom >= 2,
+          layers:{ ...layers, wire:layers.wire && camera.zoom >= 2, actuator:layers.actuator && camera.zoom >= 2 } };
+        let { image } = await session.render({ ...region,
+          ...(textured ? { atlases:resources.atlases, textureIds:resources.selectedIds } : {}) });
         if (!active) return;
+        if (textured && image.requiredTextures?.length && resources.files.size) {
+          setTextureCache(previous => ({ ...previous, loading:true, failures:[] }));
+          const prepared = await resources.ensure(image.requiredTextures, message => {
+            if (active) setTextureCache(previous => ({ ...previous, loading:true, message }));
+          });
+          if (!active) return;
+          setTextureCache({ ...prepared, loading:false, message:'' });
+          if (prepared.changed) {
+            ({ image } = await session.render({ ...region, atlases:resources.atlases }));
+            if (!active) return;
+          }
+        } else setTextureCache({ loaded:resources.images.size, bytes:resources.bytes, loading:false, failures:[] });
         const canvas = document.createElement('canvas');
         canvas.width = image.imageWidth;
         canvas.height = image.imageHeight;
@@ -407,7 +424,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
         if (active && error.name !== 'AbortError') onError(error);
       }
     }, 50);
-    return () => { active = false; clearTimeout(timer); };
+    return () => { active = false; clearTimeout(timer); resourcesRef.current.cancel(); };
   }, [camera, size, disabled, session, world, draw, onError, editState.revision, layers, displayMode, resourceRevision]);
 
   useEffect(() => { setSample(null); }, [editState.revision]);
@@ -982,7 +999,7 @@ export default function MapView({ session, world, disabled, onError, editState, 
             </label>)}<span>隐藏图层不参与绘制或擦除</span>
           </div>
           <h3 className="resource-heading">本地贴图</h3>
-          <TextureControls resources={resourcesRef.current} mode={displayMode} onModeChange={setDisplayMode} disabled={disabled || interacting} onResourcesChange={() => {
+          <TextureControls resources={resourcesRef.current} cache={textureCache} mode={displayMode} onModeChange={setDisplayMode} disabled={disabled || interacting} onResourcesChange={() => {
             if (imageRef.current) imageRef.current.canvas.width = 0;
             imageRef.current = null;
             setDrawing(true);

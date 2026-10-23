@@ -1,5 +1,5 @@
 import palette from '../../vendor/tedit-map-colors/palette.json' with { type: 'json' };
-import { atlasSupports, createDesktopFrames, MAX_DETAIL_TILES } from './desktopTerrain.js';
+import { atlasSupports, createDesktopFrames, MAX_DETAIL_TILES, supportsTexture } from './desktopTerrain.js';
 import { circuitFlags } from './circuitOverlay.js';
 import { appearanceColor } from './appearance.js';
 
@@ -31,6 +31,7 @@ export function rasterizeRegion(source, region) {
   const detailed = Boolean(region.atlases) && step === 1 && width * height <= MAX_DETAIL_TILES;
   const frameAt = detailed && layers.block && Object.keys(region.atlases).length ? createDesktopFrames(source, region) : null;
   const sprites = [], plants = [], circuits = [], shapes = [];
+  const selectedTextures = new Set(region.textureIds || []), requiredTextures = new Map();
   let fallbackCount = 0;
   for (let row = 0; row < imageHeight; row++) {
     const tileY = y + row * step;
@@ -56,6 +57,9 @@ export function rasterizeRegion(source, region) {
         shapes.push(column, row, tile.slope, ...shapeColor);
         color = wallColor;
       }
+      if (detailed && layers.block && selectedTextures.has(tile.blockId) && supportsTexture(tile)) {
+        requiredTextures.set(tile.blockId, (requiredTextures.get(tile.blockId) || 0) + 1);
+      }
       if (detailed && layers.block && tile.blockId !== undefined) {
         const atlas = region.atlases[tile.blockId];
         const frame = atlas ? frameAt(x + column, tileY, tile) : null;
@@ -78,6 +82,7 @@ export function rasterizeRegion(source, region) {
     const commands = new Int32Array([...sprites, ...plants]);
     result.sprites = commands.buffer;
     result.textureStats = { detailed, drawn: commands.length / 8, fallback: fallbackCount };
+    if (region.textureIds) result.requiredTextures = [...requiredTextures].sort((a,b) => b[1]-a[1] || a[0]-b[0]).map(([id]) => id);
   }
   return result;
 }
