@@ -1,0 +1,472 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TEdit.Terraria;
+using TEdit.Geometry;
+using TEdit.Terraria.DataModel;
+using TEdit.Terraria.Objects;
+
+namespace TEdit.Editor;
+
+public static class BiomeMorphExtensions
+{
+    /// <summary>
+    /// This modifies the tile UV coordinates
+    /// </summary>
+    public static void ApplyOffset(this MorphSpriteUVOffset offset, ref Tile tile)
+    {
+        if (offset.Delete)
+        {
+            tile.ClearTile();
+            return;
+        }
+
+        tile.U += offset.OffsetU;
+
+        if (offset.UseFilterV)
+        {
+            tile.V += offset.OffsetV;
+        }
+    }
+
+    /// <summary>
+    /// Check if a tile matches the filter
+    /// </summary>
+    public static bool FilterMatches(this MorphSpriteUVOffset offset, Tile tile)
+    {
+        if (tile.U < offset.MinU) return false;
+        if (tile.U > offset.MaxU) return false;
+
+        if (offset.UseFilterV)
+        {
+            if (tile.V < offset.MinV) return false;
+            if (tile.V > offset.MaxV) return false;
+        }
+
+        return true;
+    }
+}
+
+public class MorphBiomeDataApplier
+{
+    static Dictionary<MorphBiomeData, MorphBiomeDataApplier> _morpherCache = new();
+
+    public static MorphBiomeDataApplier GetMorpher(MorphBiomeData biome)
+    {
+        MorphBiomeDataApplier morpher;
+
+        if (!_morpherCache.TryGetValue(biome, out morpher))
+        {
+            morpher = new MorphBiomeDataApplier(biome);
+            _morpherCache[biome] = morpher;
+        }
+
+        return morpher;
+    }
+
+    private MorphBiomeDataApplier(MorphBiomeData data)
+    {
+        _morph = data;
+        InitCache();
+    }
+
+    public bool ContainsWall(int id) => _wallCache.ContainsKey(id);
+    public bool ContainsTile(int id) => _tileCache.ContainsKey(id);
+
+    /// <summary>
+    /// Compute the morph depth level for a given Y coordinate.
+    /// </summary>
+    public static MorphLevel ComputeMorphLevel(World world, int y)
+    {
+        int dirtLayer = (int)world.GroundLevel;
+        int rockLayer = (int)world.RockLevel;
+        int deepRockLayer = (int)(rockLayer + ((world.TilesHigh - rockLayer) / 2));
+        int hellLayer = world.TilesHigh - 200;
+
+        if (y > hellLayer) return MorphLevel.Hell;
+        if (y > deepRockLayer) return MorphLevel.DeepRock;
+        if (y > rockLayer) return MorphLevel.Rock;
+        if (y > dirtLayer) return MorphLevel.Dirt;
+        return MorphLevel.Sky;
+    }
+
+    public List<Vector2Int32> ApplyMorph(MorphToolOptions options, World world, ref Tile source, MorphLevel level, Vector2Int32 location)
+    {
+        var extraLocations = ApplyTileMorph(options, world, ref source, level, location);
+        ApplyWallMorph(options, world, ref source, level, location);
+
+        // After converting a block to moss stone, grow moss plants on exposed faces
+        // Only full blocks get moss plants — slopes and half blocks don't
+        if (options.EnableMoss &&
+            source.IsActive &&
+            source.BrickStyle == BrickStyle.Full &&
+            WorldConfiguration.MorphSettings.IsMoss(source.Type))
+        {
+            var mossPlants = GrowMossPlants(options, world, location);
+            if (extraLocations == null)
+                return mossPlants;
+            if (mossPlants != null)
+                extraLocations.AddRange(mossPlants);
+        }
+
+        return extraLocations;
+    }
+
+    /// <summary>
+    /// Place moss plant sprites (tile 184) on empty cardinal neighbors of a moss stone block.
+    /// </summary>
+    private List<Vector2Int32> GrowMossPlants(MorphToolOptions options, World world, Vector2Int32 location)
+    {
+        var morphSettings = WorldConfiguration.MorphSettings;
+        int columnIndex = morphSettings.GetMossColumnIndex(options.MossType);
+        if (columnIndex < 0) return null;
+
+        short columnU = (short)(columnIndex * MorphConfiguration.MossPlantColumnWidth);
+        int x = location.X;
+        int y = location.Y;
+        List<Vector2Int32> grownPlants = null;
+
+        // Direction table: dx, dy, V base
+        // Above (y-1): plant hangs from block → Top anchor, V base 54
+        // Below (y+1): plant grows from block → Bottom anchor, V base 0
+        // Left  (x-1): plant grows from right block → Right anchor, V base 162
+        // Right (x+1): plant grows from left block → Left anchor, V base 108
+        ReadOnlySpan<int> directions = stackalloc int[]
+        {
+            0, -1,  0,   // above: plant sits on top of block, Bottom anchor, grows UP
+            0,  1, 54,   // below: plant hangs from block, Top anchor, grows DOWN
+           -1,  0, 162,  // left
+            1,  0, 108,  // right
+        };
+
+        for (int i = 0; i < directions.Length; i += 3)
+        {
+            int nx = x + directions[i];
+            int ny = y + directions[i + 1];
+            int vBase = directions[i + 2];
+
+            if (nx < 0 || nx >= world.TilesWide || ny < 0 || ny >= world.TilesHigh)
+                continue;
+
+            ref var neighbor = ref world.Tiles[nx, ny];
+            if (neighbor.IsActive)
+                continue;
+
+            // Deterministic variety (0-2) based on position
+            int variety = ((nx * 31) + (ny * 17)) % 3;
+            if (variety < 0) variety += 3;
+
+            neighbor.IsActive = true;
+            neighbor.Type = 184;
+            neighbor.U = columnU;
+            neighbor.V = (short)(vBase + variety * 18);
+
+            grownPlants ??= new List<Vector2Int32>(4);
+            grownPlants.Add(new Vector2Int32(nx, ny));
+        }
+
+        return grownPlants;
+    }
+
+    private void ApplyWallMorph(MorphToolOptions options, World world, ref Tile source, MorphLevel level, Vector2Int32 location)
+    {
+        if (source.Wall == 0) { return; }
+        bool useEvil = options.EnableEvilTiles;
+
+        ushort sourceId = source.Wall;
+        if (!_wallCache.TryGetValue(sourceId, out var morphId)) { return; }
+
+        if (morphId.SourceIds.Contains(sourceId))
+        {
+            if (morphId.Delete)
+            {
+                source.Wall = 0;
+                return;
+            }
+
+            // Check if tiles need gravity checks.
+            if (morphId.Gravity != null && AirBelow(world, location.X, location.Y))
+            {
+                source.Wall = morphId.Gravity.GetId(level, useEvil) ?? 0;
+            }
+            else if (morphId.TouchingAir != null && TouchingAir(world, location.X, location.Y))
+            {
+                var id = morphId.TouchingAir.GetId(level, useEvil);
+                if (id != null)
+                {
+                    source.Wall = id.Value;
+                }
+            }
+            else
+            {
+                var id = morphId.Default.GetId(level, useEvil);
+                if (id != null)
+                {
+                    source.Wall = id.Value;
+                }
+            }
+        }
+    }
+
+    private List<Vector2Int32> ApplyTileMorph(MorphToolOptions options, World world, ref Tile source, MorphLevel level, Vector2Int32 location)
+    {
+        if (!source.IsActive) { return null; }
+        ushort sourceId = source.Type;
+
+        if (!_tileCache.TryGetValue(sourceId, out var morphId)) { return null; }
+        bool useEvil = options.EnableEvilTiles;
+
+        if (morphId.SourceIds.Contains(sourceId))
+        {
+            // Multi-tile sprite replacement (e.g. altars, orbs)
+            if (morphId.SpriteReplacement != null && options.EnableSprites && options.EnableDecoSprites)
+            {
+                return ApplySpriteReplacement(morphId, world, source, sourceId, location);
+            }
+
+            if (morphId.Delete)
+            {
+                if (options.EnableBaseTiles)
+                {
+                    source.ClearTile();
+                }
+                return null;
+            }
+
+            // Tile type conversion (guarded by EnableBaseTiles)
+            if (options.EnableBaseTiles)
+            {
+                // Check if tiles need gravity checks.
+                if (morphId.Gravity != null && AirBelow(world, location.X, location.Y))
+                {
+                    source.Type = morphId.Gravity.GetId(level, useEvil) ?? 397;
+                }
+                else if (morphId.TouchingAir != null && TouchingAir(world, location.X, location.Y))
+                {
+                    var id = morphId.TouchingAir.GetId(level, useEvil);
+                    if (id != null)
+                    {
+                        source.Type = id.Value;
+                    }
+                }
+                else
+                {
+                    var id = morphId.Default.GetId(level, useEvil) ?? source.Type;
+
+                    // apply moss to stone blocks (skip framed tiles like moss plants — UV handled below)
+                    if (morphId.UseMoss &&
+                        options.EnableMoss &&
+                        !WorldConfiguration.TileProperties[sourceId].IsFramed &&
+                        (WorldConfiguration.MorphSettings.IsMoss(source.Type) ||
+                         TouchingAir(world, location.X, location.Y)))
+                    {
+                        if (options.MossType >= 0)
+                        {
+                            // Real moss types grow on any surface; non-moss (e.g. grass)
+                            // only replaces dirt-target blocks, not stone
+                            if (WorldConfiguration.MorphSettings.IsMoss((ushort)options.MossType) || id == 0)
+                            {
+                                source.Type = (ushort)options.MossType;
+                            }
+                            else
+                            {
+                                source.Type = id;
+                            }
+                        }
+                        else
+                        {
+                            // MossType < 0 means "None (Remove)": convert moss back to stone
+                            source.Type = 1;
+                        }
+                    }
+                    else
+                    {
+                        source.Type = id;
+                    }
+                }
+            }
+
+            // Sprite UV offsets (guarded by EnableSprites, independent of EnableBaseTiles)
+            if (options.EnableSprites &&
+                WorldConfiguration.TileProperties[sourceId].IsFramed &&
+                morphId.SpriteOffsets.Count > 0)
+            {
+                // filter and apply morph (offset or delete)
+                // Cannot capture ref parameter in lambda, so use a local copy for the filter
+                Tile sourceSnapshot = source;
+                morphId.SpriteOffsets
+                    .FirstOrDefault(uv => uv.FilterMatches(sourceSnapshot))
+                    ?.ApplyOffset(ref source);
+            }
+
+            // Moss plant UV remapping: when UseMoss is set on a framed tile (e.g. tile 184),
+            // remap the U column to match the selected moss type.
+            // MossType < 0 means "None (Remove)": delete moss plants instead of remapping.
+            if (morphId.UseMoss &&
+                options.EnableMoss &&
+                WorldConfiguration.TileProperties[sourceId].IsFramed)
+            {
+                if (options.MossType < 0)
+                {
+                    source.ClearTile();
+                }
+                else
+                {
+                    var morphSettings = WorldConfiguration.MorphSettings;
+                    int targetColumn = morphSettings.GetMossColumnIndex(options.MossType);
+                    if (targetColumn >= 0)
+                    {
+                        short columnWidth = MorphConfiguration.MossPlantColumnWidth;
+                        int currentColumn = source.U / columnWidth;
+                        if (currentColumn != targetColumn)
+                        {
+                            source.U = (short)(targetColumn * columnWidth);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Replace a multi-tile sprite (e.g. altar, orb) with its target biome equivalent.
+    /// Only processes when the current tile is the top-left anchor of the sprite.
+    /// Returns extra modified tile locations for undo/render, or null if skipped.
+    /// </summary>
+    private List<Vector2Int32> ApplySpriteReplacement(MorphId morphId, World world, Tile source, ushort sourceId, Vector2Int32 location)
+    {
+        var replacement = morphId.SpriteReplacement!;
+
+        // Find source sprite sheet and style
+        var sourceSheet = WorldConfiguration.Sprites2.FirstOrDefault(s => s.Tile == sourceId);
+        if (sourceSheet == null) return null;
+
+        var sourceSprite = sourceSheet.GetStyleFromUV(new Vector2Short(source.U, source.V));
+        if (sourceSprite == null) return null;
+
+        // Only process at the anchor (top-left tile of the sprite)
+        var anchorUV = sourceSprite.GetTiles()[0, 0];
+        if (source.U != anchorUV.X || source.V != anchorUV.Y)
+            return null;
+
+        // Find target sprite sheet and use its default style
+        var targetSheet = WorldConfiguration.Sprites2.FirstOrDefault(s => s.Tile == replacement.TargetTileId);
+        if (targetSheet == null) return null;
+
+        var targetSprite = targetSheet.Default;
+        if (targetSprite == null) return null;
+
+        int anchorX = location.X;
+        int anchorY = location.Y;
+
+        // Bounds check: ensure the target sprite fits within the world
+        if (anchorX + targetSprite.SizeTiles.X > world.TilesWide ||
+            anchorY + targetSprite.SizeTiles.Y > world.TilesHigh)
+            return null;
+
+        // Clear source sprite footprint
+        SpritePlacer.ClearSprite(anchorX, anchorY, sourceSprite.SizeTiles.X, sourceSprite.SizeTiles.Y, world);
+
+        // Place target sprite
+        SpritePlacer.Place(targetSprite, anchorX, anchorY, world);
+
+        // Collect all modified tile positions (excluding the anchor, which the caller handles)
+        var extraLocations = new List<Vector2Int32>();
+        for (int x = 0; x < targetSprite.SizeTiles.X; x++)
+        {
+            for (int y = 0; y < targetSprite.SizeTiles.Y; y++)
+            {
+                if (x == 0 && y == 0) continue;
+                extraLocations.Add(new Vector2Int32(anchorX + x, anchorY + y));
+            }
+        }
+
+        // If source was larger than target, include cleared tiles too
+        for (int x = 0; x < sourceSprite.SizeTiles.X; x++)
+        {
+            for (int y = 0; y < sourceSprite.SizeTiles.Y; y++)
+            {
+                if (x < targetSprite.SizeTiles.X && y < targetSprite.SizeTiles.Y) continue;
+                extraLocations.Add(new Vector2Int32(anchorX + x, anchorY + y));
+            }
+        }
+
+        return extraLocations;
+    }
+
+    public static bool AirBelow(World world, int x, int y)
+    {
+        if (world == null) return false;
+
+        if (y >= world.TilesHigh - 1) return false;
+
+        Tile tile = world.Tiles[x, y + 1];
+        return !tile.IsActive || MorphConfiguration.NotSolidTiles.Contains(tile.Type);
+    }
+
+    // copied from rendering
+    const int e = 0, n = 1, w = 2, s = 3, ne = 4, nw = 5, sw = 6, se = 7;
+    private readonly MorphBiomeData _morph;
+    [ThreadStatic] static Tile?[] _neighborTile;
+
+    public static bool TouchingAir(World world, int x, int y)
+    {
+        if (world == null) return false;
+
+        _neighborTile ??= new Tile?[8];
+        var neighborTile = _neighborTile;
+
+        // copied from render code. this should probably be made a method so it can be reused
+        neighborTile[e] = x + 1 < world.TilesWide ? world.Tiles[x + 1, y] : null;
+        neighborTile[n] = y - 1 > 0 ? world.Tiles[x, y - 1] : null;
+        neighborTile[w] = x - 1 > 0 ? world.Tiles[x - 1, y] : null;
+        neighborTile[s] = y + 1 < world.TilesHigh ? world.Tiles[x, y + 1] : null;
+        neighborTile[ne] = x + 1 < world.TilesWide && y - 1 > 0 ? world.Tiles[x + 1, y - 1] : null;
+        neighborTile[nw] = x - 1 > 0 && y - 1 > 0 ? world.Tiles[x - 1, y - 1] : null;
+        neighborTile[sw] = x - 1 > 0 && y + 1 < world.TilesHigh ? world.Tiles[x - 1, y + 1] : null;
+        neighborTile[se] = x + 1 < world.TilesWide && y + 1 < world.TilesHigh ? world.Tiles[x + 1, y + 1] : null;
+
+        // these loops are split out because checking isactive is orders of magnitude faster than checking the hashset
+        // if a tile is empty, this lets the algorithm shortcut the hashcheck, making it faster
+        for (int i = 0; i < neighborTile.Length; i++)
+        {
+            var t = neighborTile[i];
+            if (t == null) { continue; }
+            if (!t.Value.IsActive) { return true; } // air
+        }
+
+        for (int i = 0; i < neighborTile.Length; i++)
+        {
+            var t = neighborTile[i];
+            if (t == null) { continue; }
+            if (MorphConfiguration.NotSolidTiles.Contains(t.Value.Type)) { return true; } // non-solid
+        }
+
+        return false;
+    }
+
+    public void InitCache()
+    {
+        _tileCache.Clear();
+        foreach (var item in _morph.MorphTiles)
+        {
+            foreach (var id in item.SourceIds)
+            {
+                _tileCache.TryAdd(id, item);
+            }
+        }
+
+        _wallCache.Clear();
+        foreach (var item in _morph.MorphWalls)
+        {
+            foreach (var id in item.SourceIds)
+            {
+                _wallCache.TryAdd(id, item);
+            }
+        }
+    }
+
+    private Dictionary<int, MorphId> _wallCache = new Dictionary<int, MorphId>();
+    private Dictionary<int, MorphId> _tileCache = new Dictionary<int, MorphId>();
+}

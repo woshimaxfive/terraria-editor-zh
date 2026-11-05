@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
+ <ItemGroup>
+  <Compile Include="*.cs" />
+  <Compile Include="../../original/TEdit/Render/BuffTileCache.cs" />
+  <Compile Include="../../original/TEdit/Render/BlendRules.cs" />
+  <Compile Include="../../original/TEdit/Editor/SpritePlacer.cs" />
+  <Compile Include="../../original/TEdit/Scripting/Api/ChestApi.cs" />
+  <Compile Include="../../original/TEdit/Scripting/Api/SignApi.cs" />
+  <Compile Include="../../original/TEdit/Scripting/Api/TileEntityApi.cs" />
+  <Compile Include="../../original/TEdit/Scripting/Api/NpcApi.cs" />
+  <Compile Include="../../original/TEdit/Scripting/Api/WorldInfoApi.cs" />
+  <Compile Include="../../original/TEdit/Scripting/Api/MetadataApi.cs" />
+  <Compile Include="../../original/TEdit/Scripting/Api/GenerateApi.cs" />
+  <Compile Include="../../original/TEdit/Scripting/Api/GenerateApi.Biomes.cs" />
+  <Compile Include="../../original/TEdit/Scripting/Api/GenerateApi.Structures.cs" />
+  <Compile Include="../../original/TEdit/Scripting/Api/GenerateApi.Deco.cs" />
+  <Compile Include="../../original/TEdit/Scripting/Api/GenerateApi.WorldGen.cs" />
+  <Compile Include="../../original/TEdit/Editor/Plugins/ImageToPixelartEditorEnums.cs" />
+  <EmbeddedResource Include="../../original/TEdit/MapColors.xml" LogicalName="TEdit.Port.MapColors.xml" />
+  <Compile Include="../platform/WorldFilePackage.cs" Link="WorldFilePackage.cs" />
+  <Compile Include="../compat/*.cs" Exclude="../compat/Session.cs;../compat/WorldViewModel.cs;../compat/UndoBuffer.cs;../compat/UndoManager.cs;../compat/BaseTool.cs;../compat/BrushTool.cs;../compat/ErrorLogging.cs" />
+  <Compile Include="../../original/TEdit.Editor/**/*.cs" Exclude="../../original/TEdit.Editor/WorldEditor.cs;../../original/TEdit.Editor/obj/**;../../original/TEdit.Editor/bin/**;../../original/TEdit.Editor/Undo/UndoBuffer.cs;../../original/TEdit.Editor/Clipboard/ClipboardBuffer.File.cs;../../original/TEdit.Editor/Clipboard/ClipboardBuffer.cs" />
+  <Compile Include="../../original/TEdit/Editor/Tools/ToolType.cs" />
+  <Compile Include="../../original/TEdit/Editor/Tools/ConstrainHelper.cs" />
+  <ProjectReference Include="../../original/TEdit.Common/TEdit.Common.csproj" />
+  <ProjectReference Include="../../original/TEdit.Terraria/TEdit.Terraria.csproj" />
+  <PackageReference Include="ReactiveUI.SourceGenerators" Version="3.2.0" PrivateAssets="all" />
+ </ItemGroup>
+<ItemGroup><Compile Include="../../original/TEdit/Editor/Plugins/SpriteDebuggerPlugin.cs" /></ItemGroup><ItemGroup><ProjectReference Include="../../original/TEdit.Png/TEdit.Png.csproj" /><EmbeddedResource Include="../../original/TEdit/Images/favicon-96x96.png" LogicalName="TEdit.Images.favicon-96x96.png" /></ItemGroup><ItemGroup><Compile Include="../../original/TEdit/ViewModel/NpcListItem.cs" /><Compile Include="../../original/TEdit/Scripting/Api/BatchApi.cs" /><Compile Include="../../original/TEdit/Scripting/Api/DrawApi.cs" /><Compile Include="../../original/TEdit/Scripting/Api/FinderApi.cs" /><Compile Include="../../original/TEdit/Scripting/Api/GeometryApi.cs" /><Compile Include="../../original/TEdit/Scripting/Api/LogApi.cs" /><Compile Include="../../original/TEdit/Scripting/Api/ScriptApi.cs" /><Compile Include="../../original/TEdit/Scripting/Api/SelectionApi.cs" /><Compile Include="../../original/TEdit/Scripting/Api/SpriteApi.cs" /><Compile Include="../../original/TEdit/Scripting/Api/TileApi.cs" /><Compile Include="../../original/TEdit/Scripting/Engine/IScriptEngine.cs" /><Compile Include="../../original/TEdit/Scripting/Engine/ScriptExecutionContext.cs" /><Compile Include="../../original/TEdit/Scripting/Engine/ScriptResult.cs" /><PackageReference Include="Jint" Version="4.16.0" /><PackageReference Include="LuaCSharp" Version="0.5.6" /></ItemGroup></Project>

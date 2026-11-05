@@ -1,0 +1,63 @@
+using TEdit.ViewModel;
+using System.Linq;
+using TEdit.Render;
+
+namespace TEdit.Editor.Plugins;
+
+public sealed class SandSettlePlugin : BasePlugin
+{
+    public SandSettlePlugin(WorldViewModel worldViewModel)
+        : base(worldViewModel)
+    {
+        Name = "Settle Sand";
+    }
+
+    public override void Execute()
+    {
+        if (_wvm.CurrentWorld == null)
+            return;
+        int[] _tileSand = {
+            53,  // Sand Block
+            112, // Ebonsand Block
+            116, // Pearlsand
+            123, // silt
+            224, // slush block
+            234, // Crimsand block
+        };
+
+        for (int y = _wvm.CurrentWorld.TilesHigh - 1; y > 0; y--)
+        {
+                TEdit.Port.OperationProgress.Advance();
+            for (int x = 0; x < _wvm.CurrentWorld.TilesWide; x++)
+            {
+                TEdit.Port.OperationProgress.Advance();
+                ref var curTile = ref _wvm.CurrentWorld.Tiles[x, y];
+                if (_tileSand.Contains(curTile.Type))
+                {
+                    // check if tile below current tile is empty and move sand to there if it is.
+                    int shiftAmmount = 1;
+                    while (shiftAmmount + y < _wvm.CurrentWorld.TilesHigh && !_wvm.CurrentWorld.Tiles[x, y + shiftAmmount].IsActive)
+                        shiftAmmount++;
+                    shiftAmmount--;
+
+                    if (shiftAmmount > 0)
+                    {
+                        ref var belowTile = ref _wvm.CurrentWorld.Tiles[x, y + shiftAmmount];
+                        if (!belowTile.IsActive)
+                        {
+                            _wvm.UndoManager.SaveTile(x, y + shiftAmmount);
+                            _wvm.UndoManager.SaveTile(x, y);
+                            belowTile.IsActive = true;
+                            belowTile.Type = curTile.Type;
+                            curTile.ClearTile();
+                            BlendRules.ResetUVCache(_wvm, x, y, 1, 1 + shiftAmmount);
+                            _wvm.UpdateRenderPixel(x, y);
+                            _wvm.UpdateRenderPixel(x, y + shiftAmmount);
+                        }
+                    }
+                }
+            }
+        }
+        _wvm.UndoManager.SaveUndo();
+    }
+}

@@ -1,0 +1,2190 @@
+{
+  "upstream": "https://github.com/TEdit/Terraria-Map-Editor",
+  "commit": "84e3fc3466d405675a09da763169774b82c22d4d",
+  "files": {
+    "src/browser/shared/ArrowTool.cs": {
+      "origin": "browser/shared/ArrowTool.cs",
+      "sha256": "a9e730422871ae5b96b9ee107b0d977ebbdc8f3a8ab3e9003e53f9b46dcc1e00"
+    },
+    "src/browser/shared/Artifacts.cs": {
+      "origin": "browser/shared/Artifacts.cs",
+      "sha256": "5abbe6ad42c272c769dc763daad4e32a09fe5cb02e3be76946a0c239d88abbbe"
+    },
+    "src/browser/shared/BackgroundBitmap.cs": {
+      "origin": "browser/shared/BackgroundBitmap.cs",
+      "sha256": "80ed8ac44fb7b1dfc331130eac575a624f9821c5eb28dcdab4a94cb8c9ebf8cf"
+    },
+    "src/browser/shared/BaseTool.cs": {
+      "origin": "browser/shared/BaseTool.cs",
+      "sha256": "f12b3e54b1ff37a6f42e2b1ae1eb35cccdcab034d5e833452f4ce65a9a9c950c"
+    },
+    "src/browser/shared/BrowserPluginApi.cs": {
+      "origin": "browser/shared/BrowserPluginApi.cs",
+      "sha256": "5a4b21513f9f2fc6745aae4c9f2a1b8f87c8caf235e802bacad9ce91a965fabe"
+    },
+    "src/browser/shared/BrowserToolsApi.cs": {
+      "origin": "browser/shared/BrowserToolsApi.cs",
+      "sha256": "b144687dadae6808d920f03a3cbef8add5637424396cb2c23370b916aca3f9d4"
+    },
+    "src/browser/shared/BrushTool.cs": {
+      "origin": "browser/shared/BrushTool.cs",
+      "sha256": "cd0b1288d557a3762cfc8eaca21ca3d1f59674c32bcda82b8317d2e64364ff9d"
+    },
+    "src/browser/shared/CatalogBackgrounds.cs": {
+      "origin": "browser/shared/CatalogBackgrounds.cs",
+      "sha256": "780ac33ce101c66a2de6c837919bc898aacff2c5bf06e641779b78dca19c176d"
+    },
+    "src/browser/shared/CatalogPreviews.cs": {
+      "origin": "browser/shared/CatalogPreviews.cs",
+      "sha256": "a1c0d4d325c6474e697fdd021198f350fa2d2fda06850e28c5714745dc8db2c8"
+    },
+    "src/browser/shared/Checkpoint.cs": {
+      "origin": "browser/shared/Checkpoint.cs",
+      "sha256": "f2b1363df6b743a54eac440384afa4a3eb69a16f645436b5567c11a3dfa6f464"
+    },
+    "src/browser/shared/CheckpointFile.cs": {
+      "origin": "browser/shared/CheckpointFile.cs",
+      "sha256": "03ca663ebbfd76704d29d860b82f64a5be399536d6788564dc43eb4fea2a14f4"
+    },
+    "src/browser/shared/CheckpointHash.cs": {
+      "origin": "browser/shared/CheckpointHash.cs",
+      "sha256": "913f2b8c96477a5569ab8c3754468ce5fe5fb6835c0eb084ab4effb62ea0fa5e"
+    },
+    "src/browser/shared/ClipboardBuffer.File.cs": {
+      "origin": "browser/shared/ClipboardBuffer.File.cs",
+      "sha256": "332e22e4d11ae8db87e91461114507b89b8b732c25f31bd64bfaa101b64ca898"
+    },
+    "src/browser/shared/ClipboardCapacity.cs": {
+      "origin": "browser/shared/ClipboardCapacity.cs",
+      "sha256": "51f4c52d85438feaa975fc6506a80a102a52394791df19f348c5ac48e34e3628"
+    },
+    "src/browser/shared/ClipboardIdentity.cs": {
+      "origin": "browser/shared/ClipboardIdentity.cs",
+      "sha256": "2dc159dafcb4ce0fa28331bd941464e6f714c139ae3c23efcd1beefeb489e63b"
+    },
+    "src/browser/shared/ClipboardRuntimeArchive.cs": {
+      "origin": "browser/shared/ClipboardRuntimeArchive.cs",
+      "sha256": "7578f65cda8ee07e01f0246dd7967a9acf4d05af18ef0cabb6c0cdc0b712860a"
+    },
+    "src/browser/shared/ClipboardSession.cs": {
+      "origin": "browser/shared/ClipboardSession.cs",
+      "sha256": "13d29f5e4a2ea636310640b08219dc367d55c36424e800c2915644c4b921618e"
+    },
+    "src/browser/shared/ClipboardSpriteMetadata.cs": {
+      "origin": "browser/shared/ClipboardSpriteMetadata.cs",
+      "sha256": "4f59445a6cdddab97f9a7f8902554c8247030bcc3b49c377266c5c2ab8437304"
+    },
+    "src/browser/shared/ClipboardTileStream.cs": {
+      "origin": "browser/shared/ClipboardTileStream.cs",
+      "sha256": "763f293eba3f3ebf6bbd1837e95815e8632108ebf32a04d6ce1fc4104402708c"
+    },
+    "src/browser/shared/FillTool.cs": {
+      "origin": "browser/shared/FillTool.cs",
+      "sha256": "d4d50f4d973092c8c549ddc086ec38668236571c083f7cb416831146d76dbd25"
+    },
+    "src/browser/shared/FloatingBufferStorage.cs": {
+      "origin": "browser/shared/FloatingBufferStorage.cs",
+      "sha256": "1048dc77f6d1b472997a004796f643da5391428a4083da17cddb8f130d72b4b7"
+    },
+    "src/browser/shared/FloatingMemory.cs": {
+      "origin": "browser/shared/FloatingMemory.cs",
+      "sha256": "9927d519e0d759546d5fab617e3acfadfe2da4c5e9463c4056bb2c91a2ec34ba"
+    },
+    "src/browser/shared/FloatingPaste.cs": {
+      "origin": "browser/shared/FloatingPaste.cs",
+      "sha256": "4f7323814f493403c815c49c8e61c84d05157ed334bc4efdf3b240216242d6ee"
+    },
+    "src/browser/shared/FloatingPreviewDelivery.cs": {
+      "origin": "browser/shared/FloatingPreviewDelivery.cs",
+      "sha256": "1b0de3c662b1ec1ab7803663bfa9220ea20e02dfca2df037a419a06cbb800081"
+    },
+    "src/browser/shared/FloatingTileSource.cs": {
+      "origin": "browser/shared/FloatingTileSource.cs",
+      "sha256": "421f6747bba21b966fcedb1ee124e45f9b70805452b080d086f84f69fe095caf"
+    },
+    "src/browser/shared/GeneratedClipboard.cs": {
+      "origin": "browser/shared/GeneratedClipboard.cs",
+      "sha256": "a68c56679562ae0fea771675ec4b1a7cea298686b27b5c55d172f4be10ada19e"
+    },
+    "src/browser/shared/HammerAreaTool.cs": {
+      "origin": "browser/shared/HammerAreaTool.cs",
+      "sha256": "b847a311691109439d14c911e00d3597dac497783a6941af6d27b8920e2600e1"
+    },
+    "src/browser/shared/HistoryTileCodec.cs": {
+      "origin": "browser/shared/HistoryTileCodec.cs",
+      "sha256": "83b0d913670b2204d0652530fe4914d2170889b2d2237a0ccf49cb18067def32"
+    },
+    "src/browser/shared/MorphHistory.cs": {
+      "origin": "browser/shared/MorphHistory.cs",
+      "sha256": "92abd9630117c214bd6fdf89406817d3d101065365caa9b982e6be32acb76ce6"
+    },
+    "src/browser/shared/MorphTool.cs": {
+      "origin": "browser/shared/MorphTool.cs",
+      "sha256": "dcc00aec7ca6199c69ddabc0ee979c5d3401b160d7649dd18fd261945a2ca244"
+    },
+    "src/browser/shared/NewWorldFiles.cs": {
+      "origin": "browser/shared/NewWorldFiles.cs",
+      "sha256": "4ca2e655eb686fc40ef2d439484ac3a12fe1f9de00ff09efb1595fb1c9b03b3c"
+    },
+    "src/browser/shared/NewWorldNames.cs": {
+      "origin": "browser/shared/NewWorldNames.cs",
+      "sha256": "7ae36553ab7e10e43ad11e974fdcf84a6104589cf0ea174d48a55ef0aa76bfed"
+    },
+    "src/browser/shared/ObjectCommandsApi.cs": {
+      "origin": "browser/shared/ObjectCommandsApi.cs",
+      "sha256": "d94f14db1cf0e029034d0e9670c0977c6826da25061141e884412cd0e2366473"
+    },
+    "src/browser/shared/OperationProgress.cs": {
+      "origin": "browser/shared/OperationProgress.cs",
+      "sha256": "c5e01ff8153abb1816043de706633b1b0dabddef790afa0b9147e09b49ddd3a0"
+    },
+    "src/browser/shared/OriginalBackgroundPreview.cs": {
+      "origin": "browser/shared/OriginalBackgroundPreview.cs",
+      "sha256": "39eda7a493fbbd230dd18373fab8929263180d3ee86a09f6ac37c3201349618c"
+    },
+    "src/browser/shared/OriginalBiomePreview.cs": {
+      "origin": "browser/shared/OriginalBiomePreview.cs",
+      "sha256": "ca92c492b73f8b9edcaa2d55aeef374bf2997081ff0fd46c6e6e568ddefea5f5"
+    },
+    "src/browser/shared/OriginalClipboardBuffer.cs": {
+      "origin": "browser/shared/OriginalClipboardBuffer.cs",
+      "sha256": "afe34e2d4fbec959491b734c2ba6f45dddf1ab9bf5bfaac588fb61e0ad2f6d56"
+    },
+    "src/browser/shared/OriginalClipboardTiledPreview.cs": {
+      "origin": "browser/shared/OriginalClipboardTiledPreview.cs",
+      "sha256": "acff476f176b49ac42eb0001a7d1028c21323a7a7cd2d6af99fbf285df95dc1b"
+    },
+    "src/browser/shared/OriginalDesktopPixelMap.cs": {
+      "origin": "browser/shared/OriginalDesktopPixelMap.cs",
+      "sha256": "fa40d58296e4e7cb1097d91d118a5976fe24200d2d7965bc8bb6fe4d3ecf91c7"
+    },
+    "src/browser/shared/OriginalFilterManager.cs": {
+      "origin": "browser/shared/OriginalFilterManager.cs",
+      "sha256": "51e3bddccfbf7844b80fceac15407f9687a43ae81565b6fb2a77df3746bb919f"
+    },
+    "src/browser/shared/OriginalFinder.cs": {
+      "origin": "browser/shared/OriginalFinder.cs",
+      "sha256": "a8630bc824e12d14b86bf7ca9d11925548b33742a3c6c15891c24f089462bfeb"
+    },
+    "src/browser/shared/OriginalGeometryUtils.cs": {
+      "origin": "browser/shared/OriginalGeometryUtils.cs",
+      "sha256": "5b74510e358f4dc61883d06f2d68ea84662849bdbbe4bcfa90be177eed0baec1"
+    },
+    "src/browser/shared/OriginalGlowMaskData.cs": {
+      "origin": "browser/shared/OriginalGlowMaskData.cs",
+      "sha256": "b55ca03c002bf3a5b68acaefae27bc50688adde60df689fe9498bfbcb41b56d0"
+    },
+    "src/browser/shared/OriginalHouseGenerator.cs": {
+      "origin": "browser/shared/OriginalHouseGenerator.cs",
+      "sha256": "a9951911170cbbf5ec431a36b4130f6b2ec275c3d4e44791f8f3691cd9b20e2a"
+    },
+    "src/browser/shared/OriginalJintScriptEngine.cs": {
+      "origin": "browser/shared/OriginalJintScriptEngine.cs",
+      "sha256": "81c312ed85fd79f28551e8482f09511433a974ba918136f2128286fc586a1ba7"
+    },
+    "src/browser/shared/OriginalLeafletTileExporter.cs": {
+      "origin": "browser/shared/OriginalLeafletTileExporter.cs",
+      "sha256": "deb283cf6e37b67676084d1371478c1caddd0d58190b22b35d847c394bb5a423"
+    },
+    "src/browser/shared/OriginalLuaScriptEngine.cs": {
+      "origin": "browser/shared/OriginalLuaScriptEngine.cs",
+      "sha256": "d714a9f2bbbaad717eeaf721722a514199f7a125c83bf42fc56d2188f9d97a5e"
+    },
+    "src/browser/shared/OriginalMapColorLoader.cs": {
+      "origin": "browser/shared/OriginalMapColorLoader.cs",
+      "sha256": "b1f35b5bfad9f9029c7504e86d2a8a3375dff5e1838cf87e71c32a2897ec9956"
+    },
+    "src/browser/shared/OriginalMetadataImport.cs": {
+      "origin": "browser/shared/OriginalMetadataImport.cs",
+      "sha256": "4527cb75ba3ff511b51493fdb30fcb1936e540b3a697a86e7ce849279550cd38"
+    },
+    "src/browser/shared/OriginalMouseTile.cs": {
+      "origin": "browser/shared/OriginalMouseTile.cs",
+      "sha256": "0ec4ccdac1147495a3b49502e6220832d607a1a77ce1fb40837e36d8ad53cb0e"
+    },
+    "src/browser/shared/OriginalObjectCommands.cs": {
+      "origin": "browser/shared/OriginalObjectCommands.cs",
+      "sha256": "f3386160148ebd0da902e81c1bb8a9f138d7507b53d5b32a7f371beae97c1239"
+    },
+    "src/browser/shared/OriginalPixelArt.cs": {
+      "origin": "browser/shared/OriginalPixelArt.cs",
+      "sha256": "b7aff5f8f39ef8f97fbb2ea8da03ebf045b9a7234b6a857cde39b2cade54a1d4"
+    },
+    "src/browser/shared/OriginalPlayerMap.cs": {
+      "origin": "browser/shared/OriginalPlayerMap.cs",
+      "sha256": "b179f7e3b9a360882ee39b33cb3184eabfcc8e4785e35841ad01eed871e746d5"
+    },
+    "src/browser/shared/OriginalPlayerPreviewRenderer.cs": {
+      "origin": "browser/shared/OriginalPlayerPreviewRenderer.cs",
+      "sha256": "c85e780be6bdcea5d52edc4211069bf27c40347d516c02ea85f6bbb8fbac064f"
+    },
+    "src/browser/shared/OriginalPngExporter.cs": {
+      "origin": "browser/shared/OriginalPngExporter.cs",
+      "sha256": "18c2587879e63ea65f844b4e469fba1d2675e0a076eb05b346a0ebed027d1b13"
+    },
+    "src/browser/shared/OriginalRenderMask.cs": {
+      "origin": "browser/shared/OriginalRenderMask.cs",
+      "sha256": "425cad1847f2916d34f772b65e98c95a1df74101dcec8b28673859764a7a2252"
+    },
+    "src/browser/shared/OriginalSelectionDelete.cs": {
+      "origin": "browser/shared/OriginalSelectionDelete.cs",
+      "sha256": "c7f1e14ad671ac6bc72b4bb3b971a9dcc646a4b0e36f69e0a9c7dbfdd240e860"
+    },
+    "src/browser/shared/OriginalSpritePreview.cs": {
+      "origin": "browser/shared/OriginalSpritePreview.cs",
+      "sha256": "9d82dafee346bdfef42a3d6add870a2b32266bc16e27fcbce400ef734301b2f5"
+    },
+    "src/browser/shared/OriginalSpritePreviewConfig.cs": {
+      "origin": "browser/shared/OriginalSpritePreviewConfig.cs",
+      "sha256": "d3d5a5cbba2b5a6d39525fef95c8804d3bf18e21f39f0839c8b4212d0221f21b"
+    },
+    "src/browser/shared/OriginalSpriteSheetEditor.cs": {
+      "origin": "browser/shared/OriginalSpriteSheetEditor.cs",
+      "sha256": "efd655c4bf24c94890306d09c77f83c255c730e1c0ba9a46f00d102ee6b71c78"
+    },
+    "src/browser/shared/OriginalTextStatues.cs": {
+      "origin": "browser/shared/OriginalTextStatues.cs",
+      "sha256": "263a0d2b267fe8723a26a74ffe4672bf9d45b25b7c883385d73c4d8be3af1825"
+    },
+    "src/browser/shared/OriginalTextureColor.cs": {
+      "origin": "browser/shared/OriginalTextureColor.cs",
+      "sha256": "b6ead741be3bca086842ad27533120724a2e606620696e7952314daaa332fbf2"
+    },
+    "src/browser/shared/OriginalTextures.cs": {
+      "origin": "browser/shared/OriginalTextures.cs",
+      "sha256": "4dffc86483c17610ed1425d3108bfd02573290fce8a71f2b847d8350e1684ea7"
+    },
+    "src/browser/shared/OriginalUvDraft.cs": {
+      "origin": "browser/shared/OriginalUvDraft.cs",
+      "sha256": "f86905a61870e36d60d1cb8169def986a32104d0f3e9d93def3b2fc36a57a629"
+    },
+    "src/browser/shared/OriginalViewportLayers.cs": {
+      "origin": "browser/shared/OriginalViewportLayers.cs",
+      "sha256": "4e9ceb79b50a7e1f55d392ba8549696ab4bbdcd33d04e9c16a1abce57913677a"
+    },
+    "src/browser/shared/OriginalWorldGenerator.cs": {
+      "origin": "browser/shared/OriginalWorldGenerator.cs",
+      "sha256": "12c4b6039925b4ac37ac85d0544a573b4e0a27d5a0d44a1b9dbbc28c747c5ef8"
+    },
+    "src/browser/shared/OriginalWorldMetadata.cs": {
+      "origin": "browser/shared/OriginalWorldMetadata.cs",
+      "sha256": "18451b5c661639668be51e9f3ae900a256f31a5625bd71d6263357260c963d5c"
+    },
+    "src/browser/shared/OriginalWorldRenderer.cs": {
+      "origin": "browser/shared/OriginalWorldRenderer.cs",
+      "sha256": "bc65f3f4409da795007316ab132057e6bc26e443f89106f6bf7ae1f20b210eff"
+    },
+    "src/browser/shared/OriginalWorldTransform.cs": {
+      "origin": "browser/shared/OriginalWorldTransform.cs",
+      "sha256": "aebced046de18c6b6d90924f96a8e205d603cb0ef33be0204446e77d6f5b024a"
+    },
+    "src/browser/shared/PasteTool.cs": {
+      "origin": "browser/shared/PasteTool.cs",
+      "sha256": "1297b32389408fe15ebbf8be47da905b5b9baac7fa8e75fc095e0dffd75b2732"
+    },
+    "src/browser/shared/PencilTool.cs": {
+      "origin": "browser/shared/PencilTool.cs",
+      "sha256": "28344eab2195332d403e7003b25a261008df3f76f4588a3ba1953101a69470fa"
+    },
+    "src/browser/shared/PickerTool.cs": {
+      "origin": "browser/shared/PickerTool.cs",
+      "sha256": "f857033e3e10f10b1f04d304bc35e495b5aa290fb7f33b79e4c9a874f1d9da1d"
+    },
+    "src/browser/shared/PixelArt.cs": {
+      "origin": "browser/shared/PixelArt.cs",
+      "sha256": "ce3f008b327ac33787bc3caefc9f493fee16c18ed82d2ab1d6e4e4333cea310d"
+    },
+    "src/browser/shared/Plugin.BasePlugin.cs": {
+      "origin": "browser/shared/Plugin.BasePlugin.cs",
+      "sha256": "04dc7f355b4a110594234fc17721756b962988f09c78556ba965149cc3152fec"
+    },
+    "src/browser/shared/Plugin.BlockShufflePlugin.cs": {
+      "origin": "browser/shared/Plugin.BlockShufflePlugin.cs",
+      "sha256": "a035dd54c58cb6bcfe475ad8f8bca258694c3dbbf7b576579481554d5d7e0280"
+    },
+    "src/browser/shared/Plugin.CleanseWorldPlugin.cs": {
+      "origin": "browser/shared/Plugin.CleanseWorldPlugin.cs",
+      "sha256": "0e9d500f3ba987a8ebbdc1688134564f73e15f92328d31ffbfa36d4ef1cafa91"
+    },
+    "src/browser/shared/Plugin.IPlugin.cs": {
+      "origin": "browser/shared/Plugin.IPlugin.cs",
+      "sha256": "a783287cdae66b30db5592127ad5ff13bf2c08b229448f96fde23e4a560bb170"
+    },
+    "src/browser/shared/Plugin.PerlinNoise.cs": {
+      "origin": "browser/shared/Plugin.PerlinNoise.cs",
+      "sha256": "52f8483968f304ff3229a9660b0cceae649fb228f30e31493c6ee7f39b57290f"
+    },
+    "src/browser/shared/Plugin.RandomizerPlugin.cs": {
+      "origin": "browser/shared/Plugin.RandomizerPlugin.cs",
+      "sha256": "f6be3065ff167abbdbb7048a9c271f8d2d1b8fa5a6c1a87dfd3ecd377c85ffc2"
+    },
+    "src/browser/shared/Plugin.RemoveAllChestsPlugin.cs": {
+      "origin": "browser/shared/Plugin.RemoveAllChestsPlugin.cs",
+      "sha256": "c8f03de5886700190593a0dc787901f3ec571c4da39acbb6773db20b5168dafb"
+    },
+    "src/browser/shared/Plugin.RemoveAllUnlockedChestsPlugin.cs": {
+      "origin": "browser/shared/Plugin.RemoveAllUnlockedChestsPlugin.cs",
+      "sha256": "672a14aac206041f50e583fc7134ea687bbeb3b84141a0b7387bfdba50e90737"
+    },
+    "src/browser/shared/Plugin.RemoveTileWithPlugin.cs": {
+      "origin": "browser/shared/Plugin.RemoveTileWithPlugin.cs",
+      "sha256": "50b1a5f06de3b3531bb09aa482c137bc77ec1fbe20e288c27ee90cf24704af52"
+    },
+    "src/browser/shared/Plugin.SandSettlePlugin.cs": {
+      "origin": "browser/shared/Plugin.SandSettlePlugin.cs",
+      "sha256": "c802aceca23ed12539e4a2be96a12ebdcb93120b26c982102f25429974473be4"
+    },
+    "src/browser/shared/Plugin.SimpleOreGeneratorPlugin.cs": {
+      "origin": "browser/shared/Plugin.SimpleOreGeneratorPlugin.cs",
+      "sha256": "24d7afde182211617d976a4e5049dfb6f6b42b42823a9ae357f95c65de043132"
+    },
+    "src/browser/shared/Plugin.UnlockAllChestsPlugin.cs": {
+      "origin": "browser/shared/Plugin.UnlockAllChestsPlugin.cs",
+      "sha256": "a28b346941e7b5dadf3c807bb4ca067f0f78ee254fe927166b16d4aded013574"
+    },
+    "src/browser/shared/PluginOptions.cs": {
+      "origin": "browser/shared/PluginOptions.cs",
+      "sha256": "6b9d25ccbcacd5d15932c158589febea14b75277ead15f429da0f27a5385b1e2"
+    },
+    "src/browser/shared/PointTool.cs": {
+      "origin": "browser/shared/PointTool.cs",
+      "sha256": "ce46d39a0ee44523dff2380ed6ef5a1eec9ce5ac09eedba46e6383752f375c77"
+    },
+    "src/browser/shared/PreviewTextureGetters.cs": {
+      "origin": "browser/shared/PreviewTextureGetters.cs",
+      "sha256": "75e88136172c18f513f708fa45a43d759c5604d88242043d13f91a912fcab0b9"
+    },
+    "src/browser/shared/PreviewTextures.cs": {
+      "origin": "browser/shared/PreviewTextures.cs",
+      "sha256": "840843ca4863bf6be5b370a9f12ba7736cae6aaa5cbf18e642a6f23536953b68"
+    },
+    "src/browser/shared/RecorderHistory.cs": {
+      "origin": "browser/shared/RecorderHistory.cs",
+      "sha256": "c5c3fefec4fe427d7fc67ed8a9443dd5277f0aefd54196271f1d3d287e5ec588"
+    },
+    "src/browser/shared/RecoveryCapacity.cs": {
+      "origin": "browser/shared/RecoveryCapacity.cs",
+      "sha256": "fc5b20cbb479c835ef20b6233a9a909bbf0af8ad234b0b5ef1abe0214b8d3a22"
+    },
+    "src/browser/shared/RenderCommands.cs": {
+      "origin": "browser/shared/RenderCommands.cs",
+      "sha256": "0ae9893b6e8545bd05ce06f8b44ae221a0d58333fd821177619beec3734afe57"
+    },
+    "src/browser/shared/RenderHost.cs": {
+      "origin": "browser/shared/RenderHost.cs",
+      "sha256": "76d2fbcaa6fdd24729ecdc32c481960c3d25fb62bb451044ae0dc1a6b7a16ed8"
+    },
+    "src/browser/shared/RenderLogging.cs": {
+      "origin": "browser/shared/RenderLogging.cs",
+      "sha256": "9a2c6a76574ee53d4fc4bb7489d7cdd84483843e9b04e267295804a6a826efd0"
+    },
+    "src/browser/shared/RenderSceneTransfer.cs": {
+      "origin": "browser/shared/RenderSceneTransfer.cs",
+      "sha256": "29510a4386d8dd24f11291c2ac7a16a0d929c88fae2a6761ed05a46d689e787b"
+    },
+    "src/browser/shared/RenderSceneTypes.cs": {
+      "origin": "browser/shared/RenderSceneTypes.cs",
+      "sha256": "04bb3bc34d7a4128f9b8e3d05180796218042dda3b7e4657ac866ef96e422117"
+    },
+    "src/browser/shared/RenderViewModel.cs": {
+      "origin": "browser/shared/RenderViewModel.cs",
+      "sha256": "8217534479eb44ff78c73283fe147d3d5bc45ab47fc75af449fe6458f2968c42"
+    },
+    "src/browser/shared/ReplayControls.cs": {
+      "origin": "browser/shared/ReplayControls.cs",
+      "sha256": "61a565d3436ae3a88dc09766be2f06769da67905983ac3a837db6c3ff75a7392"
+    },
+    "src/browser/shared/ReplayPluginFile.cs": {
+      "origin": "browser/shared/ReplayPluginFile.cs",
+      "sha256": "7dc81701efa6d5548773b9defaf1381ab4570b869885868e0e7cece2eaac6d1b"
+    },
+    "src/browser/shared/ReplayPluginPlayer.cs": {
+      "origin": "browser/shared/ReplayPluginPlayer.cs",
+      "sha256": "1cadf34f7eadb24d5cd1c41b2e0fd09a59e3767a01e3e6301dd3e5740ea5967b"
+    },
+    "src/browser/shared/ReplayPluginRecorder.cs": {
+      "origin": "browser/shared/ReplayPluginRecorder.cs",
+      "sha256": "6a0aaae5d2e9d5d68eedaa2cb26eae2c31e0e303d4a933a4819dfbaa554629c0"
+    },
+    "src/browser/shared/RuntimeFrameFile.cs": {
+      "origin": "browser/shared/RuntimeFrameFile.cs",
+      "sha256": "25c1dbf3bc78d9913420c0ff304d6ead0b2ed1cc7e17b161144697f9731d81e1"
+    },
+    "src/browser/shared/SaveReport.cs": {
+      "origin": "browser/shared/SaveReport.cs",
+      "sha256": "0581ba45b38224f14a2cfd5deacfd426cc5330dfac44f7abd81c0919d18b0858"
+    },
+    "src/browser/shared/ScriptDownloadSnapshot.cs": {
+      "origin": "browser/shared/ScriptDownloadSnapshot.cs",
+      "sha256": "234dc6f5b8c0090fc56f2d2df717fccc28c3100e11ae489795a683283473be4b"
+    },
+    "src/browser/shared/SelectionApi.cs": {
+      "origin": "browser/shared/SelectionApi.cs",
+      "sha256": "a5e1be0eed8928e684e4bdfc17378fd699319f46b0ab8943ad1e84e4e40ee37d"
+    },
+    "src/browser/shared/SelectionTool.cs": {
+      "origin": "browser/shared/SelectionTool.cs",
+      "sha256": "4e951d843e8addf88b1081ca16fff468565c129263a7656498034e00114b4e68"
+    },
+    "src/browser/shared/Session.cs": {
+      "origin": "browser/shared/Session.cs",
+      "sha256": "aa584b6660d399bc221f540d04555918164851bfc265be8c99deb39bac0dc7fb"
+    },
+    "src/browser/shared/SessionAux.cs": {
+      "origin": "browser/shared/SessionAux.cs",
+      "sha256": "c311d85b5c7c85688e68ff2cd462aba822555ee51a470b94ff3dea0c55486a32"
+    },
+    "src/browser/shared/SessionBackgroundPreview.cs": {
+      "origin": "browser/shared/SessionBackgroundPreview.cs",
+      "sha256": "3e859f424fceddf9861454707a23496a4d1b6dfd4f54d287ea497c0febfe7bb6"
+    },
+    "src/browser/shared/SessionDesktop.cs": {
+      "origin": "browser/shared/SessionDesktop.cs",
+      "sha256": "694b0a740f047c0b37e260dfc2aab63b5d7b5dceed93ced4c33c1b7ab158d007"
+    },
+    "src/browser/shared/SessionDomain.cs": {
+      "origin": "browser/shared/SessionDomain.cs",
+      "sha256": "74eaeb7a70b5ffd0042297454318f642aba045b3e601f21204406f6e08c3ae7c"
+    },
+    "src/browser/shared/SessionEditors.cs": {
+      "origin": "browser/shared/SessionEditors.cs",
+      "sha256": "bb333306b4f5a6c67dabaec86ee587b722f10c8cb11ea063cead8e15e973699c"
+    },
+    "src/browser/shared/SessionHover.cs": {
+      "origin": "browser/shared/SessionHover.cs",
+      "sha256": "e9ca67c44086cb8d40fa22f0eb2996ea19b11783840e0a3a55d021867c16591c"
+    },
+    "src/browser/shared/SessionInteraction.cs": {
+      "origin": "browser/shared/SessionInteraction.cs",
+      "sha256": "255283eefe8b52e5dc759218c8a90cc65535dc34a8f45346c9aa875a3a308c29"
+    },
+    "src/browser/shared/SessionPalette.cs": {
+      "origin": "browser/shared/SessionPalette.cs",
+      "sha256": "f06aa404b3fabc70fc439f2feea4a1ac742981af68bc7f8227f73a27461adfe5"
+    },
+    "src/browser/shared/SessionPlayerPreview.cs": {
+      "origin": "browser/shared/SessionPlayerPreview.cs",
+      "sha256": "cb76dca0861ffeec937014f0d73a1b73002e6c9070f0da2c37ae4522eabd8858"
+    },
+    "src/browser/shared/SessionRenderExport.cs": {
+      "origin": "browser/shared/SessionRenderExport.cs",
+      "sha256": "2bc91973d800ec8ce35d2a0ad24402986dfd3d2ee97bcc53e7001bc5fd35aa2f"
+    },
+    "src/browser/shared/SessionRendering.cs": {
+      "origin": "browser/shared/SessionRendering.cs",
+      "sha256": "91de6c5401628f35ae82ffdcd395eb8f7d8c9e5faf30b448c586d269deca0135"
+    },
+    "src/browser/shared/SessionScripts.cs": {
+      "origin": "browser/shared/SessionScripts.cs",
+      "sha256": "f698747e4d8ffd2fbf8f12f9088f0cb484d399242888d84a56ac021b462ee013"
+    },
+    "src/browser/shared/SessionTools.cs": {
+      "origin": "browser/shared/SessionTools.cs",
+      "sha256": "91fb9953f9261b0b64550cecf0acf5811c3525e6036874afe04a7cd37023b43c"
+    },
+    "src/browser/shared/SessionTransform.cs": {
+      "origin": "browser/shared/SessionTransform.cs",
+      "sha256": "26e5864dd1c7927a386ebd4a7e4e614cefc14e44e3c61da99c32ab0c5075dd6f"
+    },
+    "src/browser/shared/SpriteDebug.cs": {
+      "origin": "browser/shared/SpriteDebug.cs",
+      "sha256": "a4ec797d0897e645cf761c04b10af66e5074da6cc4eb0fc1e92628e12144db5b"
+    },
+    "src/browser/shared/SpriteFramesApi.cs": {
+      "origin": "browser/shared/SpriteFramesApi.cs",
+      "sha256": "c824c99811787cccb7655cda74de45aa61650364321b2f93d915635769e4b92f"
+    },
+    "src/browser/shared/SpriteTool2.cs": {
+      "origin": "browser/shared/SpriteTool2.cs",
+      "sha256": "38c3291ae85d1ff3dbb148af993377c9c3081aec39127f8660ef5d08017f04f0"
+    },
+    "src/browser/shared/StrokeClock.cs": {
+      "origin": "browser/shared/StrokeClock.cs",
+      "sha256": "6d45b84a910316c8809b62285601a5aa79ab3950b5a539f3795a86073f4e1da7"
+    },
+    "src/browser/shared/TEdit.Browser.Domain.csproj": {
+      "origin": "browser/shared/TEdit.Browser.Domain.csproj",
+      "sha256": "8066e5929ce970224a3e4dd8c79969cdec2c9c42d225b7b464496e8fc0446fa2"
+    },
+    "src/browser/shared/TileRuntimeFrames.cs": {
+      "origin": "browser/shared/TileRuntimeFrames.cs",
+      "sha256": "645463e6785877088c6ae0513ffa62a2d337f128844c07f9305df2aa1f3afe38"
+    },
+    "src/browser/shared/TileRuntimeShapes.cs": {
+      "origin": "browser/shared/TileRuntimeShapes.cs",
+      "sha256": "1a300eb14fa2637a7f4c205d5fa7ca8ff352d4450ec058db401cc227cc89f5d5"
+    },
+    "src/browser/shared/TileRuntimeTypes.cs": {
+      "origin": "browser/shared/TileRuntimeTypes.cs",
+      "sha256": "1578155eecfb08eb7ebf110540bb8064ec6513f98290170417b3bdba7ccbcf25"
+    },
+    "src/browser/shared/UndoBuffer.cs": {
+      "origin": "browser/shared/UndoBuffer.cs",
+      "sha256": "e8f2c654aa01d85844bfd5ba2b5f650c7ef6d1afaa7afb55deab1fa15523772a"
+    },
+    "src/browser/shared/UndoEntityOrder.cs": {
+      "origin": "browser/shared/UndoEntityOrder.cs",
+      "sha256": "15914778e5fcf403ef6659e57dd8c1f77686a0abaa05604ed3185a8d7c00b528"
+    },
+    "src/browser/shared/UndoLegacyLighting.cs": {
+      "origin": "browser/shared/UndoLegacyLighting.cs",
+      "sha256": "f4554afac22db278e742de88cf273539dcb8ca4045345b41f055ca7f8573d65e"
+    },
+    "src/browser/shared/UndoManager.cs": {
+      "origin": "browser/shared/UndoManager.cs",
+      "sha256": "66e3d78243b9b52f558ff68aec311b574ffc71d0e78bbfc80c7ce77784bb2230"
+    },
+    "src/browser/shared/UndoPersistence.cs": {
+      "origin": "browser/shared/UndoPersistence.cs",
+      "sha256": "d115db54ebe9dc98eee9b77f24d3617ccdfec123484154ffd1fed1686d8e38c3"
+    },
+    "src/browser/shared/UndoRuntimeFrames.cs": {
+      "origin": "browser/shared/UndoRuntimeFrames.cs",
+      "sha256": "3a4e84805dea86d58c33d0771ed411e889dee2e20dd85c48d2296181fcb348d4"
+    },
+    "src/browser/shared/WorldAuxApi.cs": {
+      "origin": "browser/shared/WorldAuxApi.cs",
+      "sha256": "aba19135cc1a70162cd6fecfeef08ff690346b0d4143ca4a8c984e662a879b67"
+    },
+    "src/browser/shared/WorldEditor.cs": {
+      "origin": "browser/shared/WorldEditor.cs",
+      "sha256": "a429d11aa5359f7f808eed4db0b527f3470446eeb4869873a4275f83de1aa1e1"
+    },
+    "src/browser/shared/WorldFiles.cs": {
+      "origin": "browser/shared/WorldFiles.cs",
+      "sha256": "2535131b3e5f2b42f67af8c71bd3fc8b170d2192aa43d5e89fbecfa24d0beabe"
+    },
+    "src/browser/shared/WorldMetadata.cs": {
+      "origin": "browser/shared/WorldMetadata.cs",
+      "sha256": "ee3395acd681691e7438b89d1d776280071cd6ae7b33f6d1896a5291ff712094"
+    },
+    "src/browser/shared/WorldTransformSnapshot.cs": {
+      "origin": "browser/shared/WorldTransformSnapshot.cs",
+      "sha256": "67445d8aa81bb3d7cd19acb10dd815f434577b7dda8a6f07ec50edaeffa69786"
+    },
+    "src/browser/shared/WorldViewModel.cs": {
+      "origin": "browser/shared/WorldViewModel.cs",
+      "sha256": "13bd68f0324fda5c1806c11cb093aee80ab3017c88fe4367da99aa71319db5a7"
+    },
+    "src/browser/shared/WorldViewModel.Scripts.cs": {
+      "origin": "browser/shared/WorldViewModel.Scripts.cs",
+      "sha256": "54d71904a28d10baa7131a4fe8cc8da86b32ec0aedf4a5c9e820b0217989a273"
+    },
+    "src/browser/core/BrowserCheckpointDigest.cs": {
+      "origin": "browser/core/BrowserCheckpointDigest.cs",
+      "sha256": "bfeb714f5989d5bb85957cb6441ba15206c61b7a9751d0cf4c7af6510bcd293d"
+    },
+    "src/browser/core/FileProbe.cs": {
+      "origin": "browser/core/FileProbe.cs",
+      "sha256": "3f8ae4bca2c1af2284b4dd5f564c08b20cf1e1269bae6b8244332ff627e7c707"
+    },
+    "src/browser/core/PlayerHost.cs": {
+      "origin": "browser/core/PlayerHost.cs",
+      "sha256": "0efe9ec5b53910a34f8d7678becd48aca5e0dd47d53ee72ff4306990cc3cabec"
+    },
+    "src/browser/core/Program.cs": {
+      "origin": "browser/core/Program.cs",
+      "sha256": "2f09724413164a8add361fd7570cc1fb891dcdadc9000e7b44d8e83e9ec7f8a2"
+    },
+    "src/browser/core/TEdit.Browser.Core.csproj": {
+      "origin": "browser/core/TEdit.Browser.Core.csproj",
+      "sha256": "961d30854d8133fea2dab2375c58bc318bb4fbb1cdab484b861a8060462dd0d8"
+    },
+    "src/browser/core/wwwroot/checkpoint-hash.js": {
+      "origin": "browser/core/wwwroot/checkpoint-hash.js",
+      "sha256": "aba99d2938b8243ed7c889256ddd6472c8b6aa8249e4e5e031d61a614b6723f6"
+    },
+    "src/browser/core/wwwroot/formats-worker.js": {
+      "origin": "browser/core/wwwroot/formats-worker.js",
+      "sha256": "46f1926be18bb019f75f6adda251394fb3deba4b33295df906d85d3bc16a5848"
+    },
+    "src/browser/core/wwwroot/platform/boot-resource-loader.js": {
+      "origin": "browser/core/wwwroot/platform/boot-resource-loader.js",
+      "sha256": "2c7bab4a0eef76949467858706f5229f1534779c4a316104a81e567b084a9e1a"
+    },
+    "src/browser/core/wwwroot/player-crypto.js": {
+      "origin": "browser/core/wwwroot/player-crypto.js",
+      "sha256": "b90bd0cc306ba789df4958038c2c3190cbfcf9c2cb779473b01ba2d402ebe917"
+    },
+    "src/browser/core/wwwroot/vendor/noble-hashes-LICENSE.txt": {
+      "origin": "browser/core/wwwroot/vendor/noble-hashes-LICENSE.txt",
+      "sha256": "4f221aee6e072336700c408c68ab3b96a3fc09f6aebe6f48f1bd99e5ef13faec"
+    },
+    "src/browser/core/wwwroot/vendor/noble-hashes-NOTICE.md": {
+      "origin": "browser/core/wwwroot/vendor/noble-hashes-NOTICE.md",
+      "sha256": "41fe7665f95449ce8235d3e36853e3186a74a91efa000c73d7789f033066a49b"
+    },
+    "src/browser/core/wwwroot/vendor/noble-sha256.js": {
+      "origin": "browser/core/wwwroot/vendor/noble-sha256.js",
+      "sha256": "1c86d57d5ff22e128e951f9906549959bc28f2eaa8da196db21ea351641485da"
+    },
+    "src/browser/core/wwwroot/worker.js": {
+      "origin": "browser/core/wwwroot/worker.js",
+      "sha256": "d84fa2139021a01aba47353200e7c6434ab0f8b80f77819c936fa48a6f98f800"
+    },
+    "src/browser/ui/ArtifactFields.cs": {
+      "origin": "browser/ui/ArtifactFields.cs",
+      "sha256": "b25bd5396f4024c715a9c4c24aa55f9e11da9bae7c728e203a4d736303dc48e1"
+    },
+    "src/browser/ui/Assets/FluentSystemIcons-filled.ttf": {
+      "origin": "browser/ui/Assets/FluentSystemIcons-filled.ttf",
+      "sha256": "299bbcd4786071a9eb1696129f0b6e148b02548e9318bf0c849f09875d257131"
+    },
+    "src/browser/ui/Assets/FluentSystemIcons-regular.ttf": {
+      "origin": "browser/ui/Assets/FluentSystemIcons-regular.ttf",
+      "sha256": "4cde6c7c681332455c680cda7e8088c2c7826152b9f0cffb02f5f8773b8986bb"
+    },
+    "src/browser/ui/DesktopDiagnostics.cs": {
+      "origin": "browser/ui/DesktopDiagnostics.cs",
+      "sha256": "56f8f56862cfaf65c82f32e8a71f0596fdc40186261f7ccf38fe917db39074fa"
+    },
+    "src/browser/ui/DesktopFields.cs": {
+      "origin": "browser/ui/DesktopFields.cs",
+      "sha256": "146327284c8fed6379a281a62d3982415b9a5cbad323621fb42cd83fc4bd1866"
+    },
+    "src/browser/ui/DesktopLanguage.cs": {
+      "origin": "browser/ui/DesktopLanguage.cs",
+      "sha256": "b77ea25324172e9ae3d5aec12ccbd5279b73d3f54aba9b3cc240890ec2051679"
+    },
+    "src/browser/ui/DisplayNameConverter.cs": {
+      "origin": "browser/ui/DisplayNameConverter.cs",
+      "sha256": "c233bdf32da8e856553f0e54c09d922f1860f9737a79947f7b3e6b16ee865861"
+    },
+    "src/browser/ui/DomainFields.cs": {
+      "origin": "browser/ui/DomainFields.cs",
+      "sha256": "d705145bb76ba312ddabaf920b84c4af5b5f0d2c03b34a895fbc97c3ee099d07"
+    },
+    "src/browser/ui/EditorViewModel.cs": {
+      "origin": "browser/ui/EditorViewModel.cs",
+      "sha256": "3269b6f2c4277ebdd871a4c6f84c5714a0a1c70ad400e459d4006858cd7f4fb2"
+    },
+    "src/browser/ui/EditorViewModel.Menu.cs": {
+      "origin": "browser/ui/EditorViewModel.Menu.cs",
+      "sha256": "50c2f71207cf6a9a3616e7d7533843d5e9114ce11b0c4fe8a94fa0a75c9eced4"
+    },
+    "src/browser/ui/field-labels.json": {
+      "origin": "browser/ui/field-labels.json",
+      "sha256": "481177f14aeeb165feb4f58558e29b6066d26692a579b44c3b1b73ba5acfa941"
+    },
+    "src/browser/ui/FloatingFields.cs": {
+      "origin": "browser/ui/FloatingFields.cs",
+      "sha256": "eb5723add3fed69294a69355ce7d0aa6a807ba4f95e8ed9a4debc38de86f20ec"
+    },
+    "src/browser/ui/InteractionFields.cs": {
+      "origin": "browser/ui/InteractionFields.cs",
+      "sha256": "141518d3031e1bf65630fff58da79357a3fdb6dfa0bf5e3b5de061592f53202e"
+    },
+    "src/browser/ui/languages.json": {
+      "origin": "browser/ui/languages.json",
+      "sha256": "4bd60ebbe70fa0edfe7b366f9d3252e4567a23bec32cf64f516f6d0a6e76760b"
+    },
+    "src/browser/ui/MainView.axaml": {
+      "origin": "browser/ui/MainView.axaml",
+      "sha256": "8822fd2e6ff19b8a9eb61dc546b00be21f41e4496033ac2a9fe74f22f239918c"
+    },
+    "src/browser/ui/MainView.axaml.cs": {
+      "origin": "browser/ui/MainView.axaml.cs",
+      "sha256": "02b84d839d8d5f2c71833d9529281243b610aeb4f2623193ae6fe6a04113ced4"
+    },
+    "src/browser/ui/MainView.Backgrounds.cs": {
+      "origin": "browser/ui/MainView.Backgrounds.cs",
+      "sha256": "65902d59f5b776ecbca8aee7b5e00f1c82c2c2051546e9b06a70b7a2be56ce3d"
+    },
+    "src/browser/ui/MainView.Desktop.cs": {
+      "origin": "browser/ui/MainView.Desktop.cs",
+      "sha256": "460afd0c2c3a8e041c0156f63922db0bc4f01faa1da2bbedcb9f18e14b4ad2ea"
+    },
+    "src/browser/ui/MainView.DesktopDialogs.cs": {
+      "origin": "browser/ui/MainView.DesktopDialogs.cs",
+      "sha256": "82f4bac6fae05501098568e627bb2fa1af48a41cdeb5bcf22c20bba6de145069"
+    },
+    "src/browser/ui/MainView.Editors.cs": {
+      "origin": "browser/ui/MainView.Editors.cs",
+      "sha256": "47a274ddc80375bd781dfc536f5636f4ad23918467061aed430d174fcc227d81"
+    },
+    "src/browser/ui/MainView.GeneralSettings.cs": {
+      "origin": "browser/ui/MainView.GeneralSettings.cs",
+      "sha256": "0f3c28a681820959fa1b6f3d5348bd516ea7b779225affdc11dc2acdf45c70dd"
+    },
+    "src/browser/ui/MainView.InputSettings.cs": {
+      "origin": "browser/ui/MainView.InputSettings.cs",
+      "sha256": "9fd4e749d543961d0fcecd8891afd5b4d0907e6e95829bdba1f4f06676f354a8"
+    },
+    "src/browser/ui/MainView.Keyboard.cs": {
+      "origin": "browser/ui/MainView.Keyboard.cs",
+      "sha256": "a682e5cd99d55d52b3c6d0b243051b401c72e06d229b6267d391aa0173625782"
+    },
+    "src/browser/ui/MainView.ObjectEditors.cs": {
+      "origin": "browser/ui/MainView.ObjectEditors.cs",
+      "sha256": "1143d0ffb889e198cbf80ca42c4bb51ac4ab43e5d30a011d62b61588f73b7d49"
+    },
+    "src/browser/ui/MainView.Palette.cs": {
+      "origin": "browser/ui/MainView.Palette.cs",
+      "sha256": "67ea74817e358af6363f0d80dd8f985a7bc2897a63f0bf3890d867fea1d73d7f"
+    },
+    "src/browser/ui/MainView.PlayerPreview.cs": {
+      "origin": "browser/ui/MainView.PlayerPreview.cs",
+      "sha256": "8823981b38934901d46c36ccb97942710ccbbb1a9907ba52d78e9395022fd3e2"
+    },
+    "src/browser/ui/MainView.PluginHosts.cs": {
+      "origin": "browser/ui/MainView.PluginHosts.cs",
+      "sha256": "49048c8b56eed44dd2713962419de92a5ec44e7778db6135d4a05ed4f7a7c256"
+    },
+    "src/browser/ui/MainView.Rendering.cs": {
+      "origin": "browser/ui/MainView.Rendering.cs",
+      "sha256": "16111a2044d951d12bf4cb5252f5a335e0f77339b6803add23fff88d73c0fcfc"
+    },
+    "src/browser/ui/MainView.ScriptLibrary.cs": {
+      "origin": "browser/ui/MainView.ScriptLibrary.cs",
+      "sha256": "b7642764a616b5d9b91d9e644b825700a9255bbea779463f21faca46e8dbedc8"
+    },
+    "src/browser/ui/MainView.Thumbnails.cs": {
+      "origin": "browser/ui/MainView.Thumbnails.cs",
+      "sha256": "354f2ced124061fb724fa9aa18b3078fbb64ecae6daea7dc64de4fa46e42941b"
+    },
+    "src/browser/ui/MainView.WorldExplorer.cs": {
+      "origin": "browser/ui/MainView.WorldExplorer.cs",
+      "sha256": "c2e0e6465c5bf5499d91a026c4fa44a8329879f82395a35e0b5ea3bb56cfeb81"
+    },
+    "src/browser/ui/NewWorldFields.cs": {
+      "origin": "browser/ui/NewWorldFields.cs",
+      "sha256": "0676983816d6d45b5ed2d589c94da44e129c4a83cd7c07159cf2788b3562b8e6"
+    },
+    "src/browser/ui/OriginalInput/InputAction.cs": {
+      "origin": "browser/ui/OriginalInput/InputAction.cs",
+      "sha256": "bc9a24905d1c958c29b7f06e1ed90aebaacae72789a35d2cbf9531337c54b041"
+    },
+    "src/browser/ui/OriginalInput/InputBindingJsonConverter.cs": {
+      "origin": "browser/ui/OriginalInput/InputBindingJsonConverter.cs",
+      "sha256": "7dc6f4eee4e34a3614ebc88f425795c8a3c75bccab968887eeb7038349c51ba0"
+    },
+    "src/browser/ui/OriginalInput/InputBindingRegistry.cs": {
+      "origin": "browser/ui/OriginalInput/InputBindingRegistry.cs",
+      "sha256": "358893f54352a1d65cfeca4d8d691a35bfb29ac35475868ad79a16c41f77473a"
+    },
+    "src/browser/ui/OriginalInput/InputService.cs": {
+      "origin": "browser/ui/OriginalInput/InputService.cs",
+      "sha256": "f946da80f162ffda111938038cc0082c445dd974485def4d370b6a5f95e6cd46"
+    },
+    "src/browser/ui/OriginalInput/InputTypes.cs": {
+      "origin": "browser/ui/OriginalInput/InputTypes.cs",
+      "sha256": "75f66979576365409a6488b6d1529cd27a3b884fc9fd526a1d7058ef4849badf"
+    },
+    "src/browser/ui/Program.cs": {
+      "origin": "browser/ui/Program.cs",
+      "sha256": "3e8a24542997fa3ecc5ea7a753bf206af941dc77cebc14a96c0f9dd171566e4d"
+    },
+    "src/browser/ui/ScriptCodeEditor.cs": {
+      "origin": "browser/ui/ScriptCodeEditor.cs",
+      "sha256": "a640316d2da5f103041e20116df988802813ad5b647b5fc5ee6ebea7e256d448"
+    },
+    "src/browser/ui/SkiaScenePainter.cs": {
+      "origin": "browser/ui/SkiaScenePainter.cs",
+      "sha256": "a9ce754961e627e6400180225704dd9e8d4a4aca3a7c5054ddc5003d0c8f54be"
+    },
+    "src/browser/ui/TEdit.Browser.UI.csproj": {
+      "origin": "browser/ui/TEdit.Browser.UI.csproj",
+      "sha256": "deb07376e5122b719f1b40cad22b44c6132a29a391b75f482d6b42fde59bc600"
+    },
+    "src/browser/ui/TextureWorldControl.cs": {
+      "origin": "browser/ui/TextureWorldControl.cs",
+      "sha256": "1be061ad685eeae98be49331167682e390cc75e2b292d370b0fb461f685a20cd"
+    },
+    "src/browser/ui/ToolFields.cs": {
+      "origin": "browser/ui/ToolFields.cs",
+      "sha256": "d4daabb03d95203d5a638ed07c58a4d5fbc895e042760a5165ac628d973718b7"
+    },
+    "src/browser/ui/wwwroot/bridge.js": {
+      "origin": "browser/ui/wwwroot/bridge.js",
+      "sha256": "0cb37a020c5e7a558c6d58e61ca937c24a3d53f9022c930ccc82d1afb7194c99"
+    },
+    "src/browser/ui/wwwroot/build-version.json": {
+      "origin": "browser/ui/wwwroot/build-version.json",
+      "sha256": "dadb3e21e1eafcc41a2e54b89cd9c42e5285f309a3db76417c058169f471024c"
+    },
+    "src/browser/ui/wwwroot/choose-color.js": {
+      "origin": "browser/ui/wwwroot/choose-color.js",
+      "sha256": "b8f9cbc86e0f9a5e5a6bdb7ac4e7c9b47242902dd764a35d9a976dab32b031d8"
+    },
+    "src/browser/ui/wwwroot/index.html": {
+      "origin": "browser/ui/wwwroot/index.html",
+      "sha256": "1fa19bce20296c5e5fa84b01407d658c1e1965e9b9306632b0c8be9c81a52061"
+    },
+    "src/browser/ui/wwwroot/main.js": {
+      "origin": "browser/ui/wwwroot/main.js",
+      "sha256": "965444c77502cc82ad315d1def41b075e540a1d7ec145096d73355b79b8bb6b9"
+    },
+    "src/browser/ui/wwwroot/offline-bootstrap.js": {
+      "origin": "browser/ui/wwwroot/offline-bootstrap.js",
+      "sha256": "e845bd6c768dfff0588b446990343828205806055eac2aee953d26759fd9f556"
+    },
+    "src/browser/ui/wwwroot/platform/boot-resource-loader.js": {
+      "origin": "browser/ui/wwwroot/platform/boot-resource-loader.js",
+      "sha256": "2c7bab4a0eef76949467858706f5229f1534779c4a316104a81e567b084a9e1a"
+    },
+    "src/browser/ui/wwwroot/platform/checkpoints.js": {
+      "origin": "browser/ui/wwwroot/platform/checkpoints.js",
+      "sha256": "e99bbb2e06de3ed5ab4b7f89809cf73ff0ed04b464abbd29bc1c6e381b45e626"
+    },
+    "src/browser/ui/wwwroot/platform/downloadWorld.js": {
+      "origin": "browser/ui/wwwroot/platform/downloadWorld.js",
+      "sha256": "419c804f3ddd86ec8740d9527f5b7981b0005f011b2e87ae37fd2679cf981595"
+    },
+    "src/browser/ui/wwwroot/platform/storage-picker-compat.js": {
+      "origin": "browser/ui/wwwroot/platform/storage-picker-compat.js",
+      "sha256": "6d06f2aa21b391d10f3b74ff16abee1b948d61b388b89097db9d7ff825c66fef"
+    },
+    "src/browser/ui/wwwroot/platform/WorldSession.js": {
+      "origin": "browser/ui/wwwroot/platform/WorldSession.js",
+      "sha256": "5ea87f1a52a332b1578caa2ae5096eed39698829f2155a0956fcaad72c4a0ede"
+    },
+    "src/browser/ui/wwwroot/player-host.js": {
+      "origin": "browser/ui/wwwroot/player-host.js",
+      "sha256": "fbebbb511cd98b45b6ea9fa362d6222e04f962d150a06e4589c2cf1e4fd1713d"
+    },
+    "src/browser/ui/wwwroot/render-assets/dungeon_marker.png": {
+      "origin": "browser/ui/wwwroot/render-assets/dungeon_marker.png",
+      "sha256": "d7bddabd05306bf8c20b24dd735b8731760fb40a517078c0a03a1ab0ea9e62ec"
+    },
+    "src/browser/ui/wwwroot/render-assets/grid.png": {
+      "origin": "browser/ui/wwwroot/render-assets/grid.png",
+      "sha256": "51a7ff58878f973e9313aaa9cef939f687e00ccbfdc2c3ef19251ba1a9983408"
+    },
+    "src/browser/ui/wwwroot/render-assets/spawn_marker.png": {
+      "origin": "browser/ui/wwwroot/render-assets/spawn_marker.png",
+      "sha256": "73fc7a733a7adbee041caa4317a6a4d0193185778dd02eab6213ccfc8ec328bc"
+    },
+    "src/browser/ui/wwwroot/render-bridge.js": {
+      "origin": "browser/ui/wwwroot/render-bridge.js",
+      "sha256": "21a1af3bd61d8bd0f4a9b98d1e48145a94c4de914d2ca47f3a8c69687a1c0d89"
+    },
+    "src/browser/ui/wwwroot/render-texture-worker.js": {
+      "origin": "browser/ui/wwwroot/render-texture-worker.js",
+      "sha256": "79424889dbbb594350c30339fbf9d814ebf3795984208460a42253e1b6f0cc52"
+    },
+    "src/browser/ui/wwwroot/script-examples.json": {
+      "origin": "browser/ui/wwwroot/script-examples.json",
+      "sha256": "523bdfa1b9feb91afaa085a582dfb3c58a95b20d42163d8fd4f12a8a21bd9e1c"
+    },
+    "src/browser/ui/wwwroot/script-library.js": {
+      "origin": "browser/ui/wwwroot/script-library.js",
+      "sha256": "b0789da7e0321d26480171957006c7a79965eee2c39c9c573718cc9b120d5eb9"
+    },
+    "src/browser/ui/wwwroot/sheet-storage.js": {
+      "origin": "browser/ui/wwwroot/sheet-storage.js",
+      "sha256": "ac2f6d880b26846ebdd9210bbc128ac9bad17719e2cb8a89be2e88a2e0df278f"
+    },
+    "src/browser/ui/wwwroot/vendor/AvaloniaEdit-LICENSE.txt": {
+      "origin": "browser/ui/wwwroot/vendor/AvaloniaEdit-LICENSE.txt",
+      "sha256": "8a13531b616df7e9cd5d58bd8588da2288e14fab9e6785d1aead5c87e0a507d0"
+    },
+    "src/browser/ui/wwwroot/vendor/SkiaSharp-LICENSE.txt": {
+      "origin": "browser/ui/wwwroot/vendor/SkiaSharp-LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "src/browser/ui/wwwroot/vendor/TEdit-LICENSE.txt": {
+      "origin": "browser/ui/wwwroot/vendor/TEdit-LICENSE.txt",
+      "sha256": "6e3a6bc442dd7a358f911d183406d0672fa46d7438cbaa4d99f25ebf62fcc62d"
+    },
+    "src/browser/ui/wwwroot/vendor/THIRD-PARTY-NOTICES.md": {
+      "origin": "browser/ui/wwwroot/vendor/THIRD-PARTY-NOTICES.md",
+      "sha256": "7b2b4cecf7a4adb0cc4c75ae4e125a79141f43437421d5dfe9b89871a7c4da21"
+    },
+    "src/browser/ui/wwwroot/vendor/xnb-GPL-3.0.txt": {
+      "origin": "browser/ui/wwwroot/vendor/xnb-GPL-3.0.txt",
+      "sha256": "589ed823e9a84c56feb95ac58e7cf384626b9cbf4fda2a907bc36e103de1bad2"
+    },
+    "src/browser/ui/wwwroot/vendor/xnb-LICENSE.txt": {
+      "origin": "browser/ui/wwwroot/vendor/xnb-LICENSE.txt",
+      "sha256": "a5681bf9b05db14d86776930017c647ad9e6e56ff6bbcfdf21e5848288dfaf1b"
+    },
+    "src/browser/ui/wwwroot/vendor/xnb-NOTICE.md": {
+      "origin": "browser/ui/wwwroot/vendor/xnb-NOTICE.md",
+      "sha256": "c47feed7efb196735215c1076a43eab8c8a505447eda0ca2e65e8be44fc6a1e9"
+    },
+    "src/browser/ui/wwwroot/vendor/xnb-source.zip": {
+      "origin": "browser/ui/wwwroot/vendor/xnb-source.zip",
+      "sha256": "91fd966fd6760b2c0956f0bf019b4519d71df0a9e2a9469b9cb66e03d425745b"
+    },
+    "src/browser/ui/wwwroot/vendor/xnb.module.js": {
+      "origin": "browser/ui/wwwroot/vendor/xnb.module.js",
+      "sha256": "417923cf11dc4b19f30e34127d4787f59cdf85d075f39937e7ccdaa07009dd71"
+    },
+    "src/browser/ui/wwwroot/world-explorer.js": {
+      "origin": "browser/ui/wwwroot/world-explorer.js",
+      "sha256": "97680da654d7235f77bca333250e37fd9b912f984b4779cec1fb75c534e01782"
+    },
+    "src/browser/ui/zh-fields.json": {
+      "origin": "browser/ui/zh-fields.json",
+      "sha256": "04bcaa5d7cde17df8a19e2fe6b455b563ec7a10db297fe01454e06c591c5b026"
+    },
+    "src/browser/ui/zh-names.json": {
+      "origin": "browser/ui/zh-names.json",
+      "sha256": "bf4afc94e5f0f919191c77803c7670380fb4e67997787f89fdcc73e64e2ef338"
+    },
+    "src/browser/platform/boot-resource-loader.js": {
+      "origin": "browser/platform/boot-resource-loader.js",
+      "sha256": "2c7bab4a0eef76949467858706f5229f1534779c4a316104a81e567b084a9e1a"
+    },
+    "src/browser/platform/storage-picker-compat.js": {
+      "origin": "browser/platform/storage-picker-compat.js",
+      "sha256": "6d06f2aa21b391d10f3b74ff16abee1b948d61b388b89097db9d7ff825c66fef"
+    },
+    "src/browser/platform/WorldFilePackage.cs": {
+      "origin": "browser/platform/WorldFilePackage.cs",
+      "sha256": "3b7f5edb1a7a38a2110603ba0f16745d8806a0ba75be176a119c1fba0bfaf2ec"
+    },
+    "src/original/TEdit.Common/Exceptions/TEditFileFormatException.cs": {
+      "origin": "TEdit/TEdit.Common/Exceptions/TEditFileFormatException.cs",
+      "sha256": "937ff64dca0c188aadba712151c60f8356a36586d7a0e24f21dfee269181ba69"
+    },
+    "src/original/TEdit.Common/FilePathUtility.cs": {
+      "origin": "TEdit/TEdit.Common/FilePathUtility.cs",
+      "sha256": "e8b1411ba7e8ca51de0ab520d95e9c4b845499ec0a910ece55c103fa3a112d90"
+    },
+    "src/original/TEdit.Common/FodyWeavers.xsd": {
+      "origin": "TEdit/TEdit.Common/FodyWeavers.xsd",
+      "sha256": "048e7a2f2f8659c48d375aacc24e50a50f1eb0ea0940e8e1dbb1a3cdc8c6fd84"
+    },
+    "src/original/TEdit.Common/Geometry/Fill.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Fill.cs",
+      "sha256": "5219284a526e4fa3a2a3f945db062efb1db70ec9342d06ec45918ab6254ef8f1"
+    },
+    "src/original/TEdit.Common/Geometry/FloodFillRange.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/FloodFillRange.cs",
+      "sha256": "bb584489a8866e435cfa3e70f4fa569b40461c631e635f7f38a58081c0ed0733"
+    },
+    "src/original/TEdit.Common/Geometry/FloodFillRangeQueue.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/FloodFillRangeQueue.cs",
+      "sha256": "9eaee6208e01292f893da7f4ee55ca9c56951a5f7f7ad215c90ec612a943999b"
+    },
+    "src/original/TEdit.Common/Geometry/RectangleFloat.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/RectangleFloat.cs",
+      "sha256": "569abbab93012c616fee2079a3b90263304efaa74d818fb685c23fa984d3af88"
+    },
+    "src/original/TEdit.Common/Geometry/RectangleInt32.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/RectangleInt32.cs",
+      "sha256": "cae151cd23a4fdb15b88a35d86cdaa738f6bd36a66409a31c34005e666c6630e"
+    },
+    "src/original/TEdit.Common/Geometry/Shape.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Shape.cs",
+      "sha256": "c579d8a1508da302701dc0c5561f832bcfa6faf9889c86d99c5bec9efea8b592"
+    },
+    "src/original/TEdit.Common/Geometry/Spline.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Spline.cs",
+      "sha256": "34c135015f213b36753810eb15974a09f0bd4ce030afd4958a8beae11046c5a5"
+    },
+    "src/original/TEdit.Common/Geometry/Vector2Byte.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector2Byte.cs",
+      "sha256": "9c78e2dc6e242e1f83127bdcd746447bd4487ba5c6187407bec079046267b100"
+    },
+    "src/original/TEdit.Common/Geometry/Vector2Float.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector2Float.cs",
+      "sha256": "2626b3c409c6c665e5792e392b35fab3266951248ec7baafea10d3ddb5e951d1"
+    },
+    "src/original/TEdit.Common/Geometry/Vector2Int32.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector2Int32.cs",
+      "sha256": "7aab6e51ba5a7ba8251fc137d5a3c370ce119aa2da06607d1ff190ba69ef8cf2"
+    },
+    "src/original/TEdit.Common/Geometry/Vector2Short.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector2Short.cs",
+      "sha256": "657e5a5dce34ddd84289b40e574928292f95fb47ca9b85a76937a6dba647318b"
+    },
+    "src/original/TEdit.Common/Geometry/Vector3Byte.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector3Byte.cs",
+      "sha256": "dd8a9a29f3d576412fd0a02068337f0477d2a1254f08cfea114fc3bc4bfa6818"
+    },
+    "src/original/TEdit.Common/Geometry/Vector3Float.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector3Float.cs",
+      "sha256": "c00749ce576cebe64f38fd437b8f9d2fe3003c946164bb5d05ae79fda043f3bc"
+    },
+    "src/original/TEdit.Common/Geometry/Vector3Int32.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector3Int32.cs",
+      "sha256": "37a757d193173dd4065ab06439b05b344d61712bfa2d48ba49e5a38a06bc1df2"
+    },
+    "src/original/TEdit.Common/Geometry/Vector3Short.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector3Short.cs",
+      "sha256": "906d77b772f8ed0da1af597039598be1c730f0d81cd462261916019bd7f4c3b7"
+    },
+    "src/original/TEdit.Common/Geometry/Vector4Byte.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector4Byte.cs",
+      "sha256": "78361d090d45694382faac14ed0aab1ea3c021bb18b4da1b17f3ec99b41625a3"
+    },
+    "src/original/TEdit.Common/Geometry/Vector4Float.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector4Float.cs",
+      "sha256": "0281320490682b3ed09eb00b04cd2909ef4487f5d24af8de7827b88f7d963543"
+    },
+    "src/original/TEdit.Common/Geometry/Vector4Int32.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector4Int32.cs",
+      "sha256": "14f0e3e5da35faf5bdc1fffa4961f3468eb468714c978e2ff5142112e4d6b33f"
+    },
+    "src/original/TEdit.Common/Geometry/Vector4Short.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/Vector4Short.cs",
+      "sha256": "04a64fc1a837a8e5cb59275185db2710422929bdc6d98349d0ee08b3662ae462"
+    },
+    "src/original/TEdit.Common/Geometry/WireRouter.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/WireRouter.cs",
+      "sha256": "37326365de2a62fe701292c58dd1d8277a2932ba053ab1087e9c1110649fc623"
+    },
+    "src/original/TEdit.Common/Geometry/WireTracer.cs": {
+      "origin": "TEdit/TEdit.Common/Geometry/WireTracer.cs",
+      "sha256": "f65bc9603649197bbe1d2b80c4c7d6ce100892343e06491fe663517a202ffc6d"
+    },
+    "src/original/TEdit.Common/Helper/Extensions.cs": {
+      "origin": "TEdit/TEdit.Common/Helper/Extensions.cs",
+      "sha256": "0276cc24414ee01225730d4a374f9c1dde5f55e1da063b144cfb047014a5b0c7"
+    },
+    "src/original/TEdit.Common/Helper/HCLuv.cs": {
+      "origin": "TEdit/TEdit.Common/Helper/HCLuv.cs",
+      "sha256": "3f548392d8e2861db250c28497d245a398e9b809417c76eb067be1d6b5f35821"
+    },
+    "src/original/TEdit.Common/IO/BigEndianReader.cs": {
+      "origin": "TEdit/TEdit.Common/IO/BigEndianReader.cs",
+      "sha256": "599412a04240dc770db7e09ab0d172b85542d8ff3dd822a10155f7bc49549d84"
+    },
+    "src/original/TEdit.Common/IO/BigEndianWriter.cs": {
+      "origin": "TEdit/TEdit.Common/IO/BigEndianWriter.cs",
+      "sha256": "4f61509aff64b9ea9986066a41a5279912a10f17f1163a4528ea2e323ac86701"
+    },
+    "src/original/TEdit.Common/IO/TagCompound.cs": {
+      "origin": "TEdit/TEdit.Common/IO/TagCompound.cs",
+      "sha256": "eb6384edca086d8b779503da63e559360ae3b125179b58826584721cb7cdecca"
+    },
+    "src/original/TEdit.Common/IO/TagIO.cs": {
+      "origin": "TEdit/TEdit.Common/IO/TagIO.cs",
+      "sha256": "61c69f0c015257051c9d00e19b976b8ddb62c22acacb917c356d08213e90c541"
+    },
+    "src/original/TEdit.Common/Polyfills.cs": {
+      "origin": "TEdit/TEdit.Common/Polyfills.cs",
+      "sha256": "8321de662acfecf40599508ba956d27c950796a878c3f1c4f0defbbf632386ba"
+    },
+    "src/original/TEdit.Common/Serialization/InlineNumericArrayConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/InlineNumericArrayConverter.cs",
+      "sha256": "69c38c1351da88c39d547044a1a4bbc3fb6be80599492f05bb45ba1f7b7becac"
+    },
+    "src/original/TEdit.Common/Serialization/RectangleFloatJsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/RectangleFloatJsonConverter.cs",
+      "sha256": "333c051c694d8d0ef89593d09178bb2f40b5193e1eb30df1a15ce5636712f45c"
+    },
+    "src/original/TEdit.Common/Serialization/RectangleInt32JsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/RectangleInt32JsonConverter.cs",
+      "sha256": "1aac1792a579f7abdf3cb86a35ea2a2eae7903a6ce966b3494062ec009806115"
+    },
+    "src/original/TEdit.Common/Serialization/TEditColorJsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/TEditColorJsonConverter.cs",
+      "sha256": "d8d4c0eb57d16ba9c96dd2738e5a14f6c343b97583624b67f9a377b8ef9bfa19"
+    },
+    "src/original/TEdit.Common/Serialization/TEditJsonSerializer.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/TEditJsonSerializer.cs",
+      "sha256": "3f360a8547b832afa90a6726f06da1246d6ba57434f20b6d0317a4f80fecdce1"
+    },
+    "src/original/TEdit.Common/Serialization/Vector2ByteJsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector2ByteJsonConverter.cs",
+      "sha256": "c9e3d8fdc740c0f012559b437d29d2f5879f1274bca5e077fdb8de6215da1700"
+    },
+    "src/original/TEdit.Common/Serialization/Vector2FloatJsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector2FloatJsonConverter.cs",
+      "sha256": "254dedadc6e34012cf3e42bc87bbcad8842f03c2b6d6b3d34d2fef903eec80fd"
+    },
+    "src/original/TEdit.Common/Serialization/Vector2Int32JsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector2Int32JsonConverter.cs",
+      "sha256": "b582127aabd463d5e36af0793158a7986067d9c74393e645d980712f9139aa00"
+    },
+    "src/original/TEdit.Common/Serialization/Vector2ShortJsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector2ShortJsonConverter.cs",
+      "sha256": "a4fcedd10215a94a7b9b7b77b739c3e0d323b892c29a416c989f300c300a3a68"
+    },
+    "src/original/TEdit.Common/Serialization/Vector3ByteJsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector3ByteJsonConverter.cs",
+      "sha256": "be0b03d13787aa9ff031b600bf15c3fc11bc5cb28cac595c9ace10c76d44e6ee"
+    },
+    "src/original/TEdit.Common/Serialization/Vector3FloatJsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector3FloatJsonConverter.cs",
+      "sha256": "7c26c4b6f51a1255251aa7810ac45c92670b0931a7bb1f85593e378989b5efc7"
+    },
+    "src/original/TEdit.Common/Serialization/Vector3Int32JsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector3Int32JsonConverter.cs",
+      "sha256": "692a8a004099de4108add3ca546ba23d3b37862c81f5d07c319dde38e6c06068"
+    },
+    "src/original/TEdit.Common/Serialization/Vector3ShortJsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector3ShortJsonConverter.cs",
+      "sha256": "02104fc58c329d629fd0f516e31083d74d901ec632b023e8a9e6a1cb13e4eb8e"
+    },
+    "src/original/TEdit.Common/Serialization/Vector4ByteJsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector4ByteJsonConverter.cs",
+      "sha256": "aedf19610c8cefea3ce2a8fcc3e18ca63bb1addd0b96d0b54e23e901060bf853"
+    },
+    "src/original/TEdit.Common/Serialization/Vector4FloatJsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector4FloatJsonConverter.cs",
+      "sha256": "a7279c16d76ab2553005d2d698ee0b59acc1beca47e65dba5b02b7bddbc16ccd"
+    },
+    "src/original/TEdit.Common/Serialization/Vector4Int32JsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector4Int32JsonConverter.cs",
+      "sha256": "9d925eef49666638d57f0a74bbce9cebe945ef04bef67b3a8fbf60f58b01ceaa"
+    },
+    "src/original/TEdit.Common/Serialization/Vector4ShortJsonConverter.cs": {
+      "origin": "TEdit/TEdit.Common/Serialization/Vector4ShortJsonConverter.cs",
+      "sha256": "a8da8f65154172fa541875ea5532fff654c11dc45a906620cf932f629fb717b7"
+    },
+    "src/original/TEdit.Common/TEdit.Common.csproj": {
+      "origin": "TEdit/TEdit.Common/TEdit.Common.csproj",
+      "sha256": "e22f127148d9b468ad36c55e396fffa97c3913b9babb6004ff252f948b23abab"
+    },
+    "src/original/TEdit.Common/TEditColor.cs": {
+      "origin": "TEdit/TEdit.Common/TEditColor.cs",
+      "sha256": "02ab43b724cba157caba56dccacd7f7d7f16b5d9f25f5c1d48fc51759b46c12c"
+    },
+    "src/original/TEdit.Common/Utility/Calc.cs": {
+      "origin": "TEdit/TEdit.Common/Utility/Calc.cs",
+      "sha256": "b92da88413fb37f6ac5c356b60516149bbe7e91815fc31b7241453c4026b4528"
+    },
+    "src/original/TEdit.Terraria/BannerItem.cs": {
+      "origin": "TEdit/TEdit.Terraria/BannerItem.cs",
+      "sha256": "a93ca2730a307f742aa9ba6d428006b297b071d2171aebac3bf5d841f4f43497"
+    },
+    "src/original/TEdit.Terraria/Bestiary.cs": {
+      "origin": "TEdit/TEdit.Terraria/Bestiary.cs",
+      "sha256": "fb683dd3816c05300198108c13ba5c7452394bbdf6709696106c5db93ec7773e"
+    },
+    "src/original/TEdit.Terraria/BestiaryConfiguration.cs": {
+      "origin": "TEdit/TEdit.Terraria/BestiaryConfiguration.cs",
+      "sha256": "e824d73756e3de82a13246af808901eaed0df92e3436e509010d240cdaa6909a"
+    },
+    "src/original/TEdit.Terraria/BitsByte.cs": {
+      "origin": "TEdit/TEdit.Terraria/BitsByte.cs",
+      "sha256": "726fb9c5af649fd18e949899999323a4e93ebbdeed9b18795c7b24ef8b0cbf80"
+    },
+    "src/original/TEdit.Terraria/BrickStyle.cs": {
+      "origin": "TEdit/TEdit.Terraria/BrickStyle.cs",
+      "sha256": "937f786a62fb1f0e25a5571aeb440f531ccfa13a63a846fc4e75f17e6cc5da79"
+    },
+    "src/original/TEdit.Terraria/Chest.cs": {
+      "origin": "TEdit/TEdit.Terraria/Chest.cs",
+      "sha256": "24a66b86f52d6d14789826fcd83140c9838a7b4b53962eb0f977fc60f03b844f"
+    },
+    "src/original/TEdit.Terraria/ChestSignTool.cs": {
+      "origin": "TEdit/TEdit.Terraria/ChestSignTool.cs",
+      "sha256": "902b2300b6f12c8e6facc7bb7bbd2581fa2ba79564614da4426a7ef601a654eb"
+    },
+    "src/original/TEdit.Terraria/CreativePowers.cs": {
+      "origin": "TEdit/TEdit.Terraria/CreativePowers.cs",
+      "sha256": "fe3eaec40696834755147ac0cc7acef1a51f454add22f224025764b5133aa99c"
+    },
+    "src/original/TEdit.Terraria/Data/backgroundStyles.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/backgroundStyles.json",
+      "sha256": "81a912e3d0b1fb9467b03e5d52b933849606810273b5d9007dfab602e972a286"
+    },
+    "src/original/TEdit.Terraria/Data/bestiaryNpcs.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/bestiaryNpcs.json",
+      "sha256": "4eb42f551034fb57b7c6ec03074fbc8451086e403f6beee3ba403e1885a02331"
+    },
+    "src/original/TEdit.Terraria/Data/dyes.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/dyes.json",
+      "sha256": "961d02b454d653a9094bbc37b7c56f707e63f3c149942cee90ca97c4298c73aa"
+    },
+    "src/original/TEdit.Terraria/Data/globalColors.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/globalColors.json",
+      "sha256": "dd5bdca5f86bb8fba19e55efe64d2229808cf39480793c5bcfc2fa19e75956bf"
+    },
+    "src/original/TEdit.Terraria/Data/items.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/items.json",
+      "sha256": "0ee63a2cb68d1319b874329f2aedbb3f978033807af82133fe1b450d7ef170dd"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/de-DE.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/de-DE.json",
+      "sha256": "9c3d4ea8831bd63da8e8956792478fe576cdee536abae8fd93145e3e6e3ec952"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/en-US.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/en-US.json",
+      "sha256": "21932ec3b6702988c715b3b1e7e9a486cecd84581badcac97c292f071f2b92b6"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/es-ES.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/es-ES.json",
+      "sha256": "d58ecc90efd2b689ae37c58e9bad4e7e82e3135a44bd033fa1c57e3990450848"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/fr-FR.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/fr-FR.json",
+      "sha256": "2405cabcb9e2779d995496c6b2c3fccaaab08bd993a926a37381fa5bdaaf9e19"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/it-IT.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/it-IT.json",
+      "sha256": "1b96e94f322b704c7efd1b8f4ce0c3109143f2add7d9d4629ea0eedbe8c759b8"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/ja-JP.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/ja-JP.json",
+      "sha256": "2a135b5adf737040deabd9a91a6504dd7532dd57ca9fb7b777b1c2c2b166438d"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/ko-KR.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/ko-KR.json",
+      "sha256": "37378bdea65443a3e3a642c8d4bf8588d46a37936b4f58f13fdeddb046838204"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/pl-PL.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/pl-PL.json",
+      "sha256": "c464276981a6501e9f096a17b2f81ee7cab624c63c8f6c14ae5b36ecee41fde7"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/pt-BR.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/pt-BR.json",
+      "sha256": "d906bc7c197dab079a4bcde544a6aacc77674f32563203bbdc257c4a84482964"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/ru-RU.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/ru-RU.json",
+      "sha256": "587a85ef1b251e4cc37f391a882d6b6e251ffa381c0a833ba96c6c6e0962a331"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/zh-Hans.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/zh-Hans.json",
+      "sha256": "da5d121625d85ddfb51b3da1ca096a592b1504c5b2192b10267f373a160fd681"
+    },
+    "src/original/TEdit.Terraria/Data/Localization/zh-Hant.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/Localization/zh-Hant.json",
+      "sha256": "ead4a5c5630d31e706bbf7bcbc7c82c7549aba5c7d4cbcaeb6036c3b44ab4200"
+    },
+    "src/original/TEdit.Terraria/Data/morphBiomes.generate.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/morphBiomes.generate.json",
+      "sha256": "c23006d756df3cf37f4ccc2432459c2f1b810920fe860faf07e5165e43207f62"
+    },
+    "src/original/TEdit.Terraria/Data/morphBiomes.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/morphBiomes.json",
+      "sha256": "62479b83c1ef435c8faf30ce1440adc65e4dba0132bbd9c5334c3fffbcb2cc27"
+    },
+    "src/original/TEdit.Terraria/Data/npcs.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/npcs.json",
+      "sha256": "5dc50e88a049a3e9458ad120b8b33ac667f11a69968f174a59e9de1c7d310b33"
+    },
+    "src/original/TEdit.Terraria/Data/paints.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/paints.json",
+      "sha256": "72522ae2839e82c8b496db044af09fbf9311ff1bb9dd43826c2059e0cce0ef21"
+    },
+    "src/original/TEdit.Terraria/Data/prefixes.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/prefixes.json",
+      "sha256": "ccb35c25664f3d39e7bef384330cecdc70ef498d702c8f7b24cf591d2388041a"
+    },
+    "src/original/TEdit.Terraria/Data/TileOverrides/CalamityMod.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/TileOverrides/CalamityMod.json",
+      "sha256": "9548da4c4c930b1786c2e7f85b3bb091d6b91f80b45589fad53814efc570e326"
+    },
+    "src/original/TEdit.Terraria/Data/tiles.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/tiles.json",
+      "sha256": "9c65094977e595e1412a2a4af9cdb9910064134e44b9c9a8c19c659dc891cb80"
+    },
+    "src/original/TEdit.Terraria/Data/versions.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/versions.json",
+      "sha256": "4603263c6002e6b91d4eb4f0af84f20fe9d6d22540d29a6dd593e54819143a57"
+    },
+    "src/original/TEdit.Terraria/Data/walls.json": {
+      "origin": "TEdit/TEdit.Terraria/Data/walls.json",
+      "sha256": "3b3f86863c5cc90b336756ad47bf95d2cb0233e9be7a2813c9af8f73ffa3764a"
+    },
+    "src/original/TEdit.Terraria/DataModel/BackgroundStyleConfiguration.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/BackgroundStyleConfiguration.cs",
+      "sha256": "9194c41f973c029d0ca9c649428e5497aba5a43a98fc5de322e0435018f85d47"
+    },
+    "src/original/TEdit.Terraria/DataModel/BestiaryNpcConfiguration.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/BestiaryNpcConfiguration.cs",
+      "sha256": "55172c6bea0211eeb0b9a0048f9587131e247400dde8541842be0f6b35ffa87c"
+    },
+    "src/original/TEdit.Terraria/DataModel/BestiaryNpcData.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/BestiaryNpcData.cs",
+      "sha256": "62e5c57c50f9fd6c1b6829fa6702c9b6f53c940dba996ac6bd3ee877f0c8b171"
+    },
+    "src/original/TEdit.Terraria/DataModel/GlobalColorEntry.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/GlobalColorEntry.cs",
+      "sha256": "c7e8ceae6d559fa8018a4dbd4b6ed6c1f8670fd25dfcd752884af091bcdbb5d6"
+    },
+    "src/original/TEdit.Terraria/DataModel/LocalizationData.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/LocalizationData.cs",
+      "sha256": "34fe040b6e15bc5e78479fd2287ce8a532a39cf5e9159f319d14c501c392450f"
+    },
+    "src/original/TEdit.Terraria/DataModel/MapColorEntry.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/MapColorEntry.cs",
+      "sha256": "58d52a557f282f00598d25a2e297588af245f14366829b7124369ba618a7bcdf"
+    },
+    "src/original/TEdit.Terraria/DataModel/MorphBiomeData.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/MorphBiomeData.cs",
+      "sha256": "f04fb26d230ebf959477ba067608471d2320f942f306dfc45bc3445b66ed3408"
+    },
+    "src/original/TEdit.Terraria/DataModel/MorphConfiguration.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/MorphConfiguration.cs",
+      "sha256": "29b497105888a0e3ddaf53279195c073e2539993bd29d4c32da7c49cc5e4895e"
+    },
+    "src/original/TEdit.Terraria/DataModel/MorphGroup.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/MorphGroup.cs",
+      "sha256": "377ef2a9e10b082cb0bdea7993aeb418414b72e72f26ecbdf2f05ee958a099de"
+    },
+    "src/original/TEdit.Terraria/DataModel/MorphMode.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/MorphMode.cs",
+      "sha256": "a3c58564d0152e2a7d38b7a334d9b070b2c7db6e1389a15c0b991782781bb206"
+    },
+    "src/original/TEdit.Terraria/DataModel/NpcData.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/NpcData.cs",
+      "sha256": "25087d27061ff1f4a1f2b6e2b4cc75175a6624b9ea8cb5a6ce4cb30816a7fe39"
+    },
+    "src/original/TEdit.Terraria/DataModel/PrefixData.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/PrefixData.cs",
+      "sha256": "3127fbb47e6965d966533be0ac7a975598c8a275f09bd5871b7d2bcb6435d992"
+    },
+    "src/original/TEdit.Terraria/DataModel/SaveVersionData.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/SaveVersionData.cs",
+      "sha256": "d5ccb0208dff3054bd091fc26888fdbc0cba23c576d029ebf6ba01d29671b7bf"
+    },
+    "src/original/TEdit.Terraria/DataModel/SaveVersionManager.cs": {
+      "origin": "TEdit/TEdit.Terraria/DataModel/SaveVersionManager.cs",
+      "sha256": "0b89645aafcabfe20e3c3326daf25ddd335685374767926054ac668974bbe45c"
+    },
+    "src/original/TEdit.Terraria/FileType.cs": {
+      "origin": "TEdit/TEdit.Terraria/FileType.cs",
+      "sha256": "605973ac4d4ca03d6b6605fa74d35318e2ddc0b209f42f6fac762506f94365f8"
+    },
+    "src/original/TEdit.Terraria/GlobalUsing.cs": {
+      "origin": "TEdit/TEdit.Terraria/GlobalUsing.cs",
+      "sha256": "d02343392fd170eec2fff950f7a9042941448294d620a763faa2d5448c43ba2e"
+    },
+    "src/original/TEdit.Terraria/IO/ConsoleCompressor.cs": {
+      "origin": "TEdit/TEdit.Terraria/IO/ConsoleCompressor.cs",
+      "sha256": "b4675147aa8aa55a4957dcabd115db55318391059be5c005800ffd096f6571fa"
+    },
+    "src/original/TEdit.Terraria/Item.cs": {
+      "origin": "TEdit/TEdit.Terraria/Item.cs",
+      "sha256": "58c1a279a34ee9d7da4b382d161178737d4ed1666bfac8c35bd49863eda5da18"
+    },
+    "src/original/TEdit.Terraria/ITileData.cs": {
+      "origin": "TEdit/TEdit.Terraria/ITileData.cs",
+      "sha256": "41f7a741c2bfe1664d2e591e2c0086dcebcbde77a8850232e57f93cc87f614f3"
+    },
+    "src/original/TEdit.Terraria/JunctionBoxMode.cs": {
+      "origin": "TEdit/TEdit.Terraria/JunctionBoxMode.cs",
+      "sha256": "4fd3f5913d885c05233c572731a49b753085542145cccbe432e053be2c6a4d6d"
+    },
+    "src/original/TEdit.Terraria/KillTally.cs": {
+      "origin": "TEdit/TEdit.Terraria/KillTally.cs",
+      "sha256": "66bd628bcf3d2a599b34d738557d21823f1cdec0661e6eb1d0646e9570d74e4a"
+    },
+    "src/original/TEdit.Terraria/LiquidType.cs": {
+      "origin": "TEdit/TEdit.Terraria/LiquidType.cs",
+      "sha256": "0ee89ea517f726abb528aa76c96af785562e3fafb8a2dd863b7be3b3138921ee"
+    },
+    "src/original/TEdit.Terraria/Loaders/JsonDataLoader.cs": {
+      "origin": "TEdit/TEdit.Terraria/Loaders/JsonDataLoader.cs",
+      "sha256": "1b0215b6959b34eb8da450c5329f6e40a4e3badb1be490715f35701e2adfdfdd"
+    },
+    "src/original/TEdit.Terraria/Loaders/LocalizationLoader.cs": {
+      "origin": "TEdit/TEdit.Terraria/Loaders/LocalizationLoader.cs",
+      "sha256": "47f2dd5377cf50cd18d072d4f108fb65c9bb94a4d9b86b21af433af78464386b"
+    },
+    "src/original/TEdit.Terraria/Loaders/TileDataLoader.cs": {
+      "origin": "TEdit/TEdit.Terraria/Loaders/TileDataLoader.cs",
+      "sha256": "9bca4696fbc43e21b2493f5d0c2cbb9262715992194c7d8651080cb65f53905d"
+    },
+    "src/original/TEdit.Terraria/Map.cs": {
+      "origin": "TEdit/TEdit.Terraria/Map.cs",
+      "sha256": "be505e8dd8184891762ad6df70a43e5606b270d090dcba5680d648915123ee7c"
+    },
+    "src/original/TEdit.Terraria/Minecart.cs": {
+      "origin": "TEdit/TEdit.Terraria/Minecart.cs",
+      "sha256": "54b9705bc24ea4f99dba7f7c897023bbe68445d09d0e919ce1eaf48d6a35e5dc"
+    },
+    "src/original/TEdit.Terraria/ModDataSerializer.cs": {
+      "origin": "TEdit/TEdit.Terraria/ModDataSerializer.cs",
+      "sha256": "affdc010bdb11ea788a91b00614d3e7a76817878407b904fa9644491e4e8ef52"
+    },
+    "src/original/TEdit.Terraria/NPC.cs": {
+      "origin": "TEdit/TEdit.Terraria/NPC.cs",
+      "sha256": "ee9d0c12aab9ddff25e9b1f44c7116a3957545b7eaced669e1170646f826fa29"
+    },
+    "src/original/TEdit.Terraria/Objects/ChestProperty.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/ChestProperty.cs",
+      "sha256": "a1e6d15db2c01fea200b9f447e0ea782da8b5b877307f876a2b51ff5f27a91b7"
+    },
+    "src/original/TEdit.Terraria/Objects/DyeProperty.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/DyeProperty.cs",
+      "sha256": "a69808b0ab2a97888c0192b07df746e5c6c20f04b41e90378fd4e198a8914a62"
+    },
+    "src/original/TEdit.Terraria/Objects/Enums.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/Enums.cs",
+      "sha256": "70596b7de23c9e45f53e0b6567ba841c9c9bd645f6ae20bae7a4bd267e02f79f"
+    },
+    "src/original/TEdit.Terraria/Objects/FrameProperty.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/FrameProperty.cs",
+      "sha256": "ee5788001186769cad31dd0ff2798e6fdc00098ef68b8146da1a92e82ee5dcb3"
+    },
+    "src/original/TEdit.Terraria/Objects/ItemProperty.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/ItemProperty.cs",
+      "sha256": "e0e2ec353263b9726306f8bf770381a80ca98f31f665a362790c1c4369ab2f44"
+    },
+    "src/original/TEdit.Terraria/Objects/ITile.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/ITile.cs",
+      "sha256": "4e8ca32c2d1723687fd00e5cf0718e76af83cb5af6c7b0425a5dbc966ba58cde"
+    },
+    "src/original/TEdit.Terraria/Objects/NpcName.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/NpcName.cs",
+      "sha256": "3b0710ed1a35f1051c612493478e167c0c35030423b0aa38e69a980292ca8517"
+    },
+    "src/original/TEdit.Terraria/Objects/PaintProperty.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/PaintProperty.cs",
+      "sha256": "bc98411e2e2e2385daab554bc2b85f5f9ea69c25c3eac72fd10c6477c167c448"
+    },
+    "src/original/TEdit.Terraria/Objects/SignProperty.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/SignProperty.cs",
+      "sha256": "d48091fb9b90843e860ce6897ae8e5f442da407d9148dd9d0ecd5f875a93a641"
+    },
+    "src/original/TEdit.Terraria/Objects/SpriteSheet.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/SpriteSheet.cs",
+      "sha256": "6041f0842b6eb26462272ee8f7ccf18dcc00ca4e1532b95b31387d9a39c8d864"
+    },
+    "src/original/TEdit.Terraria/Objects/TileProperty.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/TileProperty.cs",
+      "sha256": "b40f12b9078b355943d3f3c1b47901aef544f7e3315598e991c6eb76e1b7168a"
+    },
+    "src/original/TEdit.Terraria/Objects/WallProperty.cs": {
+      "origin": "TEdit/TEdit.Terraria/Objects/WallProperty.cs",
+      "sha256": "a1884f21bf61c5469d886add8485702c8e93d6cd34fd3950ec74718a78fbbc59"
+    },
+    "src/original/TEdit.Terraria/Player/EquipmentLoadout.cs": {
+      "origin": "TEdit/TEdit.Terraria/Player/EquipmentLoadout.cs",
+      "sha256": "0726d3851028dcc51a9ed57a6dc4ac410c818dfb553ce117de511f6b160b19ab"
+    },
+    "src/original/TEdit.Terraria/Player/PlayerAppearance.cs": {
+      "origin": "TEdit/TEdit.Terraria/Player/PlayerAppearance.cs",
+      "sha256": "7bbfefca47de0a6208e9f0d1f1e4d78951349468c642938ce28c8727c3ca27c3"
+    },
+    "src/original/TEdit.Terraria/Player/PlayerBuff.cs": {
+      "origin": "TEdit/TEdit.Terraria/Player/PlayerBuff.cs",
+      "sha256": "c25a7febd263c0bc4462eb0d55c271aa2c1ae8471e94de51e5a92e32437fab4c"
+    },
+    "src/original/TEdit.Terraria/Player/PlayerCharacter.cs": {
+      "origin": "TEdit/TEdit.Terraria/Player/PlayerCharacter.cs",
+      "sha256": "2a06b065dcfe2d98b6b0d0effdd892e1e7a6fcd0250cc14306b54236e4feeea8"
+    },
+    "src/original/TEdit.Terraria/Player/PlayerConstants.cs": {
+      "origin": "TEdit/TEdit.Terraria/Player/PlayerConstants.cs",
+      "sha256": "9902730606e191d503b9dd3da78e564c0ced44df127d37373d56d9aa20f5633e"
+    },
+    "src/original/TEdit.Terraria/Player/PlayerFile.cs": {
+      "origin": "TEdit/TEdit.Terraria/Player/PlayerFile.cs",
+      "sha256": "791c5daf1995079b1ac45d8158669b752b3262731d74c9d89ed8d0804ca84ccf"
+    },
+    "src/original/TEdit.Terraria/Player/PlayerItem.cs": {
+      "origin": "TEdit/TEdit.Terraria/Player/PlayerItem.cs",
+      "sha256": "7e0363076849d1e3995ad62c466b24b5cfce7e97253d5fcb66613fa57b894664"
+    },
+    "src/original/TEdit.Terraria/Player/SpawnPoint.cs": {
+      "origin": "TEdit/TEdit.Terraria/Player/SpawnPoint.cs",
+      "sha256": "a7cf27a2bc90cc9c6e9e8106a85aa6914b955bee34ec56a53a7b637635dbd5f6"
+    },
+    "src/original/TEdit.Terraria/Player/TemporaryItemSlots.cs": {
+      "origin": "TEdit/TEdit.Terraria/Player/TemporaryItemSlots.cs",
+      "sha256": "7e678cf62865b4c4cf850f13f1f599bedafacceaa77fb4e9398e338cf96940fb"
+    },
+    "src/original/TEdit.Terraria/PressurePlate.cs": {
+      "origin": "TEdit/TEdit.Terraria/PressurePlate.cs",
+      "sha256": "b45959086235ffb9db87befb3c9389a92bf61d7babb17eaa338adf9a8b7c41eb"
+    },
+    "src/original/TEdit.Terraria/Render/TileFraming.cs": {
+      "origin": "TEdit/TEdit.Terraria/Render/TileFraming.cs",
+      "sha256": "780d0050250cc1f5983ca23191b2ddc51e218f8aa71e388353913f8ea0e6b761"
+    },
+    "src/original/TEdit.Terraria/Render/WallFraming.cs": {
+      "origin": "TEdit/TEdit.Terraria/Render/WallFraming.cs",
+      "sha256": "b6d9b5d60a6201fe06c9d2b7f0d2345fa4dd116258cbdf5dd5f14dde2a6a79f7"
+    },
+    "src/original/TEdit.Terraria/Sign.cs": {
+      "origin": "TEdit/TEdit.Terraria/Sign.cs",
+      "sha256": "5f147fbb2bd45798d892ddadf001fb2cd403b2d709f520064fe3539bb794aff4"
+    },
+    "src/original/TEdit.Terraria/TEdit.Terraria.csproj": {
+      "origin": "TEdit/TEdit.Terraria/TEdit.Terraria.csproj",
+      "sha256": "947626993c01d8b617ce17dab561011c7b543e8daef6a7385bcb9e909a6c8897"
+    },
+    "src/original/TEdit.Terraria/TerrariaDataStore.cs": {
+      "origin": "TEdit/TEdit.Terraria/TerrariaDataStore.cs",
+      "sha256": "28c4b2bacff3668834ad60f554a2f5fcdb404fa2bb5c92ab7d86f4ce320aee2d"
+    },
+    "src/original/TEdit.Terraria/Tile.cs": {
+      "origin": "TEdit/TEdit.Terraria/Tile.cs",
+      "sha256": "048c7db58de7caa58258f8e9ce90328e0dab2dcfb758d1a0c849e5cf24b62646"
+    },
+    "src/original/TEdit.Terraria/TileEntity.cs": {
+      "origin": "TEdit/TEdit.Terraria/TileEntity.cs",
+      "sha256": "c2af72bfb5f4ecea2a8df4366e97d1ff4ebe768c6926ee04263f7d50e4bffbad"
+    },
+    "src/original/TEdit.Terraria/TileEntityItem.cs": {
+      "origin": "TEdit/TEdit.Terraria/TileEntityItem.cs",
+      "sha256": "43774089d8d4565e56d48229aff97e5a7a51040f7a1e52492d5745f57fdecde3"
+    },
+    "src/original/TEdit.Terraria/TileEntityType.cs": {
+      "origin": "TEdit/TEdit.Terraria/TileEntityType.cs",
+      "sha256": "8f9968afbdc58baf7ccfa66f1af93625be577874893f7eae3be9c2e154c5d545"
+    },
+    "src/original/TEdit.Terraria/TileType.cs": {
+      "origin": "TEdit/TEdit.Terraria/TileType.cs",
+      "sha256": "60a028d0fd2b97ddcec4de197d27f85fdbab1312f897e1cbc0a962f421747ee3"
+    },
+    "src/original/TEdit.Terraria/TModLoader/ModTileConfigStore.cs": {
+      "origin": "TEdit/TEdit.Terraria/TModLoader/ModTileConfigStore.cs",
+      "sha256": "a697f4d87a14e6a8f8ab1270ce01e215fde2e9db00fe48ae12e4cbbf772b8120"
+    },
+    "src/original/TEdit.Terraria/TModLoader/ModTileData.cs": {
+      "origin": "TEdit/TEdit.Terraria/TModLoader/ModTileData.cs",
+      "sha256": "38c7d7e10042b2a604c5ac5f138f13abb206f3d6121bbc9d693c137beff1a9d6"
+    },
+    "src/original/TEdit.Terraria/TModLoader/ModTileEntry.cs": {
+      "origin": "TEdit/TEdit.Terraria/TModLoader/ModTileEntry.cs",
+      "sha256": "c6a17b0ecfd332d81c5dac4a5748092ae44229df339e421bc4d74ba71f14b9d4"
+    },
+    "src/original/TEdit.Terraria/TModLoader/ModWallData.cs": {
+      "origin": "TEdit/TEdit.Terraria/TModLoader/ModWallData.cs",
+      "sha256": "523bfaaa7958817c69659992f8bc6fe0ae00ff3ed88fff1de2de48dcbbc99da3"
+    },
+    "src/original/TEdit.Terraria/TModLoader/ModWallEntry.cs": {
+      "origin": "TEdit/TEdit.Terraria/TModLoader/ModWallEntry.cs",
+      "sha256": "d3b59fe8ea0e544a894e78218c3dc1d3f4a9fef91269c69d864a6c0df0c6f62b"
+    },
+    "src/original/TEdit.Terraria/TModLoader/TmodTextureExtractor.cs": {
+      "origin": "TEdit/TEdit.Terraria/TModLoader/TmodTextureExtractor.cs",
+      "sha256": "d972f90be4d2d3f9a7b98929f2eb4089f0af7701fc4b02f2d853988e77acca2d"
+    },
+    "src/original/TEdit.Terraria/TModLoader/TwldData.cs": {
+      "origin": "TEdit/TEdit.Terraria/TModLoader/TwldData.cs",
+      "sha256": "af4e821ccf7146c3ac19c43ff711733c6a6b925c198a651fff8762a5d484caf3"
+    },
+    "src/original/TEdit.Terraria/TModLoader/TwldFile.cs": {
+      "origin": "TEdit/TEdit.Terraria/TModLoader/TwldFile.cs",
+      "sha256": "45eb5cfc07cec0d117f1360b27904b9d22136e316bd39cadf92ff5e90dbc9a3e"
+    },
+    "src/original/TEdit.Terraria/TownManager.cs": {
+      "origin": "TEdit/TEdit.Terraria/TownManager.cs",
+      "sha256": "761c5edc288dca51b591efafce9a1a8eb41f7e659fac682dbf6e105c41808145"
+    },
+    "src/original/TEdit.Terraria/TownNpcKey.cs": {
+      "origin": "TEdit/TEdit.Terraria/TownNpcKey.cs",
+      "sha256": "fad405b13e15fb72331cd890e792750e6b4ec88394b8d79df70bbc623fe7f147"
+    },
+    "src/original/TEdit.Terraria/Vector2FloatObservable.cs": {
+      "origin": "TEdit/TEdit.Terraria/Vector2FloatObservable.cs",
+      "sha256": "1a62acf57d6a82f5ed2cc53b572f611eb625e44a9351d85624b128874e0a6100"
+    },
+    "src/original/TEdit.Terraria/Vector2Int32Observable.cs": {
+      "origin": "TEdit/TEdit.Terraria/Vector2Int32Observable.cs",
+      "sha256": "0cdcbde8a8b9881f17783313e7729b6cf2d0e21d9c66d4ca8207d7f36b8d3609"
+    },
+    "src/original/TEdit.Terraria/World.cs": {
+      "origin": "TEdit/TEdit.Terraria/World.cs",
+      "sha256": "b0d9bf06c9e9c253e12b8009522e9e06ba6bc8bc16422aecc2d938867265369b"
+    },
+    "src/original/TEdit.Terraria/World.FileV1.cs": {
+      "origin": "TEdit/TEdit.Terraria/World.FileV1.cs",
+      "sha256": "c4b9a4c19ee2d5c8600020e60392b6f01653355d20c8c0f573127f1b79c530e6"
+    },
+    "src/original/TEdit.Terraria/World.FileV2.cs": {
+      "origin": "TEdit/TEdit.Terraria/World.FileV2.cs",
+      "sha256": "1dbe5345d93ec74773a7503e816d2de3861b031dd0663d79aef6e089ebcedabe"
+    },
+    "src/original/TEdit.Terraria/World.Properties.cs": {
+      "origin": "TEdit/TEdit.Terraria/World.Properties.cs",
+      "sha256": "81ed0efd63ab348b452643b900e9a5b46d7f7bf9700652e00070e5f6d0dbc2b0"
+    },
+    "src/original/TEdit.Terraria/WorldConfiguration.cs": {
+      "origin": "TEdit/TEdit.Terraria/WorldConfiguration.cs",
+      "sha256": "ae45e54d419489ec543bf78c212b1c500aaa1797a85fb301f5f0ba8d4c6fdb50"
+    },
+    "src/original/TEdit.Terraria/WorldHeaderInfo.cs": {
+      "origin": "TEdit/TEdit.Terraria/WorldHeaderInfo.cs",
+      "sha256": "45aaf6f874948c9bf62c519b6b3bdd32c9beed8acfeb4ef78b8244558c8eae9e"
+    },
+    "src/original/TEdit.Terraria/WorldHeaderPatcher.cs": {
+      "origin": "TEdit/TEdit.Terraria/WorldHeaderPatcher.cs",
+      "sha256": "e811d52dbb5e1bcea2a904ca9561eae741f7cc6ae67817539abe2cae88b7ea3b"
+    },
+    "src/original/TEdit.Terraria/WorldValidationStatus.cs": {
+      "origin": "TEdit/TEdit.Terraria/WorldValidationStatus.cs",
+      "sha256": "040f613b249397b8e3c47af77984ba5b73ffed3624b735c8a77e0660070987fa"
+    },
+    "src/original/TEdit.Png/Adler32.cs": {
+      "origin": "TEdit/TEdit.Png/Adler32.cs",
+      "sha256": "e21c2b7189ef22d6d73407df5a08d6aecb282a642dca860d8ed7507bfa2a3dd7"
+    },
+    "src/original/TEdit.Png/PngChunkWriter.cs": {
+      "origin": "TEdit/TEdit.Png/PngChunkWriter.cs",
+      "sha256": "c650ff55d15f213650ed742a2198ce662708b8189ce416a03216a1551d6bea71"
+    },
+    "src/original/TEdit.Png/PngCrc32.cs": {
+      "origin": "TEdit/TEdit.Png/PngCrc32.cs",
+      "sha256": "aa70c758279df4ecd9922743523c3d2d6a4a22b247ae9d8fd0d898b4f442089e"
+    },
+    "src/original/TEdit.Png/PngWriter.cs": {
+      "origin": "TEdit/TEdit.Png/PngWriter.cs",
+      "sha256": "a78876863b80f98c54c3e92f314ec01a1b20f7c5d16c1e606d5adc6ad93fa8e0"
+    },
+    "src/original/TEdit.Png/StreamingPngWriter.cs": {
+      "origin": "TEdit/TEdit.Png/StreamingPngWriter.cs",
+      "sha256": "d320f5699076bf951430ddc16cd056c68f3e1cb9718b89e364b16185d60f2175"
+    },
+    "src/original/TEdit.Png/TEdit.Png.csproj": {
+      "origin": "TEdit/TEdit.Png/TEdit.Png.csproj",
+      "sha256": "b6a4a8cb645b131b4dc20736d1fd513016fb5d71cd2b3acd996ca1c2a63c6230"
+    },
+    "src/original/TEdit.Editor/BrushSettings.cs": {
+      "origin": "TEdit/TEdit.Editor/BrushSettings.cs",
+      "sha256": "3636333066011b819ba28c929891745f10dd28d92a074c5a8ec5a8258ad107f6"
+    },
+    "src/original/TEdit.Editor/BrushShape.cs": {
+      "origin": "TEdit/TEdit.Editor/BrushShape.cs",
+      "sha256": "6c8fd00612a68f9c0b3baffef987730a1b82bc9c384d2e3b7791a72df3c47f41"
+    },
+    "src/original/TEdit.Editor/Clipboard/ClipboardBuffer.cs": {
+      "origin": "TEdit/TEdit.Editor/Clipboard/ClipboardBuffer.cs",
+      "sha256": "e27178d08293fa30664de64b9e98825c93ce11018011ee0df2a172ea0bc5bad2"
+    },
+    "src/original/TEdit.Editor/Clipboard/ClipboardBuffer.File.cs": {
+      "origin": "TEdit/TEdit.Editor/Clipboard/ClipboardBuffer.File.cs",
+      "sha256": "fe81339ecd148da265943ca7d6d38bba98557b91f86800c447566088047cd95d"
+    },
+    "src/original/TEdit.Editor/Clipboard/PasteOptions.cs": {
+      "origin": "TEdit/TEdit.Editor/Clipboard/PasteOptions.cs",
+      "sha256": "048411d4a92a2f9300064aa77cc9170808a9013984eaad1cf97a66463fd247b1"
+    },
+    "src/original/TEdit.Editor/LiquidAmountMode.cs": {
+      "origin": "TEdit/TEdit.Editor/LiquidAmountMode.cs",
+      "sha256": "8b4a9fce1778d9b8cfcfe7a904d1f74506cb40d734edd00ad0a6eab363307a98"
+    },
+    "src/original/TEdit.Editor/LiquidLevelMaskMode.cs": {
+      "origin": "TEdit/TEdit.Editor/LiquidLevelMaskMode.cs",
+      "sha256": "197da5b9f74420104a7a5a3e6f1bbba71bbed3c72fb7c0582980a43f615b84b3"
+    },
+    "src/original/TEdit.Editor/MaskMode.cs": {
+      "origin": "TEdit/TEdit.Editor/MaskMode.cs",
+      "sha256": "475d6c042ba7a41492a8f424358109461cf878ee3c6179065c32f0e79922bc11"
+    },
+    "src/original/TEdit.Editor/MaskPreset.cs": {
+      "origin": "TEdit/TEdit.Editor/MaskPreset.cs",
+      "sha256": "42e62ed727a5ada4f0834e8bc7421efb860f5644385fd8ddd4f090d7feffb7f3"
+    },
+    "src/original/TEdit.Editor/MorphBiomeDataApplier.cs": {
+      "origin": "TEdit/TEdit.Editor/MorphBiomeDataApplier.cs",
+      "sha256": "8307dd51d61cacd4d8f02ef52e8f3d56a07becd5690d9e6b189a846be266c307"
+    },
+    "src/original/TEdit.Editor/MorphToolOptions.cs": {
+      "origin": "TEdit/TEdit.Editor/MorphToolOptions.cs",
+      "sha256": "68f47b05e391e324bb9436e330d9d0491caf2906a4451d9bf325f8239bedfa7f"
+    },
+    "src/original/TEdit.Editor/PaintMode.cs": {
+      "origin": "TEdit/TEdit.Editor/PaintMode.cs",
+      "sha256": "9d705705968b93add5ff2a21768f8df4e9ede730963eaa31037a943fe116d0c4"
+    },
+    "src/original/TEdit.Editor/Selection.cs": {
+      "origin": "TEdit/TEdit.Editor/Selection.cs",
+      "sha256": "d858e125e927fa02e0b925d82db197db0eb6d5790bd4f40f5f1a526bb8a8f052"
+    },
+    "src/original/TEdit.Editor/SpritePlacer.cs": {
+      "origin": "TEdit/TEdit.Editor/SpritePlacer.cs",
+      "sha256": "b76a0f2529e524b3ae20395b44cb640361dbf078b70a20f49c10d95fa3d32f46"
+    },
+    "src/original/TEdit.Editor/TEdit.Editor.csproj": {
+      "origin": "TEdit/TEdit.Editor/TEdit.Editor.csproj",
+      "sha256": "9633669fa5e1908f5c739c7217b9f9684caaa0ce784b1a354662abb568a242c0"
+    },
+    "src/original/TEdit.Editor/TileMaskSettings.cs": {
+      "origin": "TEdit/TEdit.Editor/TileMaskSettings.cs",
+      "sha256": "14e9dbdc210790e70c22634b1a4126486f5795a4204e29ef8e5728575a09d7ef"
+    },
+    "src/original/TEdit.Editor/TilePicker.cs": {
+      "origin": "TEdit/TEdit.Editor/TilePicker.cs",
+      "sha256": "b4fae25fed2b9bc66e4aee8e66660cca4de13f87141b38a0fa2008510a897a0f"
+    },
+    "src/original/TEdit.Editor/ToolDefaultData.cs": {
+      "origin": "TEdit/TEdit.Editor/ToolDefaultData.cs",
+      "sha256": "55768fda53904e7f2c405650e2beacedc9fb4918ad61590690a04fab8ec0073d"
+    },
+    "src/original/TEdit.Editor/Tools/ITool.cs": {
+      "origin": "TEdit/TEdit.Editor/Tools/ITool.cs",
+      "sha256": "140f156f53c149ec829ab92aac99d633859016bcfa509ca716fd3a0c46a22c56"
+    },
+    "src/original/TEdit.Editor/TrackMode.cs": {
+      "origin": "TEdit/TEdit.Editor/TrackMode.cs",
+      "sha256": "4c1a6f62bc136479e93a98c438901ed966883f392546b579b97bb2c0f3ab2f71"
+    },
+    "src/original/TEdit.Editor/Undo/IUndoManager.cs": {
+      "origin": "TEdit/TEdit.Editor/Undo/IUndoManager.cs",
+      "sha256": "a1129bd84e09e92ceba8a317d790eea4664e5da74fa00b5578d9434354996375"
+    },
+    "src/original/TEdit.Editor/Undo/UndoBuffer.cs": {
+      "origin": "TEdit/TEdit.Editor/Undo/UndoBuffer.cs",
+      "sha256": "e908e525aecfa1db49b753c97156428902f0f9c8cca49271c0bc3e524e460748"
+    },
+    "src/original/TEdit.Editor/Undo/UndoTile.cs": {
+      "origin": "TEdit/TEdit.Editor/Undo/UndoTile.cs",
+      "sha256": "85414d6844528fe4700944f98aa230684c958a39d1b2f085d3c0e9e7cb4151f1"
+    },
+    "src/original/TEdit.Editor/WireReplaceMode.cs": {
+      "origin": "TEdit/TEdit.Editor/WireReplaceMode.cs",
+      "sha256": "2d23c1fca4435ebfc5668f6b60f15fac09f7805300c95624ffbd62fde4bb84b3"
+    },
+    "src/original/TEdit.Editor/WorldAnalysis.cs": {
+      "origin": "TEdit/TEdit.Editor/WorldAnalysis.cs",
+      "sha256": "2515177b88f21e1149c95b1b7e94c23b075e912ddbafd0521f318408b91884c9"
+    },
+    "src/original/TEdit.Editor/WorldEditor.cs": {
+      "origin": "TEdit/TEdit.Editor/WorldEditor.cs",
+      "sha256": "0313eaf39ccd44e2272248e79781051272a060857b90a9038ca333b7d73e1fca"
+    },
+    "src/original/Directory.Build.props": {
+      "origin": "TEdit/Directory.Build.props",
+      "sha256": "cf0d3ff848a97314fe97c75bd6f7618ffd2f6dfb120d66e147ab2845559bb9af"
+    },
+    "src/browser/compat/FileMaintenance.cs": {
+      "origin": "browser-compat/FileMaintenance.cs",
+      "sha256": "ae730eb12ccd51857bb98219393c060f06f53f2d0bef0eb5320149f48c8e4c08"
+    },
+    "src/browser/compat/Input.cs": {
+      "origin": "browser-compat/Input.cs",
+      "sha256": "4b838125dd841024830121af78664c880722a1d148f77718f750b271fd11a5f2"
+    },
+    "src/browser/compat/OriginalPixelMap.cs": {
+      "origin": "browser-compat/OriginalPixelMap.cs",
+      "sha256": "6b78730e563d2f35d572be4e2d1c6c422792c7be50156d0c03ebc9802bba2006"
+    },
+    "src/browser/font-assets/LICENSE-NotoSansCJK.txt": {
+      "origin": "fonts/LICENSE-NotoSansCJK.txt",
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    "src/browser/font-assets/NotoSansCJKsc-Regular.otf": {
+      "origin": "fonts/NotoSansCJKsc-Regular.otf",
+      "sha256": "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b"
+    },
+    "src/original/TEdit/Render/BuffTileCache.cs": {
+      "origin": "TEdit/TEdit/Render/BuffTileCache.cs",
+      "sha256": "95b9211a9bcd436c4245f33cf62799c392993ef0f295a5ed31207bc18c6fed63"
+    },
+    "src/original/TEdit/Render/BlendRules.cs": {
+      "origin": "TEdit/TEdit/Render/BlendRules.cs",
+      "sha256": "f8d1932043f0d7e6c6a7b3e2aef7129aedca9f091f20c421d97352407e2e7446"
+    },
+    "src/original/TEdit/Editor/SpritePlacer.cs": {
+      "origin": "TEdit/TEdit/Editor/SpritePlacer.cs",
+      "sha256": "518e6ffacdab0031faf72cdde1771fc552e2e02db2285bc20c06d1a9e642f217"
+    },
+    "src/original/TEdit/Scripting/Api/ChestApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/ChestApi.cs",
+      "sha256": "bf040d5da449b7e5c2ff3477d72bb148a3effbb8a5c53dd21593a6ab93ddb71d"
+    },
+    "src/original/TEdit/Scripting/Api/SignApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/SignApi.cs",
+      "sha256": "9a9c7f4aea31914da97d88c56e4483ba56cb5112215238cae6d8522a64aa29ba"
+    },
+    "src/original/TEdit/Scripting/Api/TileEntityApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/TileEntityApi.cs",
+      "sha256": "1c573b3f13b33b54038039221132b9cde713a8c3fffadd9c266ac38224f8c4f9"
+    },
+    "src/original/TEdit/Scripting/Api/NpcApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/NpcApi.cs",
+      "sha256": "5e242bc302d95c31f32c7c1aa1dd7563d39d19ac15ef5afa24742915a75b6a44"
+    },
+    "src/original/TEdit/Scripting/Api/WorldInfoApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/WorldInfoApi.cs",
+      "sha256": "2362cf2da8c59b9ad844072a0c2c69e128567d7774f1852bbade8f0680eeb909"
+    },
+    "src/original/TEdit/Scripting/Api/MetadataApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/MetadataApi.cs",
+      "sha256": "d5453d517641b03d3eda6e0fa621573c842faebc8745010cf691f8ec42bda519"
+    },
+    "src/original/TEdit/Scripting/Api/GenerateApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/GenerateApi.cs",
+      "sha256": "f01567d0a8dad919ca3a317fb6d2c5e002377a0ac760707cf1c6d9a1553a0a44"
+    },
+    "src/original/TEdit/Scripting/Api/GenerateApi.Biomes.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/GenerateApi.Biomes.cs",
+      "sha256": "25e923b7373f2e5a93ce91be1a434c59afcbab581de5aec617285d9a73bd2db0"
+    },
+    "src/original/TEdit/Scripting/Api/GenerateApi.Structures.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/GenerateApi.Structures.cs",
+      "sha256": "9fc1970a2fc9e133d9802aa507b51bfde2edc3b2539fedb380d487d8c477a639"
+    },
+    "src/original/TEdit/Scripting/Api/GenerateApi.Deco.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/GenerateApi.Deco.cs",
+      "sha256": "e8451f4968904eb1a60066c7b8800887e3fbefff395e90a92a3cad05bf862d6b"
+    },
+    "src/original/TEdit/Scripting/Api/GenerateApi.WorldGen.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/GenerateApi.WorldGen.cs",
+      "sha256": "c4de03e90e572f4480b2e8030f8f0a3fa8736eff7db7fe98c755ceb83a5fa928"
+    },
+    "src/original/TEdit/Editor/Plugins/ImageToPixelartEditorEnums.cs": {
+      "origin": "TEdit/TEdit/Editor/Plugins/ImageToPixelartEditorEnums.cs",
+      "sha256": "00a1eaa73e246b86523c5952eb521d1a833eb19d4795c3421bebf2a4775a23b8"
+    },
+    "src/original/TEdit/MapColors.xml": {
+      "origin": "TEdit/TEdit/MapColors.xml",
+      "sha256": "36ded3c93739d67a6b0566561f6d93c0cd32bf3ed8c08c861b3d6ddb2897b819"
+    },
+    "src/original/TEdit/Editor/Tools/ToolType.cs": {
+      "origin": "TEdit/TEdit/Editor/Tools/ToolType.cs",
+      "sha256": "295c09e4d3f3f9d494350831ff5bd474b6e9ce0a89a612bcd098d9d4c72c7cf4"
+    },
+    "src/original/TEdit/Editor/Tools/ConstrainHelper.cs": {
+      "origin": "TEdit/TEdit/Editor/Tools/ConstrainHelper.cs",
+      "sha256": "0ac7eda52a6d6b73d07926bc87e5541c1788f34a5b0285da439718973c494959"
+    },
+    "src/original/TEdit/Editor/Plugins/SpriteDebuggerPlugin.cs": {
+      "origin": "TEdit/TEdit/Editor/Plugins/SpriteDebuggerPlugin.cs",
+      "sha256": "58bb66f0eedb855a29401cf137cfaa3f3996e750e04f3687c1c0e4715f9c4b85"
+    },
+    "src/original/TEdit/Images/favicon-96x96.png": {
+      "origin": "TEdit/TEdit/Images/favicon-96x96.png",
+      "sha256": "14dd7d29b89fef1daae75cee71bce20080573dd3bc4570928e2098ee04d8b76a"
+    },
+    "src/original/TEdit/ViewModel/NpcListItem.cs": {
+      "origin": "TEdit/TEdit/ViewModel/NpcListItem.cs",
+      "sha256": "46563cd437f9582ca61bd015f373a3d5891b840f7aa8815644bb3fba8639f0b4"
+    },
+    "src/original/TEdit/Scripting/Api/BatchApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/BatchApi.cs",
+      "sha256": "0a2bd90601d2bdfca67dd28bc3e46c2ad3618894ffcbb4a38d1e677174582575"
+    },
+    "src/original/TEdit/Scripting/Api/DrawApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/DrawApi.cs",
+      "sha256": "c1bf6f447ac83be52ae663567e35fb01cf0c90dd7ec455996a7a208761229ff1"
+    },
+    "src/original/TEdit/Scripting/Api/FinderApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/FinderApi.cs",
+      "sha256": "7665d031117e9c7dc495722585dd67aafc4bc64f0313b3bc5a323a93fe0779ae"
+    },
+    "src/original/TEdit/Scripting/Api/GeometryApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/GeometryApi.cs",
+      "sha256": "6808fbc07d5499c4c00aef02c5ee51585dd1a39a8e2d03932ec4147d4d08f315"
+    },
+    "src/original/TEdit/Scripting/Api/LogApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/LogApi.cs",
+      "sha256": "139a0c0b7f7980767f0f6c3cdfbb84a3dab6a4cbf9b2ec536b5a736fa2f73c9b"
+    },
+    "src/original/TEdit/Scripting/Api/ScriptApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/ScriptApi.cs",
+      "sha256": "355e3de59f34c9f610e496253970199d3703434d3b410207a2558e094d1cc56a"
+    },
+    "src/original/TEdit/Scripting/Api/SelectionApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/SelectionApi.cs",
+      "sha256": "75cfc53bc2afde74df62ec18e7534adc2705ee2491bd4e25a3fa2758575624e1"
+    },
+    "src/original/TEdit/Scripting/Api/SpriteApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/SpriteApi.cs",
+      "sha256": "ce1850d6a223a12ed8d3fba715111638294ac756418726fc44c38bec2bff4268"
+    },
+    "src/original/TEdit/Scripting/Api/TileApi.cs": {
+      "origin": "TEdit/TEdit/Scripting/Api/TileApi.cs",
+      "sha256": "553a4a565c29255125072614040a3f7b3b6bce9f5eda7cf6bf350c87a308df55"
+    },
+    "src/original/TEdit/Scripting/Engine/IScriptEngine.cs": {
+      "origin": "TEdit/TEdit/Scripting/Engine/IScriptEngine.cs",
+      "sha256": "3fec7c1d23c66105fcfd942f8d218d84a20a3891f5d8dd93cb64a92064f7edf0"
+    },
+    "src/original/TEdit/Scripting/Engine/ScriptExecutionContext.cs": {
+      "origin": "TEdit/TEdit/Scripting/Engine/ScriptExecutionContext.cs",
+      "sha256": "237c687736a5be9dd00c72a94f67b5fcfc839ce51b1824c8ebffc1c5f5f6b204"
+    },
+    "src/original/TEdit/Scripting/Engine/ScriptResult.cs": {
+      "origin": "TEdit/TEdit/Scripting/Engine/ScriptResult.cs",
+      "sha256": "81d5cf92d2825c126ea2fbeeefd936b22a4393f47524f7b5fdaa4c47efdb0b6f"
+    },
+    "src/original/TEdit/Scripting/ScriptApiMetadata.cs": {
+      "origin": "TEdit/TEdit/Scripting/ScriptApiMetadata.cs",
+      "sha256": "c9b52f2f665f25709b7aef286e0bca78a149588c3839ca748323b33709153523"
+    },
+    "src/original/TEdit/Resources/JavaScript.xshd": {
+      "origin": "TEdit/TEdit/Resources/JavaScript.xshd",
+      "sha256": "5d89cd908832847aadf023f9e9fd765b9997b1dcb3fe6669fc0131f7813f983d"
+    },
+    "src/original/TEdit/Resources/Lua.xshd": {
+      "origin": "TEdit/TEdit/Resources/Lua.xshd",
+      "sha256": "5d42871104b4d66c354b19915b736d3c99f65bb3ee0334dc472d73780de15ec5"
+    },
+    "LICENSE-MS-PL.txt": {
+      "origin": "TEdit/LICENSE",
+      "sha256": "6e3a6bc442dd7a358f911d183406d0672fa46d7438cbaa4d99f25ebf62fcc62d"
+    },
+    "LICENSE-MIT.txt": {
+      "origin": "browser/LICENSE",
+      "sha256": "3a97f6bdac337a88a57e7881940ed674924d70aea3d0e56fad56deeb435ffff6"
+    },
+    "licenses/Acornima/1.7.0/LICENSE": {
+      "origin": "dependency-notices/Acornima/1.7.0/LICENSE",
+      "sha256": "4182d3e7ce42f69b01f35c6ed27d075d26794a3c2f0b0182aa475be6ca565bab"
+    },
+    "licenses/Avalonia/12.1.1/licence.md": {
+      "origin": "dependency-notices/Avalonia/12.1.1/licence.md",
+      "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b"
+    },
+    "licenses/Avalonia.AvaloniaEdit/12.0.0/LICENSE": {
+      "origin": "dependency-notices/Avalonia.AvaloniaEdit/12.0.0/LICENSE",
+      "sha256": "8a13531b616df7e9cd5d58bd8588da2288e14fab9e6785d1aead5c87e0a507d0"
+    },
+    "licenses/Avalonia.Browser/12.1.1/licence.md": {
+      "origin": "dependency-notices/Avalonia.Browser/12.1.1/licence.md",
+      "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b"
+    },
+    "licenses/Avalonia.BuildServices/11.3.2/LICENSE": {
+      "origin": "dependency-notices/Avalonia.BuildServices/11.3.2/LICENSE",
+      "sha256": "94162c40c663bd96ec1b870e6aba6ef0a43f44c9eb500807e7965e7078f6dc47"
+    },
+    "licenses/Avalonia.HarfBuzz/12.1.1/licence.md": {
+      "origin": "dependency-notices/Avalonia.HarfBuzz/12.1.1/licence.md",
+      "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b"
+    },
+    "licenses/Avalonia.Remote.Protocol/12.1.1/licence.md": {
+      "origin": "dependency-notices/Avalonia.Remote.Protocol/12.1.1/licence.md",
+      "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b"
+    },
+    "licenses/Avalonia.Skia/12.1.1/licence.md": {
+      "origin": "dependency-notices/Avalonia.Skia/12.1.1/licence.md",
+      "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b"
+    },
+    "licenses/Avalonia.Themes.Fluent/12.1.1/licence.md": {
+      "origin": "dependency-notices/Avalonia.Themes.Fluent/12.1.1/licence.md",
+      "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b"
+    },
+    "licenses/bodong.PropertyModels/12.0.0/LICENSE": {
+      "origin": "dependency-notices/bodong.PropertyModels/12.0.0/LICENSE",
+      "sha256": "f9652be457998134acf35f6d188e533116222b0c0c2d016b9393b963aa26e923"
+    },
+    "licenses/ColorMinePortable/2.0.4/LICENSE.txt": {
+      "origin": "dependency-notices/ColorMinePortable/2.0.4/LICENSE.txt",
+      "sha256": "9fefad0c35468dba41cb7097e6fcd855690250f10a06654d8e6318e41db7786a"
+    },
+    "licenses/dependencies.json": {
+      "origin": "dependency-notices/dependencies.json",
+      "sha256": "f5fa4f9af48dba459a37db1b56b3b4d1edc0b2d5a3f2f82e077e091c0bf8e9ad"
+    },
+    "licenses/dotnet-runtime-10.0.14/LICENSE.TXT": {
+      "origin": "dependency-notices/dotnet-runtime-10.0.14/LICENSE.TXT",
+      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310"
+    },
+    "licenses/dotnet-runtime-10.0.14/THIRD-PARTY-NOTICES.TXT": {
+      "origin": "dependency-notices/dotnet-runtime-10.0.14/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "66f1d4e44973185519bb4aa8a9718eb22fc7af2cc532e3ae9cfc4c127ee7fc54"
+    },
+    "licenses/Fluent-System-Icons/LICENSE": {
+      "origin": "dependency-notices/Fluent-System-Icons/LICENSE",
+      "sha256": "69bc45dc42b9acb96a69823adbc6ae538374e3c0bde169b855b32c48eaaef52f"
+    },
+    "licenses/font-provenance.json": {
+      "origin": "dependency-notices/font-provenance.json",
+      "sha256": "3392ed6ba58418e74ccd551634d25f8494d64a24e7800ff556c31c580ddfd4e2"
+    },
+    "licenses/HarfBuzzSharp/8.3.1.3/LICENSE.txt": {
+      "origin": "dependency-notices/HarfBuzzSharp/8.3.1.3/LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "licenses/HarfBuzzSharp.NativeAssets.Linux/8.3.1.3/LICENSE.txt": {
+      "origin": "dependency-notices/HarfBuzzSharp.NativeAssets.Linux/8.3.1.3/LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "licenses/HarfBuzzSharp.NativeAssets.Linux/8.3.1.3/THIRD-PARTY-NOTICES.txt": {
+      "origin": "dependency-notices/HarfBuzzSharp.NativeAssets.Linux/8.3.1.3/THIRD-PARTY-NOTICES.txt",
+      "sha256": "98acf9d4d6083959988c884f630cdff760f94bfeb9acf57774653e08c23d1e45"
+    },
+    "licenses/HarfBuzzSharp.NativeAssets.macOS/8.3.1.3/LICENSE.txt": {
+      "origin": "dependency-notices/HarfBuzzSharp.NativeAssets.macOS/8.3.1.3/LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "licenses/HarfBuzzSharp.NativeAssets.macOS/8.3.1.3/THIRD-PARTY-NOTICES.txt": {
+      "origin": "dependency-notices/HarfBuzzSharp.NativeAssets.macOS/8.3.1.3/THIRD-PARTY-NOTICES.txt",
+      "sha256": "98acf9d4d6083959988c884f630cdff760f94bfeb9acf57774653e08c23d1e45"
+    },
+    "licenses/HarfBuzzSharp.NativeAssets.WebAssembly/8.3.1.3/LICENSE.txt": {
+      "origin": "dependency-notices/HarfBuzzSharp.NativeAssets.WebAssembly/8.3.1.3/LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "licenses/HarfBuzzSharp.NativeAssets.WebAssembly/8.3.1.3/THIRD-PARTY-NOTICES.txt": {
+      "origin": "dependency-notices/HarfBuzzSharp.NativeAssets.WebAssembly/8.3.1.3/THIRD-PARTY-NOTICES.txt",
+      "sha256": "98acf9d4d6083959988c884f630cdff760f94bfeb9acf57774653e08c23d1e45"
+    },
+    "licenses/HarfBuzzSharp.NativeAssets.Win32/8.3.1.3/LICENSE.txt": {
+      "origin": "dependency-notices/HarfBuzzSharp.NativeAssets.Win32/8.3.1.3/LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "licenses/HarfBuzzSharp.NativeAssets.Win32/8.3.1.3/THIRD-PARTY-NOTICES.txt": {
+      "origin": "dependency-notices/HarfBuzzSharp.NativeAssets.Win32/8.3.1.3/THIRD-PARTY-NOTICES.txt",
+      "sha256": "98acf9d4d6083959988c884f630cdff760f94bfeb9acf57774653e08c23d1e45"
+    },
+    "licenses/inherited/AvaloniaEdit-LICENSE.txt": {
+      "origin": "dependency-notices/inherited/AvaloniaEdit-LICENSE.txt",
+      "sha256": "8a13531b616df7e9cd5d58bd8588da2288e14fab9e6785d1aead5c87e0a507d0"
+    },
+    "licenses/inherited/SkiaSharp-LICENSE.txt": {
+      "origin": "dependency-notices/inherited/SkiaSharp-LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "licenses/inherited/TEdit-LICENSE.txt": {
+      "origin": "dependency-notices/inherited/TEdit-LICENSE.txt",
+      "sha256": "6e3a6bc442dd7a358f911d183406d0672fa46d7438cbaa4d99f25ebf62fcc62d"
+    },
+    "licenses/inherited/THIRD-PARTY-NOTICES.md": {
+      "origin": "dependency-notices/inherited/THIRD-PARTY-NOTICES.md",
+      "sha256": "7b2b4cecf7a4adb0cc4c75ae4e125a79141f43437421d5dfe9b89871a7c4da21"
+    },
+    "licenses/inherited/xnb-GPL-3.0.txt": {
+      "origin": "dependency-notices/inherited/xnb-GPL-3.0.txt",
+      "sha256": "589ed823e9a84c56feb95ac58e7cf384626b9cbf4fda2a907bc36e103de1bad2"
+    },
+    "licenses/inherited/xnb-LICENSE.txt": {
+      "origin": "dependency-notices/inherited/xnb-LICENSE.txt",
+      "sha256": "a5681bf9b05db14d86776930017c647ad9e6e56ff6bbcfdf21e5848288dfaf1b"
+    },
+    "licenses/inherited/xnb-NOTICE.md": {
+      "origin": "dependency-notices/inherited/xnb-NOTICE.md",
+      "sha256": "c47feed7efb196735215c1076a43eab8c8a505447eda0ca2e65e8be44fc6a1e9"
+    },
+    "licenses/Jint/4.16.0/LICENSE.txt": {
+      "origin": "dependency-notices/Jint/4.16.0/LICENSE.txt",
+      "sha256": "7fd0f56c1bc3ac00b50e44fc9b93eeeaeb6905b62a272eb310590b68d4a5c3ff"
+    },
+    "licenses/LuaCSharp/0.5.6/LICENSE": {
+      "origin": "dependency-notices/LuaCSharp/0.5.6/LICENSE",
+      "sha256": "7501af28397df7689efee2a2ba3709accfe556a8b4c1b402632e500030522480"
+    },
+    "licenses/LuaCSharp.Annotations/0.5.6/LICENSE": {
+      "origin": "dependency-notices/LuaCSharp.Annotations/0.5.6/LICENSE",
+      "sha256": "7501af28397df7689efee2a2ba3709accfe556a8b4c1b402632e500030522480"
+    },
+    "licenses/LuaCSharp.SourceGenerator/0.5.6/LICENSE": {
+      "origin": "dependency-notices/LuaCSharp.SourceGenerator/0.5.6/LICENSE",
+      "sha256": "7501af28397df7689efee2a2ba3709accfe556a8b4c1b402632e500030522480"
+    },
+    "licenses/MicroCom.Runtime/0.11.6/LICENSE": {
+      "origin": "dependency-notices/MicroCom.Runtime/0.11.6/LICENSE",
+      "sha256": "6ee769c9ac4dac9abb16b98b1341e9528ff9f4ab685481410d3376d14148f3a9"
+    },
+    "licenses/Microsoft.NET.Sdk.WebAssembly.Pack/10.0.13/LICENSE.TXT": {
+      "origin": "dependency-notices/Microsoft.NET.Sdk.WebAssembly.Pack/10.0.13/LICENSE.TXT",
+      "sha256": "ae48df11a335dc1a615f4f938b69cba73bcf4485c4f97af49b38efb0f216353b"
+    },
+    "licenses/Microsoft.NET.Sdk.WebAssembly.Pack/10.0.13/THIRD-PARTY-NOTICES.TXT": {
+      "origin": "dependency-notices/Microsoft.NET.Sdk.WebAssembly.Pack/10.0.13/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "66f1d4e44973185519bb4aa8a9718eb22fc7af2cc532e3ae9cfc4c127ee7fc54"
+    },
+    "licenses/Microsoft.NET.Sdk.WebAssembly.Pack/10.0.14/LICENSE.txt": {
+      "origin": "dependency-notices/Microsoft.NET.Sdk.WebAssembly.Pack/10.0.14/LICENSE.txt",
+      "sha256": "c50e462f7d9d966b50f4a9874ccfb896b83455ac0d2e7f30aaf4bb7ad5fbd12a"
+    },
+    "licenses/Microsoft.NET.Sdk.WebAssembly.Pack/10.0.14/THIRD-PARTY-NOTICES.TXT": {
+      "origin": "dependency-notices/Microsoft.NET.Sdk.WebAssembly.Pack/10.0.14/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "66f1d4e44973185519bb4aa8a9718eb22fc7af2cc532e3ae9cfc4c127ee7fc54"
+    },
+    "licenses/Newtonsoft.Json/13.0.4/LICENSE.md": {
+      "origin": "dependency-notices/Newtonsoft.Json/13.0.4/LICENSE.md",
+      "sha256": "d7f83bbea3264a8e23d7739e44d9db1a4994b357274df6f00876eb2e623827ad"
+    },
+    "licenses/NotoSansCJK-OFL.txt": {
+      "origin": "dependency-notices/NotoSansCJK-OFL.txt",
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    "licenses/ReactiveUI/24.1.0/LICENSE": {
+      "origin": "dependency-notices/ReactiveUI/24.1.0/LICENSE",
+      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310"
+    },
+    "licenses/ReactiveUI.Core/24.1.0/LICENSE": {
+      "origin": "dependency-notices/ReactiveUI.Core/24.1.0/LICENSE",
+      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310"
+    },
+    "licenses/ReactiveUI.Disposables/7.1.0/LICENSE": {
+      "origin": "dependency-notices/ReactiveUI.Disposables/7.1.0/LICENSE",
+      "sha256": "245e48d107cb0ce7d7cfd8e65a9b85b1fc327ce5b680818b8db8847d88f44e79"
+    },
+    "licenses/ReactiveUI.Primitives/7.1.0/LICENSE": {
+      "origin": "dependency-notices/ReactiveUI.Primitives/7.1.0/LICENSE",
+      "sha256": "245e48d107cb0ce7d7cfd8e65a9b85b1fc327ce5b680818b8db8847d88f44e79"
+    },
+    "licenses/ReactiveUI.Primitives.Core/7.1.0/LICENSE": {
+      "origin": "dependency-notices/ReactiveUI.Primitives.Core/7.1.0/LICENSE",
+      "sha256": "245e48d107cb0ce7d7cfd8e65a9b85b1fc327ce5b680818b8db8847d88f44e79"
+    },
+    "licenses/SkiaSharp/3.119.4/LICENSE.txt": {
+      "origin": "dependency-notices/SkiaSharp/3.119.4/LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "licenses/SkiaSharp.NativeAssets.Linux/3.119.4/LICENSE.txt": {
+      "origin": "dependency-notices/SkiaSharp.NativeAssets.Linux/3.119.4/LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "licenses/SkiaSharp.NativeAssets.Linux/3.119.4/THIRD-PARTY-NOTICES.txt": {
+      "origin": "dependency-notices/SkiaSharp.NativeAssets.Linux/3.119.4/THIRD-PARTY-NOTICES.txt",
+      "sha256": "98acf9d4d6083959988c884f630cdff760f94bfeb9acf57774653e08c23d1e45"
+    },
+    "licenses/SkiaSharp.NativeAssets.macOS/3.119.4/LICENSE.txt": {
+      "origin": "dependency-notices/SkiaSharp.NativeAssets.macOS/3.119.4/LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "licenses/SkiaSharp.NativeAssets.macOS/3.119.4/THIRD-PARTY-NOTICES.txt": {
+      "origin": "dependency-notices/SkiaSharp.NativeAssets.macOS/3.119.4/THIRD-PARTY-NOTICES.txt",
+      "sha256": "98acf9d4d6083959988c884f630cdff760f94bfeb9acf57774653e08c23d1e45"
+    },
+    "licenses/SkiaSharp.NativeAssets.WebAssembly/3.119.4/LICENSE.txt": {
+      "origin": "dependency-notices/SkiaSharp.NativeAssets.WebAssembly/3.119.4/LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "licenses/SkiaSharp.NativeAssets.WebAssembly/3.119.4/THIRD-PARTY-NOTICES.txt": {
+      "origin": "dependency-notices/SkiaSharp.NativeAssets.WebAssembly/3.119.4/THIRD-PARTY-NOTICES.txt",
+      "sha256": "98acf9d4d6083959988c884f630cdff760f94bfeb9acf57774653e08c23d1e45"
+    },
+    "licenses/SkiaSharp.NativeAssets.Win32/3.119.4/LICENSE.txt": {
+      "origin": "dependency-notices/SkiaSharp.NativeAssets.Win32/3.119.4/LICENSE.txt",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77"
+    },
+    "licenses/SkiaSharp.NativeAssets.Win32/3.119.4/THIRD-PARTY-NOTICES.txt": {
+      "origin": "dependency-notices/SkiaSharp.NativeAssets.Win32/3.119.4/THIRD-PARTY-NOTICES.txt",
+      "sha256": "98acf9d4d6083959988c884f630cdff760f94bfeb9acf57774653e08c23d1e45"
+    },
+    "licenses/Splat/20.2.0/LICENSE": {
+      "origin": "dependency-notices/Splat/20.2.0/LICENSE",
+      "sha256": "44662399dc82a3f27a85f32c379ea83164ce7a0f247ac75b58b21486c09363df"
+    },
+    "licenses/Splat.Builder/20.2.0/LICENSE": {
+      "origin": "dependency-notices/Splat.Builder/20.2.0/LICENSE",
+      "sha256": "44662399dc82a3f27a85f32c379ea83164ce7a0f247ac75b58b21486c09363df"
+    },
+    "licenses/Splat.Core/20.2.0/LICENSE": {
+      "origin": "dependency-notices/Splat.Core/20.2.0/LICENSE",
+      "sha256": "44662399dc82a3f27a85f32c379ea83164ce7a0f247ac75b58b21486c09363df"
+    },
+    "licenses/Splat.Logging/20.2.0/LICENSE": {
+      "origin": "dependency-notices/Splat.Logging/20.2.0/LICENSE",
+      "sha256": "44662399dc82a3f27a85f32c379ea83164ce7a0f247ac75b58b21486c09363df"
+    },
+    "licenses/System.Reactive/7.0.0/LICENSE": {
+      "origin": "dependency-notices/System.Reactive/7.0.0/LICENSE",
+      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310"
+    },
+    "scripts/generate-offline.py": {
+      "origin": "browser/offline-generator",
+      "sha256": "74d41266877cafbd0bf2854ef454421d9b2f87f234ef5ded37052855e8d8ec05"
+    },
+    "scripts/generate-version.py": {
+      "origin": "browser/build",
+      "sha256": "b0abd4e24416a1db424571423e688aef99ad7d2d86863c57316c1944e582258d"
+    },
+    "scripts/build.ps1": {
+      "origin": "browser/build",
+      "sha256": "8744d128b870f9acd121667882b665c7cb1df52d20bbb86d0086143d7793e0c7"
+    },
+    ".github/workflows/pages.yml": {
+      "origin": "browser/build",
+      "sha256": "d90440773f3b760184aaf8250195a9c442b2e01c394d076b685f3820813cf7fc"
+    },
+    "global.json": {
+      "origin": "browser/build",
+      "sha256": "6e0770b2ba0441ab46cccab89febfa2cef6830df7a2aab62c025b4718a18999b"
+    },
+    "README.md": {
+      "origin": "browser/product",
+      "sha256": "74920f3d0a1f9353a1b4957a88095a9294a3586cf61120c151067fed3e009e03"
+    },
+    ".gitignore": {
+      "origin": "browser/product",
+      "sha256": "d1bbb040a7d9a26605b38ce84c903dc99036e0da98be913024ff10d6801a0e1b"
+    },
+    "LICENSE": {
+      "origin": "TEdit/LICENSE",
+      "sha256": "6e3a6bc442dd7a358f911d183406d0672fa46d7438cbaa4d99f25ebf62fcc62d"
+    },
+    ".gitattributes": {
+      "origin": "browser/build",
+      "sha256": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c"
+    }
+  }
+}

@@ -1,0 +1,1121 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using TEdit.Terraria;
+using TEdit.Editor.Undo;
+using TEdit.Geometry;
+
+namespace TEdit.Editor;
+
+public interface ISelection
+{
+    RectangleInt32 SelectionArea { get; set; }
+    bool IsActive { get; set; }
+    bool IsValid(int x, int y);
+    bool IsValid(Vector2Int32 xy);
+    void SetRectangle(Vector2Int32 p1, Vector2Int32 p2);
+}
+
+public delegate void NotifyTileChanged(int x, int y, int height = 1, int width = 1);
+public delegate Task NotifyTileChangedAsync(int x, int y, int height = 1, int width = 1);
+
+public interface INotifyTileChanged
+{
+    void UpdateTile(int x, int y, int height = 1, int width = 1);
+}
+
+public class WorldEditor : IDisposable
+{
+    private readonly World _world;
+    private readonly ISelection _selection;
+    private readonly IUndoManager _undo;
+    private readonly NotifyTileChanged? _notifyTileChanged;
+
+    /// <summary>
+    /// When true, per-tile notifications are suppressed. Used by BrushTool for batched updates.
+    /// </summary>
+    public bool SuppressNotify { get; set; }
+
+    public int[] _checkTiles;
+    public int _checkTileGeneration = 1;
+    public TilePicker TilePicker { get; }
+    public TileMaskSettings MaskSettings { get; }
+
+    public WorldEditor(
+        TilePicker tilePicker,
+        TileMaskSettings maskSettings,
+        World world,
+        ISelection selection,
+        IUndoManager undo,
+        NotifyTileChanged? notifyTileChanged)
+    {
+        _world = world;
+        _selection = selection;
+        _undo = undo;
+        _notifyTileChanged = notifyTileChanged;
+        _checkTiles = new int[_world.TilesWide * _world.TilesHigh];
+        TilePicker = tilePicker;
+        MaskSettings = maskSettings;
+    }
+
+    public async Task BeginOperationAsync()
+    {
+        _checkTiles = new int[_world.TilesWide * _world.TilesHigh];
+        if (++_checkTileGeneration <= 0) _checkTileGeneration = 1;
+        //await _undo.StartUndoAsync();
+    }
+
+    public async Task EndOperationAsync()
+    {
+        if (_undo == null) return;
+
+        await _undo.SaveUndoAsync();
+
+    }
+
+    public BrushSettings Brush { get; set; } = new BrushSettings();
+
+    public void SetPixel(int x, int y, PaintMode? mode = null, bool? erase = null)
+    {
+        if (_world == null) return;
+        if (TilePicker == null) return;
+
+        int index = GetTileIndex(x, y);
+        if (index < 0 || index >= _checkTiles.Length) return;
+        if (_checkTiles[index] == _checkTileGeneration) { return; }
+        // else { _checkTiles[index] = _checkTileGeneration; }
+
+        ref Tile curTile = ref _world.Tiles[x, y];
+
+        // Global mask gate: if any enabled mask fails, skip this tile entirely
+        if (!MaskSettings.Passes(curTile)) return;
+
+        PaintMode curMode = mode ?? TilePicker.PaintMode;
+        bool isErase = erase ?? TilePicker.IsEraser;
+
+        switch (curMode)
+        {
+            case PaintMode.Sprites:
+                if (curTile.Type < _world.TileFrameImportant.Length && _world.TileFrameImportant[curTile.Type])
+                {
+                    if (isErase)
+                    {
+                        SetTile(ref curTile, true);
+                    }
+                    else
+                    {
+                        // Paint-only: apply paint/coating/actuator/inactive to existing sprites
+                        if (TilePicker.TilePaintActive)
+                            SetPixelAutomatic(ref curTile, tileColor: TilePicker.TileColor);
+                        if (TilePicker.WallPaintActive)
+                            SetPixelAutomatic(ref curTile, wallColor: TilePicker.WallColor);
+                        if (TilePicker.Actuator)
+                            SetPixelAutomatic(ref curTile, actuator: true);
+                        if (TilePicker.ActuatorInActive)
+                            SetPixelAutomatic(ref curTile, actuatorInActive: true);
+                        if (TilePicker.EnableTileCoating)
+                            SetPixelAutomatic(ref curTile,
+                                tileEchoCoating: TilePicker.TileCoatingEcho,
+                                tileIlluminantCoating: TilePicker.TileCoatingIlluminant);
+                        if (TilePicker.EnableWallCoating)
+                            SetPixelAutomatic(ref curTile,
+                                wallEchoCoating: TilePicker.WallCoatingEcho,
+                                wallIlluminantCoating: TilePicker.WallCoatingIlluminant);
+                        if (TilePicker.BrickStyleActive && TilePicker.ExtrasActive &&
+                            WorldConfiguration.TileProperties[curTile.Type].HasSlopes)
+                            SetPixelAutomatic(ref curTile, brickStyle: TilePicker.BrickStyle);
+                    }
+                }
+                break;
+            case PaintMode.TileAndWall:
+                if (TilePicker.TileStyleActive)
+                    SetTile(ref curTile, isErase);
+                if (TilePicker.WallStyleActive)
+                    SetWall(ref curTile, isErase);
+                if (TilePicker.BrickStyleActive && TilePicker.ExtrasActive)
+                    SetPixelAutomatic(ref curTile, brickStyle: TilePicker.BrickStyle);
+                if (TilePicker.TilePaintActive)
+                    SetPixelAutomatic(ref curTile, tileColor: isErase ? 0 : TilePicker.TileColor);
+                if (TilePicker.WallPaintActive)
+                    SetPixelAutomatic(ref curTile, wallColor: isErase ? 0 : TilePicker.WallColor);
+                if (TilePicker.ExtrasActive)
+                    SetPixelAutomatic(ref curTile, actuator: isErase ? false : TilePicker.Actuator, actuatorInActive: isErase ? false : TilePicker.ActuatorInActive);
+                if (TilePicker.EnableTileCoating)
+                    SetPixelAutomatic(ref curTile, tileEchoCoating: TilePicker.TileCoatingEcho, tileIlluminantCoating: TilePicker.TileCoatingIlluminant);
+                if (TilePicker.EnableWallCoating)
+                    SetPixelAutomatic(ref curTile, wallEchoCoating: TilePicker.WallCoatingEcho, wallIlluminantCoating: TilePicker.WallCoatingIlluminant);
+                break;
+            case PaintMode.Wire:
+                // Is Replace Mode Active?
+                bool WireReplaceMode = TilePicker.WireReplaceActive;
+
+                if (!WireReplaceMode)
+                {
+                    // paint all wires in one call
+                    SetPixelAutomatic(ref curTile,
+                        wireRed: TilePicker.RedWireActive ? !isErase : null,
+                        wireBlue: TilePicker.BlueWireActive ? !isErase : null,
+                        wireGreen: TilePicker.GreenWireActive ? !isErase : null,
+                        wireYellow: TilePicker.YellowWireActive ? !isErase : null
+                        );
+                }
+                else
+                {
+                    WireReplaceMode curWireBits = Editor.WireReplaceMode.Off;
+                    if (curTile.WireRed) { curWireBits |= Editor.WireReplaceMode.Red; }
+                    if (curTile.WireBlue) { curWireBits |= Editor.WireReplaceMode.Blue; }
+                    if (curTile.WireGreen) { curWireBits |= Editor.WireReplaceMode.Green; }
+                    if (curTile.WireYellow) { curWireBits |= Editor.WireReplaceMode.Yellow; }
+
+
+                    WireReplaceMode turnOnWires = Editor.WireReplaceMode.Off;
+                    WireReplaceMode turnOffWires = Editor.WireReplaceMode.Off;
+
+                    if (TilePicker.WireReplaceRed && curTile.WireRed)
+                    {
+                        turnOffWires |= Editor.WireReplaceMode.Red;   // remove red
+                        turnOnWires |= TilePicker.WireReplaceModeRed; // add back red's replacement
+                    }
+
+                    if (TilePicker.WireReplaceBlue && curTile.WireBlue)
+                    {
+                        turnOffWires |= Editor.WireReplaceMode.Blue;   // remove blue
+                        turnOnWires |= TilePicker.WireReplaceModeBlue; // add back blue's replacement
+                    }
+
+                    if (TilePicker.WireReplaceGreen && curTile.WireGreen)
+                    {
+                        turnOffWires |= Editor.WireReplaceMode.Green;   // remove Green
+                        turnOnWires |= TilePicker.WireReplaceModeGreen; // add back Green's replacement
+                    }
+
+                    if (TilePicker.WireReplaceYellow && curTile.WireYellow)
+                    {
+                        turnOffWires |= Editor.WireReplaceMode.Yellow;   // remove Yellow
+                        turnOnWires |= TilePicker.WireReplaceModeYellow; // add back Yellow's replacement
+                    }
+
+                    // apply off, then on
+                    curWireBits = curWireBits & ~turnOffWires;
+                    curWireBits |= turnOnWires;
+
+                    SetPixelAutomatic(ref curTile,
+                        wireRed: curWireBits.HasFlag(Editor.WireReplaceMode.Red),
+                        wireBlue: curWireBits.HasFlag(Editor.WireReplaceMode.Blue),
+                        wireGreen: curWireBits.HasFlag(Editor.WireReplaceMode.Green),
+                        wireYellow: curWireBits.HasFlag(Editor.WireReplaceMode.Yellow));
+                }
+
+                // stack on junction boxes
+                if (TilePicker.JunctionBoxMode != JunctionBoxMode.None)
+                {
+                    if (isErase &&
+                        curTile.Type == (int)TileType.JunctionBox &&
+                        curTile.U == (short)TilePicker.JunctionBoxMode)
+                    {
+                        // erase junction box matching selection only. Set tile also checks masks
+                        SetTile(ref curTile, true);
+                    }
+                    else if (!isErase)
+                    {
+                        SetPixelAutomatic(ref curTile, tile: (int)TileType.JunctionBox, u: (short)TilePicker.JunctionBoxMode, v: 0);
+                    }
+                }
+
+                break;
+            case PaintMode.Liquid:
+                SetPixelAutomatic(
+                    ref curTile,
+                    liquid: (isErase || TilePicker.LiquidType == LiquidType.None) ? (byte)0 : (byte)TilePicker.LiquidAmountMode,
+                    liquidType: TilePicker.LiquidType);
+                break;
+            case PaintMode.Track:
+                SetTrack(x, y, ref curTile, isErase, (TilePicker.TrackMode == TrackMode.Hammer), true);
+                break;
+            case PaintMode.Platform:
+                SetPlatform(x, y, ref curTile, isErase);
+                break;
+        }
+    }
+
+    private int GetTileIndex(int x, int y)
+    {
+        return x + y * _world.TilesWide;
+    }
+
+    private void SetWall(ref Tile curTile, bool erase)
+    {
+        if (erase)
+            SetPixelAutomatic(ref curTile, wall: 0);
+        else
+            SetPixelAutomatic(ref curTile, wall: TilePicker.Wall);
+    }
+
+    private void SetTile(ref Tile curTile, bool erase)
+    {
+        if (erase)
+            SetPixelAutomatic(ref curTile, tile: -1);
+        else
+            SetPixelAutomatic(ref curTile, tile: TilePicker.Tile);
+    }
+
+    private void SetTrack(int x, int y, ref Tile curTile, bool erase, bool hammer, bool check)
+    {
+        if (x <= 0 || y <= 0 || x >= this._world.TilesWide - 1 || y >= this._world.TilesHigh - 1)
+        {
+            return; // tracks not allowed on border of map.
+        }
+
+
+        _undo.SaveTile(_world,x,y); // Capture recursive neighbor re-framing before mutation.
+
+        if (TilePicker.TrackMode == TrackMode.Pressure)
+        {
+            if (erase)
+                if (curTile.V == 21)
+                    curTile.V = 1;
+                else
+                {
+                    if (curTile.U >= 20 && curTile.U <= 23)
+                        curTile.U -= 20;
+                }
+            else
+            {
+                if (curTile.V == 1)
+                    curTile.V = 21;
+                else
+                {
+                    if (curTile.U >= 0 && curTile.U <= 3)
+                        curTile.U += 20;
+                    if (curTile.U == 14 || curTile.U == 24)
+                        curTile.U += 22;
+                    if (curTile.U == 15 || curTile.U == 25)
+                        curTile.U += 23;
+                }
+            }
+        }
+        else if (TilePicker.TrackMode == TrackMode.Booster)
+        {
+            if (erase)
+            {
+                if (curTile.U == 30 || curTile.U == 31)
+                    curTile.U = 1;
+                if (curTile.U == 32 || curTile.U == 34)
+                    curTile.U = 8;
+                if (curTile.U == 33 || curTile.U == 35)
+                    curTile.U = 9;
+            }
+            else
+            {
+                int slope = DetectTrackSlope(x, y);
+                if (curTile.U == 1)
+                {
+                    // Flat track: default right (30), flip to left (31) if slope goes up-left
+                    curTile.U = (short)(slope == -1 ? 31 : 30);
+                }
+                if (curTile.U == 8)
+                {
+                    // Slope track variant 8: default 32, use 34 for uphill-right
+                    curTile.U = (short)(slope == 1 ? 34 : 32);
+                }
+                if (curTile.U == 9)
+                {
+                    // Slope track variant 9: default 33, use 35 for uphill-left
+                    curTile.U = (short)(slope == -1 ? 35 : 33);
+                }
+            }
+        }
+        else
+        {
+            if (erase)
+            {
+                int u = curTile.U;
+                int v = curTile.V;
+                SetPixelAutomatic(ref curTile, tile: -1, u: 0, v: 0);
+                if (u > 0 && u < Minecart.LeftSideConnection.Length)
+                {
+                    switch (Minecart.LeftSideConnection[u])
+                    {
+                        case 0: SetTrack(x - 1, y - 1, ref _world.Tiles[x - 1, y - 1], false, false, false); break;
+                        case 1: SetTrack(x - 1, y, ref _world.Tiles[x - 1, y], false, false, false); break;
+                        case 2: SetTrack(x - 1, y + 1, ref _world.Tiles[x - 1, y + 1], false, false, false); break;
+                    }
+                    switch (Minecart.RightSideConnection[u])
+                    {
+                        case 0: SetTrack(x + 1, y - 1, ref _world.Tiles[x + 1, y - 1], false, false, false); break;
+                        case 1: SetTrack(x + 1, y, ref _world.Tiles[x + 1, y], false, false, false); break;
+                        case 2: SetTrack(x + 1, y + 1, ref _world.Tiles[x + 1, y + 1], false, false, false); break;
+                    }
+                }
+                if (v > 0 && v < Minecart.LeftSideConnection.Length)
+                {
+                    switch (Minecart.LeftSideConnection[v])
+                    {
+                        case 0: SetTrack(x - 1, y - 1, ref _world.Tiles[x - 1, y - 1], false, false, false); break;
+                        case 1: SetTrack(x - 1, y, ref _world.Tiles[x - 1, y], false, false, false); break;
+                        case 2: SetTrack(x - 1, y + 1, ref _world.Tiles[x - 1, y + 1], false, false, false); break;
+                    }
+                    switch (Minecart.RightSideConnection[v])
+                    {
+                        case 0: SetTrack(x + 1, y - 1, ref _world.Tiles[x + 1, y - 1], false, false, false); break;
+                        case 1: SetTrack(x + 1, y, ref _world.Tiles[x + 1, y], false, false, false); break;
+                        case 2: SetTrack(x + 1, y + 1, ref _world.Tiles[x + 1, y + 1], false, false, false); break;
+                    }
+                }
+            }
+            else
+            {
+                int num = 0;
+                if (_world.Tiles[x - 1, y - 1].Type == 314)
+                    num++;
+                if (_world.Tiles[x - 1, y].Type == 314)
+                    num += 2;
+                if (_world.Tiles[x - 1, y + 1].Type == 314)
+                    num += 4;
+                if (_world.Tiles[x + 1, y - 1].Type == 314)
+                    num += 8;
+                if (_world.Tiles[x + 1, y].Type == 314)
+                    num += 16;
+                if (_world.Tiles[x + 1, y + 1].Type == 314)
+                    num += 32;
+                int Front = curTile.U;
+                int Back = curTile.V;
+                int num4;
+                if (Front >= 0 && Front < Minecart.TrackType.Length)
+                    num4 = Minecart.TrackType[Front];
+                else
+                    num4 = 0;
+                int num5 = -1;
+                int num6 = -1;
+                int[] array = Minecart.TrackSwitchOptions[num];
+                if (!hammer)
+                {
+                    if (curTile.Type != 314)
+                    {
+                        curTile.Type = (ushort)314;
+                        curTile.IsActive = true;
+                        Front = 0;
+                        Back = -1;
+                    }
+                    int num7 = -1;
+                    int num8 = -1;
+                    bool flag = false;
+                    for (int k = 0; k < array.Length; k++)
+                    {
+                        int num9 = array[k];
+                        if (Back == array[k])
+                            num6 = k;
+                        if (Minecart.TrackType[num9] == num4)
+                        {
+                            if (Minecart.LeftSideConnection[num9] == -1 || Minecart.RightSideConnection[num9] == -1)
+                            {
+                                if (Front == array[k])
+                                {
+                                    num5 = k;
+                                    flag = true;
+                                }
+                                if (num7 == -1)
+                                    num7 = k;
+                            }
+                            else
+                            {
+                                if (Front == array[k])
+                                {
+                                    num5 = k;
+                                    flag = false;
+                                }
+                                if (num8 == -1)
+                                    num8 = k;
+                            }
+                        }
+                    }
+                    if (num8 != -1)
+                    {
+                        if (num5 == -1 || flag)
+                            num5 = num8;
+                    }
+                    else
+                    {
+                        if (num5 == -1)
+                        {
+                            if (num4 == 2 || num4 == 1)
+                                return;
+                            num5 = num7;
+                        }
+                        num6 = -1;
+                    }
+                }
+                else if (hammer && curTile.Type == 314)
+                {
+                    for (int l = 0; l < array.Length; l++)
+                    {
+                        if (Front == array[l])
+                            num5 = l;
+                        if (Back == array[l])
+                            num6 = l;
+                    }
+                    int num10 = 0;
+                    int num11 = 0;
+                    for (int m = 0; m < array.Length; m++)
+                    {
+                        if (Minecart.TrackType[array[m]] == num4)
+                        {
+                            if (Minecart.LeftSideConnection[array[m]] == -1 || Minecart.RightSideConnection[array[m]] == -1)
+                                num11++;
+                            else
+                                num10++;
+                        }
+                    }
+                    if (num10 < 2 && num11 < 2)
+                        return;
+                    bool flag2 = num10 == 0;
+                    bool flag3 = false;
+                    if (!flag2)
+                    {
+                        while (!flag3)
+                        {
+                            num6++;
+                            if (num6 >= array.Length)
+                            {
+                                num6 = -1;
+                                break;
+                            }
+                            if ((Minecart.LeftSideConnection[array[num6]] != Minecart.LeftSideConnection[array[num5]] ||
+                                Minecart.RightSideConnection[array[num6]] != Minecart.RightSideConnection[array[num5]]) &&
+                                Minecart.TrackType[array[num6]] == num4 && Minecart.LeftSideConnection[array[num6]] != -1 &&
+                                Minecart.RightSideConnection[array[num6]] != -1)
+                                flag3 = true;
+                        }
+                    }
+                    if (!flag3)
+                    {
+                        while (true)
+                        {
+                            num5++;
+                            if (num5 >= array.Length)
+                                break;
+                            if (Minecart.TrackType[array[num5]] == num4 &&
+                                (Minecart.LeftSideConnection[array[num5]] == -1 ||
+                                Minecart.RightSideConnection[array[num5]] == -1) == flag2)
+                                goto IL_100;
+                        }
+                        num5 = -1;
+                        while (true)
+                        {
+                            num5++;
+                            if (Minecart.TrackType[array[num5]] == num4)
+                            {
+                                if ((Minecart.LeftSideConnection[array[num5]] == -1 || Minecart.RightSideConnection[array[num5]] == -1) == flag2)
+                                    break;
+                            }
+                        }
+                    }
+                }
+            IL_100:
+                if (num5 == -1)
+                    curTile.U = 0;
+                else
+                {
+                    curTile.U = (short)array[num5];
+                    if (check)
+                    {
+                        switch (Minecart.LeftSideConnection[curTile.U])
+                        {
+                            case 0: SetTrack(x - 1, y - 1, ref _world.Tiles[x - 1, y - 1], false, false, false); break;
+                            case 1: SetTrack(x - 1, y, ref _world.Tiles[x - 1, y], false, false, false); break;
+                            case 2: SetTrack(x - 1, y + 1, ref _world.Tiles[x - 1, y + 1], false, false, false); break;
+                        }
+                        switch (Minecart.RightSideConnection[curTile.U])
+                        {
+                            case 0: SetTrack(x + 1, y - 1, ref _world.Tiles[x + 1, y - 1], false, false, false); break;
+                            case 1: SetTrack(x + 1, y, ref _world.Tiles[x + 1, y], false, false, false); break;
+                            case 2: SetTrack(x + 1, y + 1, ref _world.Tiles[x + 1, y + 1], false, false, false); break;
+                        }
+                    }
+                }
+                if (num6 == -1)
+                    curTile.V = -1;
+                else
+                {
+                    curTile.V = (short)array[num6];
+                    if (check)
+                    {
+                        switch (Minecart.LeftSideConnection[curTile.V])
+                        {
+                            case 0: SetTrack(x - 1, y - 1, ref _world.Tiles[x - 1, y - 1], false, false, false); break;
+                            case 1: SetTrack(x - 1, y, ref _world.Tiles[x - 1, y], false, false, false); break;
+                            case 2: SetTrack(x - 1, y + 1, ref _world.Tiles[x - 1, y + 1], false, false, false); break;
+                        }
+                        switch (Minecart.RightSideConnection[curTile.V])
+                        {
+                            case 0: SetTrack(x + 1, y - 1, ref _world.Tiles[x + 1, y - 1], false, false, false); break;
+                            case 1: SetTrack(x + 1, y, ref _world.Tiles[x + 1, y], false, false, false); break;
+                            case 2: SetTrack(x + 1, y + 1, ref _world.Tiles[x + 1, y + 1], false, false, false); break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Tunnel clearing and smooth slopes for Track mode placement
+        if (TilePicker.TrackMode == TrackMode.Track && !erase && !hammer && TilePicker.TrackTunnelEnabled)
+        {
+            int tunnelHeight = Math.Clamp(TilePicker.TrackTunnelHeight, 1, 10);
+            for (int ty = y - 1; ty >= y - tunnelHeight; ty--)
+            {
+                if (ty < 0 || ty >= _world.TilesHigh) continue;
+                ref Tile above = ref _world.Tiles[x, ty];
+                if (above.Type == 314) continue; // don't destroy parallel tracks
+
+                if (above.IsActive)
+                {
+                    _undo.SaveTile(_world, new Vector2Int32(x, ty));
+                    above.ClearTile();
+                    if (!SuppressNotify) _notifyTileChanged?.Invoke(x, ty, 1, 1);
+                }
+            }
+
+            // Smooth slope hammering — uses 3x3 neighbor check (same as HammerAreaTool)
+            if (TilePicker.TrackSmoothEnabled)
+            {
+                // Hammer floor block at (x, y+1)
+                TryAutoHammer(x, y + 1);
+
+                // Hammer ceiling block (first solid block above the cleared zone)
+                TryAutoHammer(x, y - tunnelHeight - 1);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Detects slope direction at a track position by checking surrounding blocks.
+    /// Returns: -1 = slope up-left, +1 = slope up-right, 0 = flat/unknown
+    /// </summary>
+    private int DetectTrackSlope(int x, int y)
+    {
+        bool blockDownLeft = HasSolidBlock(x - 1, y + 1);
+        bool blockDownRight = HasSolidBlock(x + 1, y + 1);
+        bool blockBelow = HasSolidBlock(x, y + 1);
+
+        if (blockDownLeft && !blockDownRight && blockBelow)
+            return +1; // terrain rises to the right
+        if (blockDownRight && !blockDownLeft && blockBelow)
+            return -1; // terrain rises to the left
+        return 0; // flat or ambiguous
+    }
+
+    /// <summary>
+    /// Auto-hammer a tile using 3x3 neighbor check (same logic as HammerAreaTool.GetBrickStyle).
+    /// Only modifies the center tile; checks all 8 neighbors to determine slope direction.
+    /// </summary>
+    private void TryAutoHammer(int x, int y)
+    {
+        if (x < 1 || y < 1 || x >= _world.TilesWide - 1 || y >= _world.TilesHigh - 1) return;
+
+        ref Tile t = ref _world.Tiles[x, y];
+        if (!t.IsActive) return;
+
+        var tp = WorldConfiguration.GetTileProperties(t.Type);
+        if ((tp.IsFramed && !tp.HasSlopes) || t.LiquidType != LiquidType.None) return;
+
+        var v = new Vector2Int32(x, y);
+        bool up = _world.SlopeCheck(v, new Vector2Int32(x, y - 1));
+        bool down = _world.SlopeCheck(v, new Vector2Int32(x, y + 1));
+        bool left = _world.SlopeCheck(v, new Vector2Int32(x - 1, y));
+        bool right = _world.SlopeCheck(v, new Vector2Int32(x + 1, y));
+        bool upLeft = _world.SlopeCheck(v, new Vector2Int32(x - 1, y - 1));
+        bool upRight = _world.SlopeCheck(v, new Vector2Int32(x + 1, y - 1));
+        bool downLeft = _world.SlopeCheck(v, new Vector2Int32(x - 1, y + 1));
+        bool downRight = _world.SlopeCheck(v, new Vector2Int32(x + 1, y + 1));
+
+        BrickStyle? style = null;
+
+        if (!up && !down) return;
+
+        if (!up && left && !right && (downRight || !upRight))
+            style = BrickStyle.SlopeTopRight;
+        else if (!up && right && !left && (downLeft || !upLeft))
+            style = BrickStyle.SlopeTopLeft;
+        else if (!down && left && !right && (!downRight || upRight))
+            style = BrickStyle.SlopeBottomRight;
+        else if (!down && right && !left && (!downLeft || upLeft))
+            style = BrickStyle.SlopeBottomLeft;
+
+        if (style != null && t.BrickStyle != style.Value)
+        {
+            _undo.SaveTile(_world, v);
+            t.BrickStyle = style.Value;
+            if (!SuppressNotify) _notifyTileChanged?.Invoke(x, y, 1, 1);
+        }
+    }
+
+    private bool HasSolidBlock(int x, int y)
+    {
+        if (x < 0 || y < 0 || x >= _world.TilesWide || y >= _world.TilesHigh)
+            return false;
+        Tile t = _world.Tiles[x, y];
+        return t.IsActive && IsSolidNonFramed(t);
+    }
+
+    private bool IsSolidNonFramed(Tile t)
+    {
+        if (t.Type >= WorldConfiguration.TileProperties.Count) return false;
+        var prop = WorldConfiguration.TileProperties[t.Type];
+        return prop.IsSolid && !prop.IsFramed;
+    }
+
+    private void SetPlatform(int x, int y, ref Tile curTile, bool erase)
+    {
+        if (x <= 0 || y <= 0 || x >= _world.TilesWide - 1 || y >= _world.TilesHigh - 1)
+            return;
+
+        if (erase)
+        {
+            if (curTile.IsActive && curTile.Type == 19)
+            {
+                SetPixelAutomatic(ref curTile, tile: -1, u: 0, v: 0);
+                ReframePlatformNeighbors(x, y);
+            }
+            return;
+        }
+
+        int stairDir = TilePicker.PlatformStairDirection;
+
+        // Place platform
+        curTile.Type = 19;
+        curTile.IsActive = true;
+        curTile.V = (short)(TilePicker.PlatformStyle * 18);
+
+        if (stairDir != 0)
+        {
+            // Stair placement: column 8 for right, 10 for left — no neighbor detection
+            int col = stairDir > 0 ? 8 : 10;
+            curTile.U = (short)(col * 18);
+            if (!SuppressNotify) _notifyTileChanged?.Invoke(x, y, 1, 1);
+            // Don't reframe neighbors — stair tiles are user-controlled
+        }
+        else
+        {
+            curTile.U = (short)(ComputePlatformFrameX(x, y) * 18);
+            if (!SuppressNotify) _notifyTileChanged?.Invoke(x, y, 1, 1);
+            ReframePlatformNeighbors(x, y);
+        }
+    }
+
+    private void ReframePlatformNeighbors(int x, int y)
+    {
+        // Re-frame horizontal and diagonal neighbors (stair connectivity)
+        ReframePlatform(x - 1, y);
+        ReframePlatform(x + 1, y);
+        ReframePlatform(x - 1, y - 1);
+        ReframePlatform(x + 1, y - 1);
+        ReframePlatform(x - 1, y + 1);
+        ReframePlatform(x + 1, y + 1);
+    }
+
+    private void ReframePlatform(int x, int y)
+    {
+        if (x < 0 || y < 0 || x >= _world.TilesWide || y >= _world.TilesHigh) return;
+        ref Tile t = ref _world.Tiles[x, y];
+        if (!t.IsActive || t.Type != 19) return;
+
+        // Don't reframe stair tiles (column >= 8) — they are user-controlled
+        int currentCol = t.U / 18;
+        if (currentCol >= 8) return;
+
+        short newU = (short)(ComputePlatformFrameX(x, y) * 18);
+        if (t.U != newU)
+        {
+            t.U = newU;
+            if (!SuppressNotify) _notifyTileChanged?.Invoke(x, y, 1, 1);
+        }
+    }
+
+    private bool IsPlatformAt(int x, int y)
+    {
+        if (x < 0 || y < 0 || x >= _world.TilesWide || y >= _world.TilesHigh) return false;
+        var t = _world.Tiles[x, y];
+        return t.IsActive && t.Type == 19;
+    }
+
+    /// <summary>
+    /// Computes flat platform frame column (0-7) based on horizontal neighbors.
+    /// Stair frames are assigned directly by SetPlatform when stair direction is set.
+    /// </summary>
+    private int ComputePlatformFrameX(int x, int y)
+    {
+        bool wPlat = IsPlatformAt(x - 1, y);
+        bool ePlat = IsPlatformAt(x + 1, y);
+
+        bool wSolid = !wPlat && HasSolidBlock(x - 1, y);
+        bool eSolid = !ePlat && HasSolidBlock(x + 1, y);
+        int bits = 0;
+        if (wPlat) bits |= 1;
+        if (wSolid) bits |= 2;
+        if (ePlat) bits |= 4;
+        if (eSolid) bits |= 8;
+
+        int[] lookup = { 5, 1, 6, 1, 2, 0, 3, 0, 7, 4, 5, 4, 2, 0, 3, 0 };
+        return lookup[bits];
+    }
+
+    private void SetPixelAutomatic(
+        ref Tile curTile,
+        int? tile = null,
+        int? wall = null,
+        byte? liquid = null,
+        LiquidType? liquidType = null,
+        bool? wireRed = null,
+        short? u = null,
+        short? v = null,
+        bool? wireBlue = null,
+        bool? wireGreen = null,
+        bool? wireYellow = null,
+        BrickStyle? brickStyle = null,
+        bool? actuator = null, bool? actuatorInActive = null,
+        int? tileColor = null,
+        int? wallColor = null,
+        bool? wallEchoCoating = null,
+        bool? wallIlluminantCoating = null,
+        bool? tileEchoCoating = null,
+        bool? tileIlluminantCoating = null)
+    {
+        // Set Tile Data
+        if (u != null)
+            curTile.U = (short)u;
+        if (v != null)
+            curTile.V = (short)v;
+
+        if (tile != null)
+        {
+            if (tile == -1)
+            {
+                curTile.ClearTile();
+            }
+            else
+            {
+                curTile.Type = (ushort)tile;
+                curTile.IsActive = true;
+                if (WorldConfiguration.TileProperties[curTile.Type].IsSolid
+                    && !WorldConfiguration.TileProperties[curTile.Type].IsFramed)
+                {
+                    curTile.U = -1;
+                    curTile.V = -1;
+                    // All solid blocks can contain liquid.
+                    // curTile.LiquidAmount = 0;
+                }
+            }
+        }
+
+        if (actuator != null && curTile.IsActive)
+        {
+            curTile.Actuator = (bool)actuator;
+        }
+
+        if (actuatorInActive != null && curTile.IsActive)
+        {
+            curTile.InActive = (bool)actuatorInActive;
+        }
+
+        if (brickStyle != null && TilePicker.BrickStyleActive)
+        {
+            curTile.BrickStyle = (BrickStyle)brickStyle;
+        }
+
+        if (wall != null)
+            curTile.Wall = (ushort)wall;
+
+        if (liquidType == LiquidType.None)
+        {
+            curTile.LiquidAmount = 0;
+        }
+        else if (liquid != null && liquidType != null)
+        {
+            curTile.LiquidAmount = (byte)liquid;
+            curTile.LiquidType = (LiquidType)liquidType;
+        }
+        else
+        {
+            // do nothing with liquid
+        }
+
+        if (wireRed != null)
+            curTile.WireRed = (bool)wireRed;
+
+        if (wireBlue != null)
+            curTile.WireBlue = (bool)wireBlue;
+
+        if (wireGreen != null)
+            curTile.WireGreen = (bool)wireGreen;
+
+        if (wireYellow != null)
+            curTile.WireYellow = (bool)wireYellow;
+
+        if (tileColor != null)
+        {
+            if (curTile.IsActive)
+            {
+                curTile.TileColor = (byte)tileColor;
+            }
+            else
+            {
+                curTile.TileColor = (byte)0;
+            }
+        }
+
+        if (wallColor != null)
+        {
+            if (curTile.Wall != 0)
+            {
+                curTile.WallColor = (byte)wallColor;
+            }
+            else
+            {
+                curTile.WallColor = (byte)0;
+            }
+        }
+
+        // clear liquids for solid tiles
+        if (curTile.IsActive)
+        {
+            if (WorldConfiguration.TileProperties[curTile.Type].IsSolid &&
+                !curTile.InActive &&
+                !WorldConfiguration.TileProperties[curTile.Type].IsPlatform &&
+                curTile.Type != 52 && // Exclude Vines
+                curTile.Type != 62 && // Exclude Jungle Vines
+                curTile.Type != 115 && // Exclude Hallowed Vines,
+                curTile.Type != 205 && // Exclude Crimson Vines,
+                curTile.Type != 353 && // Exclude Vine Rope
+                curTile.Type != 382 && // Exclude Vine Flowers
+                curTile.Type != 365 && // Exclude Silk Rope
+                curTile.Type != 366) // Exclude Web Rope
+            {
+                // curTile.LiquidAmount = 0;
+            }
+        }
+
+        // handle coatings
+        if (wallEchoCoating != null && curTile.Wall != 0)
+        {
+            curTile.InvisibleWall = (bool)wallEchoCoating;
+        }
+
+        if (wallIlluminantCoating != null && curTile.Wall != 0)
+        {
+            curTile.FullBrightWall = (bool)wallIlluminantCoating;
+        }
+
+        if (tileEchoCoating != null && curTile.IsActive)
+        {
+            curTile.InvisibleBlock = (bool)tileEchoCoating;
+        }
+
+        if (tileIlluminantCoating != null && curTile.IsActive)
+        {
+            curTile.FullBrightBlock = (bool)tileIlluminantCoating;
+        }
+    }
+
+    public IList<Vector2Int32> GetShapePoints(Vector2Int32 center)
+    {
+        return Brush.GetShapePoints(center);
+    }
+
+    private bool IsSimpleRectShape()
+    {
+        return (Brush.Shape == BrushShape.Square || Brush.Height <= 1 || Brush.Width <= 1)
+            && !Brush.HasTransform;
+    }
+
+    public void DrawLine(
+        Vector2Int32 start,
+        Vector2Int32 end)
+    {
+        var line = TEdit.Geometry.Shape.DrawLineTool(start, end).ToList();
+        if (IsSimpleRectShape())
+        {
+            for (int i = 1; i < line.Count; i++)
+            {
+                FillRectangleLine(line[i - 1], line[i]);
+            }
+        }
+        else
+        {
+            foreach (Vector2Int32 point in line)
+            {
+                FillShape(point);
+            }
+        }
+    }
+
+    protected void FillShape(Vector2Int32 point)
+    {
+        var area = GetShapePoints(point);
+        if (Brush.IsOutline && Brush.Shape != BrushShape.Right && Brush.Shape != BrushShape.Left)
+        {
+            int interiorWidth = Math.Max(1, Brush.Width - Brush.Outline * 2);
+            int interiorHeight = Math.Max(1, Brush.Height - Brush.Outline * 2);
+
+            var interiorPoints = Brush.GetShapePoints(point, interiorWidth, interiorHeight);
+
+            FillHollow(area, interiorPoints.ToList());
+        }
+        else
+        {
+            FillSolid(area);
+        }
+    }
+
+    protected void FillRectangleLine(Vector2Int32 start, Vector2Int32 end)
+    {
+        var area = Fill.FillRectangleVectorCenter(
+            start,
+            end,
+            new Vector2Int32(Brush.Width, Brush.Height))
+            .ToList();
+        FillSolid(area);
+    }
+
+    protected void FillRectangle(Vector2Int32 point)
+    {
+        var area = Fill.FillRectangleCentered(point, new Vector2Int32(Brush.Width, Brush.Height)).ToList();
+        if (Brush.IsOutline)
+        {
+            var interrior = Fill.FillRectangleCentered(
+                point,
+                new Vector2Int32(
+                    Brush.Width - Brush.Outline * 2,
+                    Brush.Height - Brush.Outline * 2)).ToList();
+            FillHollow(area, interrior);
+        }
+        else
+        {
+            FillSolid(area);
+        }
+    }
+
+    public void FillSolid(IList<Vector2Int32> area)
+    {
+        foreach (Vector2Int32 pixel in area)
+        {
+            if (!_world.ValidTileLocation(pixel)) continue;
+
+            int index = pixel.X + pixel.Y * _world.TilesWide;
+            if (_checkTiles[index] != _checkTileGeneration)
+            {
+                if (_selection.IsValid(pixel))
+                {
+                    _undo.SaveTile(_world, pixel);
+                    SetPixel(pixel.X, pixel.Y);
+
+                    if (!SuppressNotify) _notifyTileChanged?.Invoke(pixel.X, pixel.Y, 1, 1);
+                }
+                _checkTiles[index] = _checkTileGeneration;
+            }
+        }
+    }
+
+    public void FillHollow(IList<Vector2Int32> area, IList<Vector2Int32> interrior)
+    {
+        IEnumerable<Vector2Int32> border = area.Except(interrior).ToList();
+
+        // Draw the border
+        if (TilePicker.TileStyleActive)
+        {
+            foreach (Vector2Int32 pixel in border)
+            {
+                if (!_world.ValidTileLocation(pixel)) continue;
+
+                int index = pixel.X + pixel.Y * _world.TilesWide;
+
+                if (_checkTiles[index] != _checkTileGeneration)
+                {
+                    _checkTiles[index] = _checkTileGeneration;
+                    if (_selection.IsValid(pixel))
+                    {
+                        _undo.SaveTile(_world, pixel);
+                        if (TilePicker.WallStyleActive)
+                        {
+                            TilePicker.WallStyleActive = false;
+                            SetPixel(pixel.X, pixel.Y, mode: PaintMode.TileAndWall);
+                            TilePicker.WallStyleActive = true;
+                        }
+                        else
+                            SetPixel(pixel.X, pixel.Y, mode: PaintMode.TileAndWall);
+
+                        // BlendRules.ResetUVCache(_wvm, pixel.X, pixel.Y, 1, 1);
+                        if (!SuppressNotify) _notifyTileChanged?.Invoke(pixel.X, pixel.Y, 1, 1);
+                    }
+                }
+            }
+        }
+
+        // Draw the wall in the interrior, exclude the border so no overlaps
+        foreach (Vector2Int32 pixel in interrior)
+        {
+            if (!_world.ValidTileLocation(pixel)) continue;
+
+            if (_selection.IsValid(pixel))
+            {
+                _undo.SaveTile(_world, pixel);
+                SetPixel(pixel.X, pixel.Y, mode: PaintMode.TileAndWall, erase: true);
+
+                if (TilePicker.WallStyleActive)
+                {
+                    if (TilePicker.TileStyleActive)
+                    {
+                        TilePicker.TileStyleActive = false;
+                        SetPixel(pixel.X, pixel.Y, mode: PaintMode.TileAndWall);
+                        TilePicker.TileStyleActive = true;
+                    }
+                    else
+                        SetPixel(pixel.X, pixel.Y, mode: PaintMode.TileAndWall);
+                }
+
+                /* Heathtech */
+                if (!SuppressNotify) _notifyTileChanged?.Invoke(pixel.X, pixel.Y, 1, 1);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Replace all tiles matching the current mask settings with the current tile picker settings.
+    /// Returns false if all masks are off (nothing to match against).
+    /// </summary>
+    public bool ReplaceAll(bool selectionOnly = false)
+    {
+        if (_world == null) return false;
+        if (MaskSettings.AllMasksOff) return false;
+
+        int startX = selectionOnly && _selection.IsActive ? _selection.SelectionArea.X : 0;
+        int endX = selectionOnly && _selection.IsActive
+            ? _selection.SelectionArea.X + _selection.SelectionArea.Width : _world.TilesWide;
+        int startY = selectionOnly && _selection.IsActive ? _selection.SelectionArea.Y : 0;
+        int endY = selectionOnly && _selection.IsActive
+            ? _selection.SelectionArea.Y + _selection.SelectionArea.Height : _world.TilesHigh;
+
+        for (int x = startX; x < endX; x++)
+        {
+            TEdit.Port.OperationProgress.Advance(endY-startY);
+            for (int y = startY; y < endY; y++)
+            {
+                if (selectionOnly && !_selection.IsValid(x, y)) continue;
+
+                Tile curTile = _world.Tiles[x, y];
+                if (!MaskSettings.Passes(curTile)) continue;
+
+                _undo.SaveTile(_world, x, y);
+                SetPixel(x, y);
+                if (!SuppressNotify) _notifyTileChanged?.Invoke(x, y, 1, 1);
+            }
+        }
+
+        return true;
+    }
+
+    public void Dispose()
+    {
+        _undo.Dispose();
+    }
+}

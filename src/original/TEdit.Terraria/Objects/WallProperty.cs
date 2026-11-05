@@ -1,0 +1,36 @@
+using System.Text.Json.Serialization;
+using TEdit.Common;
+
+namespace TEdit.Terraria.Objects;
+
+public class WallProperty : ReactiveObject, ITile
+{
+    [JsonPropertyOrder(0)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+    public int Id { get; set; } = -1;
+
+    [JsonPropertyOrder(1)]
+    public string Name { get; set; } = "UNKNOWN";
+
+    [JsonPropertyOrder(2)]
+    public string? Key { get; set; }
+
+    [JsonPropertyOrder(3)]
+    public TEditColor Color { get; set; } = TEditColor.Magenta;
+
+    [JsonPropertyOrder(4)]
+    public byte LargeFrameType { get; set; } = 0;
+
+    [JsonPropertyOrder(5)]
+    public int BlendType { get; set; } = -1;
+
+    /// <summary>Mod name prefix (before ':') or empty for vanilla walls.</summary>
+    [JsonIgnore]
+    public string ModName => Name.Contains(':') ? Name[..Name.IndexOf(':')] : string.Empty;
+
+    /// <summary>Short display name (after ':') or full Name for vanilla walls.</summary>
+    [JsonIgnore]
+    public string ShortName => Name.Contains(':') ? Name[(Name.IndexOf(':') + 1)..] : Name;
+
+    public override string ToString() => Name;
+}

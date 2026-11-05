@@ -12,3 +12,8 @@ dist/
 /.codex/
 /.claude/
 /tests/fixtures/*.wld
+
+**/bin/
+**/obj/
+/artifacts/
+/build/

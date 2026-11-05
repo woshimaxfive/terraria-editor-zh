@@ -1,0 +1,96 @@
+using System;
+using TEdit.Editor;
+using TEdit.Editor.Undo;
+using TEdit.Scripting.Engine;
+using TEdit.Terraria;
+using TEdit.ViewModel;
+
+namespace TEdit.Scripting.Api;
+
+public class ScriptApi : IDisposable
+{
+    private readonly WorldViewModel? _wvm;
+
+    public TileApi Tile { get; }
+    public GeometryApi Geometry { get; }
+    public ChestApi Chests { get; }
+    public SignApi Signs { get; }
+    public NpcApi Npcs { get; }
+    public WorldInfoApi World { get; }
+    public SelectionApi Selection { get; }
+    public MetadataApi Metadata { get; }
+    public LogApi Log { get; }
+    public BatchApi Batch { get; }
+    public ToolsApi? Tools { get; }
+    public FinderApi Finder { get; }
+    public SpriteApi Sprites { get; }
+    public DrawApi Draw { get; }
+    public TileEntityApi TileEntities { get; }
+    public GenerateApi Generate { get; }
+
+    public ScriptApi(WorldViewModel wvm, ScriptExecutionContext context)
+    {
+        _wvm = wvm;
+        var world = wvm.CurrentWorld;
+
+        Tile = new TileApi(world, wvm.UndoManager);
+        Geometry = new GeometryApi(world, wvm.UndoManager);
+        Chests = new ChestApi(world);
+        Signs = new SignApi(world);
+        TileEntities = new TileEntityApi(world);
+        Npcs = new NpcApi(world);
+        World = new WorldInfoApi(world);
+        Selection = new SelectionApi(wvm.Selection);
+        Metadata = new MetadataApi();
+        Log = new LogApi(context);
+        Batch = new BatchApi(world, wvm.Selection, wvm.UndoManager, context);
+        Tools = new ToolsApi(wvm);
+        Finder = new FinderApi(context);
+        Sprites = new SpriteApi(world, wvm.UndoManager);
+        Draw = new DrawApi(world, wvm.UndoManager, wvm.Selection);
+        Generate = new GenerateApi(world, wvm.UndoManager, wvm.Selection);
+    }
+
+    /// <summary>
+    /// Test constructor - creates ScriptApi without WorldViewModel dependency.
+    /// </summary>
+    public ScriptApi(World world, IUndoManager undo, ISelection selection, ScriptExecutionContext context)
+    {
+        _wvm = null;
+
+        Tile = new TileApi(world, undo);
+        Geometry = new GeometryApi(world, undo);
+        Chests = new ChestApi(world);
+        Signs = new SignApi(world);
+        TileEntities = new TileEntityApi(world);
+        Npcs = new NpcApi(world);
+        World = new WorldInfoApi(world);
+        Selection = new SelectionApi(selection);
+        Metadata = new MetadataApi();
+        Log = new LogApi(context);
+        Batch = new BatchApi(world, selection, undo, context);
+        Tools = null;
+        Finder = new FinderApi(context);
+        Sprites = new SpriteApi(world, undo);
+        Draw = new DrawApi(world, undo, selection);
+        Generate = new GenerateApi(world, undo, selection);
+    }
+
+    public void BeginExecution()
+    {
+        // Undo frame is managed implicitly - SaveTile records each tile before modification
+    }
+
+    public void EndExecution()
+    {
+        if (_wvm != null)
+        {
+            _wvm.UndoManager.SaveUndo();
+            _wvm.UpdateRenderWorld();
+        }
+    }
+
+    public void Dispose()
+    {
+    }
+}

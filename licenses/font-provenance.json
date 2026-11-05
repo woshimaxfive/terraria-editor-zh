@@ -1,0 +1,33 @@
+{
+  "fluentIconsCommit": "3e1e525f4499a22d46039ef54e9b9a86b809bc66",
+  "icons": [
+    {
+      "asset": "FluentSystemIcons-filled.ttf",
+      "source": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/3e1e525f4499a22d46039ef54e9b9a86b809bc66/fonts/FluentSystemIcons-Filled.ttf",
+      "bytes": 2363748,
+      "sha256": "299bbcd4786071a9eb1696129f0b6e148b02548e9318bf0c849f09875d257131",
+      "sourceSha256": "299bbcd4786071a9eb1696129f0b6e148b02548e9318bf0c849f09875d257131",
+      "exactMatch": true
+    },
+    {
+      "asset": "FluentSystemIcons-regular.ttf",
+      "source": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/3e1e525f4499a22d46039ef54e9b9a86b809bc66/fonts/FluentSystemIcons-Regular.ttf",
+      "bytes": 2679020,
+      "sha256": "4cde6c7c681332455c680cda7e8088c2c7826152b9f0cffb02f5f8773b8986bb",
+      "sourceSha256": "4cde6c7c681332455c680cda7e8088c2c7826152b9f0cffb02f5f8773b8986bb",
+      "exactMatch": true
+    }
+  ],
+  "noto": {
+    "asset": "NotoSansCJKsc-Regular.otf",
+    "bytes": 16437364,
+    "sha256": "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b",
+    "source": "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf",
+    "sourceSha256": "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b",
+    "exactMatch": true,
+    "license": "OFL-1.1",
+    "licenseSource": "Existing font asset license and embedded Adobe copyright"
+  },
+  "success": true,
+  "scope": "Exact official icon fonts and NotoSansCJK Sans2.004; licenses retained, no font bytes changed"
+}

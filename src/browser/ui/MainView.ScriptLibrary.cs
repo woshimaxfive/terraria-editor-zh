@@ -1,0 +1,12 @@
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using System.Text.Json;
+namespace TEditBrowser;
+public partial class MainView {
+ Dictionary<string,string> localScripts=[];
+ async void ImportScripts(object? sender,RoutedEventArgs e){try{localScripts=JsonSerializer.Deserialize<Dictionary<string,string>>(await CoreBridge.DesktopData("scriptOpen",""))!;if(localScripts.Count>0)ShowScriptLibrary();}catch(Exception ex){Current.Fail(ex.Message);}}
+ async void OpenScriptLibrary(object? sender,RoutedEventArgs e){try{localScripts=JsonSerializer.Deserialize<Dictionary<string,string>>(await CoreBridge.DesktopData("scriptLibrary",""))!;ShowScriptLibrary();}catch(Exception ex){Current.Fail(ex.Message);}}
+ void ShowScriptLibrary(){var stack=this.FindControl<StackPanel>("DesktopDialogContent")!;stack.Children.Clear();stack.Children.Add(Label("本机脚本库"));foreach(var (name,code) in localScripts){var row=new StackPanel{Orientation=Avalonia.Layout.Orientation.Horizontal,Spacing=4};row.Children.Add(Button(name,()=>{this.FindControl<ScriptCodeEditor>("ScriptEditor")!.Text=code;this.FindControl<TextBox>("ScriptName")!.Text=name;this.FindControl<ComboBox>("ScriptLanguage")!.SelectedIndex=name.EndsWith(".lua")?1:0;this.FindControl<Border>("DesktopDialog")!.IsVisible=false;}));row.Children.Add(Button("删除",async()=>{localScripts=JsonSerializer.Deserialize<Dictionary<string,string>>(await CoreBridge.DesktopData("scriptDelete",JsonSerializer.Serialize(new{name})))!;ShowScriptLibrary();}));stack.Children.Add(row);}this.FindControl<Border>("DesktopDialog")!.IsVisible=true;}
+ async void ExportScript(object? sender,RoutedEventArgs e){try{string name=this.FindControl<TextBox>("ScriptName")!.Text??"script";if(!name.EndsWith(".js")&&!name.EndsWith(".lua"))name+=this.FindControl<ComboBox>("ScriptLanguage")!.SelectedIndex==1?".lua":".js";await CoreBridge.DesktopData("scriptSave",JsonSerializer.Serialize(new{name,code=this.FindControl<ScriptCodeEditor>("ScriptEditor")!.Text??""}));}catch(Exception ex){Current.Fail(ex.Message);}}
+ void ShowScriptApi(object? sender,RoutedEventArgs e){var stack=this.FindControl<StackPanel>("DesktopDialogContent")!;stack.Children.Clear();stack.Children.Add(Label("原版脚本 API"));stack.Children.Add(new TextBox{Text=scriptExamples.GetValueOrDefault("tedit-api.d.ts",""),IsReadOnly=true,AcceptsReturn=true,FontFamily="monospace",Height=500});this.FindControl<Border>("DesktopDialog")!.IsVisible=true;}
+}
