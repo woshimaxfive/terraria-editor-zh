@@ -636,7 +636,7 @@
     },
     "src/browser/ui/DesktopDiagnostics.cs": {
       "origin": "browser/ui/DesktopDiagnostics.cs",
-      "sha256": "56f8f56862cfaf65c82f32e8a71f0596fdc40186261f7ccf38fe917db39074fa"
+      "sha256": "0da2752dcf41a37fafa81cb15b8bd2cf742ef3572d310a1eabaf9d3614524b7e"
     },
     "src/browser/ui/DesktopFields.cs": {
       "origin": "browser/ui/DesktopFields.cs",
@@ -680,7 +680,7 @@
     },
     "src/browser/ui/MainView.axaml": {
       "origin": "browser/ui/MainView.axaml",
-      "sha256": "8822fd2e6ff19b8a9eb61dc546b00be21f41e4496033ac2a9fe74f22f239918c"
+      "sha256": "85197e148d038531ec80a8f7cbe9c155f51e90105c681114c3964fbfbb731d0a"
     },
     "src/browser/ui/MainView.axaml.cs": {
       "origin": "browser/ui/MainView.axaml.cs",
@@ -692,7 +692,7 @@
     },
     "src/browser/ui/MainView.Desktop.cs": {
       "origin": "browser/ui/MainView.Desktop.cs",
-      "sha256": "460afd0c2c3a8e041c0156f63922db0bc4f01faa1da2bbedcb9f18e14b4ad2ea"
+      "sha256": "112a46efa8f72b992c9fe9313d45e4099a9ac76ca21249fbb2846c957cc4540a"
     },
     "src/browser/ui/MainView.DesktopDialogs.cs": {
       "origin": "browser/ui/MainView.DesktopDialogs.cs",
@@ -772,7 +772,7 @@
     },
     "src/browser/ui/Program.cs": {
       "origin": "browser/ui/Program.cs",
-      "sha256": "3e8a24542997fa3ecc5ea7a753bf206af941dc77cebc14a96c0f9dd171566e4d"
+      "sha256": "43fd30e8c020b368e2ab1a7469e4dba2301bc03ee1b0e7e1951ad4cb004d04df"
     },
     "src/browser/ui/ScriptCodeEditor.cs": {
       "origin": "browser/ui/ScriptCodeEditor.cs",

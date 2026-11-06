@@ -1,19 +1,27 @@
 using Avalonia;
 using Avalonia.Browser;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
+using Avalonia.Media;
 using System.Runtime.InteropServices.JavaScript;
 
 namespace TEditBrowser;
 internal static class Program {
  static async Task Main(string[] args) {
   await JSHost.ImportAsync("coreBridge",new Uri(new Uri(args[0]),"bridge.js").AbsoluteUri);
-  await AppBuilder.Configure<App>().StartBrowserAppAsync("out");
+  await AppBuilder.Configure<App>()
+   .With(new FontManagerOptions {
+    DefaultFamilyName=App.TextFontFamily,
+    FontFallbacks=[new FontFallback {FontFamily=new FontFamily(App.TextFontFamily)}]
+   })
+   .StartBrowserAppAsync("out");
  }
 }
 public sealed class App:Application {
- public override void Initialize(){Styles.Add(new FluentTheme());Styles.Add(new Avalonia.Markup.Xaml.Styling.StyleInclude(new Uri("avares://TEdit.Browser.UI/")){Source=new Uri("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml")});RequestedThemeVariant=ThemeVariant.Dark;DesktopLanguage.Apply("zh-Hans");}
+ public const string TextFontFamily="avares://TEdit.Browser.UI/Assets#Noto Sans CJK SC";
+ public override void Initialize(){Styles.Add(new FluentTheme());Styles.Add(new Style(selector=>selector.OfType<ToolTip>()){Setters={new Setter(ToolTip.FontFamilyProperty,new FontFamily(TextFontFamily))}});Styles.Add(new Avalonia.Markup.Xaml.Styling.StyleInclude(new Uri("avares://TEdit.Browser.UI/")){Source=new Uri("avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml")});RequestedThemeVariant=ThemeVariant.Dark;DesktopLanguage.Apply("zh-Hans");}
  public override void OnFrameworkInitializationCompleted(){if(ApplicationLifetime is ISingleViewApplicationLifetime view)view.MainView=new MainView();base.OnFrameworkInitializationCompleted();}
 }
 internal static partial class CoreBridge {
