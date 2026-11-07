@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Windows.Input;
 
 namespace TEditBrowser;
-public sealed record Material(int Id,string OriginalName){public string Name=>DesktopLanguage.Name(OriginalName);}
+public sealed record Material(int Id,string OriginalName,string Color="#808080"){public string Name=>DesktopLanguage.Name(OriginalName);}
 public sealed record RecoveryChoice(string Id,string Label){public override string ToString()=>Label;}
 public sealed record PickedWorld(byte[] Data,string Name,byte[] Sidecar,string SidecarName);
 public sealed class UiCommand(Action action):ICommand {
@@ -23,6 +23,7 @@ public sealed partial class EditorViewModel:INotifyPropertyChanged {
  public void ApplyProgress(string status){Status=status;pendingProgress=status;PropertyChanged?.Invoke(this,new PropertyChangedEventArgs(nameof(Status)));}
  public string Status {get;private set;}="打开世界文件开始编辑；存档在本机处理。";
  public bool Editable {get;private set;}
+ public string SaveState {get;private set;}="";
  public bool Busy {get;private set;}
  public int OriginX {get;private set;}
  public int OriginY {get;private set;}
@@ -30,8 +31,8 @@ public sealed partial class EditorViewModel:INotifyPropertyChanged {
  public string[] MaskModes {get;private set;}=[];
  Material? selectedMaterial;
  string selectedMask="Off";
- public Material? SelectedMaterial {get=>selectedMaterial;set{if(value!=null)selectedMaterial=value;}}
- public string SelectedMask {get=>selectedMask;set{if(value!=null)selectedMask=value;}}
+ public Material? SelectedMaterial {get=>selectedMaterial;set{if(value==null||selectedMaterial==value)return;selectedMaterial=value;PropertyChanged?.Invoke(this,new(nameof(SelectedMaterial)));}}
+ public string SelectedMask {get=>selectedMask;set{if(value==null)return;selectedMask=MaskModes.FirstOrDefault(mode=>mode==value)??value;PropertyChanged?.Invoke(this,new(nameof(SelectedMask)));}}
  public bool TileActive {get;set;}=true;
  public int BrushWidth {get;set;}=3;
  public int BrushHeight {get;set;}=3;
@@ -124,7 +125,7 @@ public sealed partial class EditorViewModel:INotifyPropertyChanged {
   catch(Exception error){Fail(error.Message);}finally{picking=false;if(Busy){Busy=false;Editable=wasEditable;PropertyChanged?.Invoke(this,new PropertyChangedEventArgs(null));}}
  }
  public void ApplyInfo(string json){
-  Info=json;using var doc=JsonDocument.Parse(json);var info=doc.RootElement;InitializeTools(info);ApplyInteraction(info);ApplyDomain(info);ApplyReplay(info);ApplyDesktop(info);ApplyFloatingInfo(info);
+  Info=json;using var doc=JsonDocument.Parse(json);var info=doc.RootElement;SaveState=info.TryGetProperty("saveState",out var saveState)?saveState.GetString()??"":"";InitializeTools(info);ApplyInteraction(info);ApplyDomain(info);ApplyReplay(info);ApplyDesktop(info);ApplyFloatingInfo(info);
   Status=info.GetProperty("status").GetString()!;Editable=info.GetProperty("editable").GetBoolean();Busy=info.GetProperty("busy").GetBoolean();
   if(info.TryGetProperty("autoSave",out var auto))AutoSaveLabel=auto.GetBoolean()?"自动保存：开":"自动保存：关";
   if(info.TryGetProperty("recoveries",out var records)){
@@ -135,9 +136,13 @@ public sealed partial class EditorViewModel:INotifyPropertyChanged {
   if(info.TryGetProperty("originY",out var y))OriginY=y.GetInt32();
   if(SaveVersions.Length==0&&info.TryGetProperty("saveVersions",out var versions)){SaveVersions=versions.EnumerateArray().Select(v=>v.GetString()!).ToArray();TargetVersion=SaveVersions.FirstOrDefault();}
   if(Materials.Length==0&&info.TryGetProperty("materials",out var materials)){
-   Materials=materials.EnumerateArray().Select(v=>new Material(v.GetProperty("id").GetInt32(),v.GetProperty("name").GetString()!)).ToArray();
+   Materials=materials.EnumerateArray().Select(v=>new Material(v.GetProperty("id").GetInt32(),v.GetProperty("name").GetString()!,v.TryGetProperty("color",out var color)?color.GetString()??"#808080":"#808080")).ToArray();
+   PropertyChanged?.Invoke(this,new(nameof(Materials)));
+   PropertyChanged?.Invoke(this,new(nameof(FilteredMaterials)));
    SelectedMaterial=Materials.FirstOrDefault(m=>m.Id==(SelectedMaterial?.Id??1));
    MaskModes=info.GetProperty("maskModes").EnumerateArray().Select(v=>v.GetString()!).ToArray();
+   PropertyChanged?.Invoke(this,new(nameof(MaskModes)));
+   SelectedMask=selectedMask;
   }
   if(info.TryGetProperty("clipboard",out var clip)&&clip.ValueKind==JsonValueKind.Object)ClipboardStatus=$"模板 {clip.GetProperty("width")}×{clip.GetProperty("height")} · 箱 {clip.GetProperty("chests")} · 牌 {clip.GetProperty("signs")} · 实体 {clip.GetProperty("entities")}";
   else ClipboardStatus="拖动框选或填写世界坐标，再复制；也可导入原版模板。";

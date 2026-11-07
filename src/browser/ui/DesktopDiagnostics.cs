@@ -8,6 +8,7 @@ using System.Text.Json;
 namespace TEditBrowser;
 // Read-only diagnostics, matching the existing Info/Settings/RenderState browser hooks.
 public static partial class UiHooks {
+ [JSExport] public static void RefreshMaterialPreview()=>MainView.Instance?.InvalidateMaterialPreview();
  [JSExport] public static void ApplyRenderPreferences(string json)=>MainView.Instance?.ApplyRenderPreferences(json);
  [JSExport] public static void ApplyColor(string name,string value){var box=MainView.Instance?.GetVisualDescendants().OfType<TextBox>().FirstOrDefault(c=>c.Name==name&&c.IsEffectivelyVisible);if(box!=null&&System.Text.RegularExpressions.Regex.IsMatch(value,"^#[0-9A-Fa-f]{6}$"))box.Text=value;}
  [JSExport] public static void ApplyHover(string json)=>MainView.Instance?.ApplyHover(json);

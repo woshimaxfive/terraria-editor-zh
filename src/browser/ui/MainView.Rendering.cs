@@ -12,7 +12,7 @@ public partial class MainView {
  public void ClearScene(){map.Clear();var minimap=this.FindControl<Image>("Minimap");if(minimap?.Source is IDisposable image)image.Dispose();if(minimap!=null)minimap.Source=null;}
  public byte[] SnapshotScene(string json,bool png)=>map.SnapshotScene(json,png);
  async void ApplyRenderFilter(object? sender,Avalonia.Interactivity.RoutedEventArgs e){try{using var doc=JsonDocument.Parse(this.FindControl<TextBox>("RenderFilter")?.Text??"{}");await CoreBridge.RenderView(JsonSerializer.Serialize(new{operation="set",view=new{filter=doc.RootElement}}));}catch(Exception ex){RenderStatus(ex.Message);}}
- public string RenderState(){var state=JsonSerializer.SerializeToElement(Current.Settings());return JsonSerializer.Serialize(new{width=Math.Max(1,(int)map.Bounds.Width),height=Math.Max(1,(int)map.Bounds.Height),tool=Current.SelectedTool.Id,toolState=state.TryGetProperty("toolState",out var s)?(object)s:null,cursor=cursorX.HasValue?new{x=cursorX.Value,y=cursorY!.Value}:null,shift,language=DesktopLanguage.Language});}
+ public string RenderState(){var state=JsonSerializer.SerializeToElement(Current.Settings());return JsonSerializer.Serialize(new{width=Math.Max(1,(int)map.Bounds.Width),height=Math.Max(1,(int)map.Bounds.Height),tool=Current.SelectedTool.Id,toolState=state.TryGetProperty("toolState",out var s)?(object)s:null,cursor=cursorX.HasValue&&!panMode&&!spacePan&&!panning?new{x=cursorX.Value,y=cursorY!.Value}:null,shift,language=DesktopLanguage.Language});}
  public void ApplyHover(string json){using var doc=JsonDocument.Parse(json);foreach(string field in new[]{"Position","Depth","Tile","Wall","Extra","UV","Paint"}){string key=char.ToLowerInvariant(field[0])+field[1..];if(field=="UV")key="uv";if(this.FindControl<TextBox>("Hover"+field) is {} control)control.Text=HoverText(field,doc.RootElement.TryGetProperty(key,out var value)?value.GetString()??"":"");}}
  static string HoverText(string field,string text){
   if(!DesktopLanguage.Language.StartsWith("zh"))return text;
@@ -22,7 +22,28 @@ public partial class MainView {
   return text;
  }
  void Hover(PointerEventArgs e){var p=map.TileAt(e.GetPosition(map));cursorX=p.X;cursorY=p.Y;shift=e.KeyModifiers.HasFlag(KeyModifiers.Shift);if(Current.Editable)_=CoreBridge.RenderView("{}");}
- async void MapWheel(object? sender,PointerWheelEventArgs e){try{foreach(string action in desktopInput.HandleMouseWheel((int)Math.Sign(e.Delta.Y),e.KeyModifiers,TEdit.Input.InputScope.Application))if(await HandleDesktopInput(action)){e.Handled=true;return;}}catch(Exception ex){Current.Fail(ex.Message);}}
+ async void MapWheel(object? sender,PointerWheelEventArgs e)
+ {
+  try
+  {
+   foreach(string action in desktopInput.HandleMouseWheel((int)Math.Sign(e.Delta.Y),e.KeyModifiers,TEdit.Input.InputScope.Application))
+   {
+    if(action is "nav.zoom.in" or "nav.zoom.out")
+    {
+     var p=e.GetPosition(map);
+     await CoreBridge.RenderView(JsonSerializer.Serialize(new{
+      operation="zoom",factor=action.EndsWith("in")?1.2:1/1.2,
+      px=p.X*Math.Min(4096,map.Bounds.Width)/Math.Max(1,map.Bounds.Width),
+      py=p.Y*Math.Min(4096,map.Bounds.Height)/Math.Max(1,map.Bounds.Height)
+     }));
+     e.Handled=true;
+     return;
+    }
+    if(await HandleDesktopInput(action)){e.Handled=true;return;}
+   }
+  }
+  catch(Exception ex){Current.Fail(ex.Message);}
+ }
  void MapExited(object? sender,PointerEventArgs e){if(!drawing&&!panning){cursorX=null;cursorY=null;_=CoreBridge.RenderView("{}");}}
  async void PickTextures(object? sender,Avalonia.Interactivity.RoutedEventArgs e)=>await CoreBridge.ChooseTextures();
  async void ExportImage(object? sender,Avalonia.Interactivity.RoutedEventArgs e)=>await CoreBridge.ExportPng();

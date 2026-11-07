@@ -21,7 +21,7 @@ public partial class MainView {
     else if(f.IsEnum){var c=new ComboBox{ItemsSource=f.Choices,ItemTemplate=ChoiceTemplate,HorizontalAlignment=HorizontalAlignment.Stretch};c.Bind(ComboBox.SelectedItemProperty,new Binding(nameof(ToolField.TextValue)){Source=f,Mode=BindingMode.TwoWay});input=c;}
     else{var c=new TextBox();c.Bind(TextBox.TextProperty,new Binding(nameof(ToolField.TextValue)){Source=f,Mode=BindingMode.TwoWay});input=c;}
     Grid.SetColumn(input,1);row.Children.Add(input);panel.Children.Add(row);
-   }stack.Children.Add(new Expander{Header=title,Content=panel,HorizontalAlignment=HorizontalAlignment.Stretch,IsExpanded=title=="方块与墙壁"});
+   }stack.Children.Add(new Expander{Header=title,Tag=group,Content=panel,HorizontalAlignment=HorizontalAlignment.Stretch,IsExpanded=title=="方块与墙壁"});
   }
   BuildFilterPanel();
  }

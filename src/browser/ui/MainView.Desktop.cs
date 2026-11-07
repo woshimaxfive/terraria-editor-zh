@@ -22,9 +22,15 @@ public partial class MainView {
  Control[] dialogParts=[];
  void InitializeDesktop(){
   SyncLanguageMenus();
-  desktopReady=true;Current.PropertyChanged+=(_,e)=>{if(e.PropertyName!=nameof(EditorViewModel.Status))RefreshDesktopData();};
+  desktopReady=true;Current.PropertyChanged+=(_,e)=>{
+   if(e.PropertyName==nameof(EditorViewModel.SelectedTool))panMode=false;
+   if(e.PropertyName!=nameof(EditorViewModel.Status))RefreshDesktopData();
+  };
   Current.NewWorldCreated+=()=>{this.FindControl<Border>("DesktopDialog")!.IsVisible=false;map.Focus();if(Current.NewWorldOres){ShowPluginDialog();var choice=this.FindControl<ComboBox>("PluginChoice");if(choice!=null)choice.SelectedIndex=choice.Items.Cast<object>().ToList().FindIndex(v=>v.ToString()=="矿石生成");}};
   dialogParts=this.FindControl<StackPanel>("DesktopDialogContent")!.Children.ToArray();
+  this.FindControl<Border>("DesktopDialog")!.PropertyChanged+=(_,e)=>{if(e.Property==IsVisibleProperty&&e.NewValue is false)this.FindControl<Border>("NewWorldFooter")!.IsVisible=false;};
+  map.LostFocus+=(_,_)=>{spacePan=false;RefreshInteractionUi();};
+  RefreshInteractionUi();
   AddHandler(KeyDownEvent,DesktopKeyDown,RoutingStrategies.Tunnel);
   AddHandler(KeyUpEvent,DesktopKeyUp,RoutingStrategies.Tunnel);
   _=LoadDesktopExamples();_=RestoreDesktopPreferences();_=RestoreInputBindings();
@@ -33,7 +39,7 @@ public partial class MainView {
  void DesktopMenu(object? sender,RoutedEventArgs e){if(e.Source!=sender)return;if(sender is MenuItem item&&item.Tag is string action){e.Handled=true;_=DesktopAction(action,item.IsChecked);}}
  public void SyncLanguageMenus(){foreach(var item in this.GetLogicalDescendants().OfType<MenuItem>())if(item.Tag is string action&&action.StartsWith("language:"))item.IsChecked=action[9..]==DesktopLanguage.Language;}
  public void ApplyRenderPreferences(string json){
-  using var doc=JsonDocument.Parse(json);var view=doc.RootElement;
+  using var doc=JsonDocument.Parse(json);var view=doc.RootElement;UpdateZoomLabel(view);
   var layers=new Dictionary<string,bool>();
   if(view.TryGetProperty("layers",out var values))foreach(var value in values.EnumerateObject()){
    if(value.Name=="ShowAllWires")foreach(string color in new[]{"Red","Blue","Green","Yellow"})layers["Show"+color+"Wires"]=value.Value.GetBoolean();
@@ -69,6 +75,10 @@ public partial class MainView {
     case "crop":case "expand":ShowTransformDialog(action);break;
     case "plugins":ShowPluginDialog();break;
     case "settings":await OpenDesktopSettings();break;
+    case "practice":
+     if(Current.Busy)return;
+     await CoreBridge.CreateWorld(JsonSerializer.Serialize(new{title="练习世界",width=800,height=400,ground=100,rock=180,seed="TEdit practice"}));
+     map.Focus();break;
     case "new":case "version":ShowDesktopDialog(action);break;
     case "uvEditor":await OpenUvEditor();break;
     case "update":await ShowBrowserUpdate();break;
@@ -76,14 +86,34 @@ public partial class MainView {
     case "wiki":await CoreBridge.DesktopData("wiki","");break;
     case "log":Current.SidebarIndex=13;break;
     case "cad":Current.CadCycleCommand.Execute(null);break;
+    case "pan":panMode=!panMode;RefreshInteractionUi();map.Focus();break;
+    case "fit":case "spawn":await CoreBridge.RenderView(JsonSerializer.Serialize(new{operation=action}));map.Focus();break;
     case "zoomIn":case "zoomOut":await CoreBridge.RenderView(JsonSerializer.Serialize(new{operation="zoom",factor=action=="zoomIn"?1.2:1/1.2}));break;
     case "mapTiles":await ExportRegion(true,true);break;
     case "about":ShowDesktopAbout();break;
    }
   }catch(Exception ex){Current.Fail(ex.Message);}
  }
- void ChooseDesktopTool(object? sender,RoutedEventArgs e){if(sender is Button b&&b.Tag is string id){Current.SelectedTool=Current.Tools.First(t=>t.Id==id);if(id=="Sprite")Current.SidebarIndex=3;else if(id=="Paste")Current.SidebarIndex=4;else if(id=="Arrow")Current.SidebarIndex=2;map.Focus();}}
- void ShowDesktopDialog(string action){var stack=this.FindControl<StackPanel>("DesktopDialogContent")!;stack.Children.Clear();if(action=="settings"){BuildDesktopSettings(stack);}else foreach(var part in dialogParts.Where(p=>p.Tag as string==action)){if(part is Expander expander)expander.IsExpanded=true;foreach(var nested in part.GetLogicalDescendants().OfType<Expander>())nested.IsExpanded=true;stack.Children.Add(part);}this.FindControl<Border>("DesktopDialog")!.IsVisible=true;}
+ void ChooseDesktopTool(object? sender,RoutedEventArgs e){if(sender is Button b&&b.Tag is string id){Current.SelectedTool=Current.Tools.First(t=>t.Id==id);ResetPanMode();if(id=="Sprite")Current.SidebarIndex=3;else if(id=="Paste")Current.SidebarIndex=4;else if(id=="Arrow")Current.SidebarIndex=2;map.Focus();}}
+ void ShowDesktopDialog(string action)
+ {
+  this.FindControl<Border>("NewWorldFooter")!.IsVisible=action=="new";
+  var stack=this.FindControl<StackPanel>("DesktopDialogContent")!;
+  stack.Children.Clear();
+  if(action=="settings")BuildDesktopSettings(stack);
+  else foreach(var part in dialogParts.Where(p=>p.Tag as string==action))
+  {
+   if(part is Expander expander)expander.IsExpanded=true;
+   var expanders=part.GetLogicalDescendants().OfType<Expander>();
+   if(action=="new")
+   {
+    if(expanders.FirstOrDefault() is {} first)first.IsExpanded=true;
+   }
+   else foreach(var nested in expanders)nested.IsExpanded=true;
+   stack.Children.Add(part);
+  }
+  this.FindControl<Border>("DesktopDialog")!.IsVisible=true;
+ }
  void CloseDesktopDialog(object? sender,RoutedEventArgs e){this.FindControl<Border>("DesktopDialog")!.IsVisible=false;map.Focus();}
  void ShowMessage(string title,string message){var stack=this.FindControl<StackPanel>("DesktopDialogContent")!;stack.Children.Clear();stack.Children.Add(new TextBlock{Text=title,FontSize=20});stack.Children.Add(new TextBlock{Text=message,TextWrapping=TextWrapping.Wrap});this.FindControl<Border>("DesktopDialog")!.IsVisible=true;}
  async void DesktopTabChanged(object? sender,SelectionChangedEventArgs e){if(e.Source!=sender||!desktopReady)return;if(this.FindControl<TabControl>("DesktopTabs")?.SelectedItem is TabItem tab&&tab.Tag is string page){if(page=="special")page=this.FindControl<ComboBox>("SpecialKind")?.SelectedIndex==1?"signs":"chests";if(page is "world" or "chests" or "signs" or "npc" or "analysis" or "bestiary" or "banners" or "entity" or "creative" or "nbt"){if(Current.Editable)await Current.Run("desktopRead",new{page});}}}
@@ -92,8 +122,9 @@ public partial class MainView {
  async void GlowIntensityChanged(object? sender,RangeBaseValueChangedEventArgs e){if(desktopReady&&!syncingRenderPreferences)try{await CoreBridge.RenderView(JsonSerializer.Serialize(new{operation="set",view=new{lightGlowIntensity=e.NewValue}}));}catch(Exception ex){Current.Fail(ex.Message);}}
  async void RenderPreferenceChanged(object? sender,RangeBaseValueChangedEventArgs e){if(desktopReady&&!syncingRenderPreferences&&sender is Slider {Tag:string key})try{await CoreBridge.RenderView(JsonSerializer.Serialize(new{operation="set",view=new Dictionary<string,double>{{key,e.NewValue}}}));}catch(Exception ex){Current.Fail(ex.Message);}}
  void RefreshDesktopData(){
-  foreach(var button in this.FindControl<ScrollViewer>("ToolRail")!.GetLogicalDescendants().OfType<Button>())button.Classes.Set("activeTool",button.Tag as string==Current.SelectedTool.Id);
+  RefreshInteractionUi();
   BuildPalette();
+  ExpandActiveToolParameters();
   if(desktopSession!=Current.DesktopSessionId){desktopSession=Current.DesktopSessionId;desktopDataIdentity=null;scriptIdentity=null;worldChanges.Clear();worldRows.Clear();foreach(string host in new[]{"WorldPropertiesContent","SpecialContent","NpcContent","AnalysisContent","BestiaryContent","BannersContent","EntityContent","CreativeContent","NbtContent"})this.FindControl<StackPanel>(host)?.Children.Clear();if(desktopSession!=null)Avalonia.Threading.Dispatcher.UIThread.Post(()=>{if(Current.Editable)DesktopTabChanged(this.FindControl<TabControl>("DesktopTabs"),new SelectionChangedEventArgs(SelectingItemsControl.SelectionChangedEvent,Array.Empty<object>(),Array.Empty<object>()){Source=this.FindControl<TabControl>("DesktopTabs")});});}
   if(Current.DesktopData is {} d&&d.GetRawText()!=desktopDataIdentity){desktopDataIdentity=d.GetRawText();BuildDesktopPanel(d.GetProperty("page").GetString()!,d.GetProperty("data"));}
   if(Current.ScriptData is {} s&&s.GetRawText()!=scriptIdentity){scriptIdentity=s.GetRawText();var log=this.FindControl<TextBox>("ScriptLog");if(s.TryGetProperty("found",out var found))this.FindControl<ListBox>("ScriptFound")!.ItemsSource=found.EnumerateArray().Select(f=>new FindChoice(f.GetProperty("name").GetString()??"",f.GetProperty("x").GetInt32(),f.GetProperty("y").GetInt32())).ToArray();if(s.TryGetProperty("navigate",out var navigate)&&navigate.ValueKind==JsonValueKind.Object)_=CoreBridge.RenderView(JsonSerializer.Serialize(new{operation="center",x=navigate.GetProperty("x").GetInt32(),y=navigate.GetProperty("y").GetInt32()}));if(log!=null)log.Text=string.Join('\n',s.GetProperty("logs").EnumerateArray().Select(l=>$"[{l.GetProperty("level")}] {l.GetProperty("message")}"))+"\n"+(s.GetProperty("success").GetBoolean()?"完成":"失败")+$" · {s.GetProperty("elapsedMs")} ms";}

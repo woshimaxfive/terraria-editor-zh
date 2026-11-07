@@ -51,16 +51,93 @@ public partial class MainView:UserControl {
  long strokeStarted;
  void AddPoint(PointerEventArgs e){
   if(points.Count>=4096){overflow=true;return;}
-  var p=e.GetPosition(map);
+  PreviewStroke(e);
   points.Add(new{x=MapLocation(e).X,y=MapLocation(e).Y,timeMs=Environment.TickCount64-strokeStarted,shift=e.KeyModifiers.HasFlag(KeyModifiers.Shift),alt=e.KeyModifiers.HasFlag(KeyModifiers.Alt),ctrl=e.KeyModifiers.HasFlag(KeyModifiers.Control),secondary=e.GetCurrentPoint(map).Properties.IsRightButtonPressed,actions=PointerActions(e)});
  }
- void MapDown(object? sender,PointerPressedEventArgs e){map.Focus();if(spacePan||PointerActions(e).Contains("editor.pan")){panning=true;panPoint=e.GetPosition(map);e.Pointer.Capture(map);return;}if(!Current.Editable)return;if(Current.SelectMode&&Current.SelectedTool.Id!="Selection"){selecting=true;var p=MapLocation(e);selectionStartX=selectionEndX=p.X;selectionStartY=selectionEndY=p.Y;e.Pointer.Capture(map);return;}points.Clear();strokeStarted=Environment.TickCount64;overflow=false;drawing=true;e.Pointer.Capture(map);AddPoint(e);}
- void MapMove(object? sender,PointerEventArgs e){if(panning){var current=e.GetPosition(map);_=CoreBridge.RenderView(System.Text.Json.JsonSerializer.Serialize(new{operation="pan",dx=panPoint.X-current.X,dy=panPoint.Y-current.Y}));panPoint=current;return;}Hover(e);if(selecting){var p=MapLocation(e);selectionEndX=p.X;selectionEndY=p.Y;Current.SelectRectangle(Math.Min(selectionStartX,selectionEndX),Math.Min(selectionStartY,selectionEndY),Math.Abs(selectionEndX-selectionStartX)+1,Math.Abs(selectionEndY-selectionStartY)+1);}else if(drawing)AddPoint(e);}
- async void MapUp(object? sender,PointerReleasedEventArgs e){if(panning){panning=false;e.Pointer.Capture(null);return;}
-  if(selecting){selecting=false;var p=MapLocation(e);Current.SelectRectangle(Math.Min(selectionStartX,p.X),Math.Min(selectionStartY,p.Y),Math.Abs(p.X-selectionStartX)+1,Math.Abs(p.Y-selectionStartY)+1);e.Pointer.Capture(null);return;}
-  if(!drawing)return;drawing=false;AddPoint(e);e.Pointer.Capture(null);
-  if(overflow){Current.Fail("笔画点数超过单次笔画点数上限，未提交；请分段绘制。");return;}
-  await Current.Run("tool",new{tool=Current.SelectedTool.Id,settings=Current.Settings(),points=points.ToArray()});points.Clear();
+ void MapDown(object? sender,PointerPressedEventArgs e)
+ {
+  map.Focus();
+  if(panMode||spacePan||PointerActions(e).Contains("editor.pan"))
+  {
+   panning=true;
+   panPoint=e.GetPosition(map);
+   e.Pointer.Capture(map);
+   RefreshInteractionUi();
+   return;
+  }
+  if(!Current.Editable)return;
+  if(Current.SelectMode&&Current.SelectedTool.Id!="Selection")
+  {
+   selecting=true;
+   var p=MapLocation(e);
+   selectionStartX=selectionEndX=p.X;
+   selectionStartY=selectionEndY=p.Y;
+   e.Pointer.Capture(map);
+   return;
+  }
+  ClearStrokePreview();
+  points.Clear();
+  strokeStarted=Environment.TickCount64;
+  overflow=false;
+  drawing=true;
+  e.Pointer.Capture(map);
+  AddPoint(e);
  }
- void MapCaptureLost(object? sender,PointerCaptureLostEventArgs e){panning=false;selecting=false;if(drawing){drawing=false;points.Clear();}}
+ void MapMove(object? sender,PointerEventArgs e)
+ {
+  if(panning)
+  {
+   var current=e.GetPosition(map);
+   _=CoreBridge.RenderView(System.Text.Json.JsonSerializer.Serialize(new{operation="pan",dx=panPoint.X-current.X,dy=panPoint.Y-current.Y}));
+   panPoint=current;
+   return;
+  }
+  Hover(e);
+  if(selecting)
+  {
+   var p=MapLocation(e);
+   selectionEndX=p.X;
+   selectionEndY=p.Y;
+   Current.SelectRectangle(Math.Min(selectionStartX,selectionEndX),Math.Min(selectionStartY,selectionEndY),Math.Abs(selectionEndX-selectionStartX)+1,Math.Abs(selectionEndY-selectionStartY)+1);
+  }
+  else if(drawing)AddPoint(e);
+ }
+ async void MapUp(object? sender,PointerReleasedEventArgs e)
+ {
+  if(panning)
+  {
+   panning=false;
+   e.Pointer.Capture(null);
+   RefreshInteractionUi();
+   return;
+  }
+  if(selecting)
+  {
+   selecting=false;
+   var p=MapLocation(e);
+   Current.SelectRectangle(Math.Min(selectionStartX,p.X),Math.Min(selectionStartY,p.Y),Math.Abs(p.X-selectionStartX)+1,Math.Abs(p.Y-selectionStartY)+1);
+   e.Pointer.Capture(null);
+   return;
+  }
+  if(!drawing){e.Pointer.Capture(null);return;}
+  drawing=false;
+  AddPoint(e);
+  e.Pointer.Capture(null);
+  ClearStrokePreview();
+  if(overflow)
+  {
+   points.Clear();
+   Current.Fail("笔画点数超过单次笔画点数上限，未提交；请分段绘制。");
+   return;
+  }
+  await Current.Run("tool",new{tool=Current.SelectedTool.Id,settings=Current.Settings(),points=points.ToArray()});
+  points.Clear();
+ }
+ void MapCaptureLost(object? sender,PointerCaptureLostEventArgs e)
+ {
+  panning=false;
+  selecting=false;
+  if(drawing){drawing=false;points.Clear();}
+  ClearStrokePreview();
+ }
 }

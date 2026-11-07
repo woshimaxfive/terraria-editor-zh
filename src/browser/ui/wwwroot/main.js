@@ -16,9 +16,9 @@ const runtime=await host.create();
 
 const config=runtime.getConfig();
 
-const {StorageProvider}=await import('./_framework/storage.js');
+const {StorageProvider,StorageItems}=await import('./_framework/storage.js');
 
-installPickerCompatibility(StorageProvider);
+installPickerCompatibility(StorageProvider,StorageItems);
 
 window.r2=(await runtime.getAssemblyExports(config.mainAssemblyName)).TEditBrowser.UiHooks;
 

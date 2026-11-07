@@ -1,10 +1,53 @@
-// HTML Standard color state, opaque sRGB. Original player fields are RGB.
 let closePicker;
-export function chooseColor(json,changed){
- closePicker?.();const p=JSON.parse(json),input=document.createElement('input');input.type='color';input.value=/^#[0-9a-f]{6}$/i.test(p.value||'')?p.value:'#000000';input.dataset.teditColor=p.target;
- Object.assign(input.style,{position:'fixed',left:'50%',top:'50%',width:'1px',height:'1px',opacity:'0'});document.body.append(input);
- const close=()=>{input.remove();window.removeEventListener('pointerdown',close,true);window.removeEventListener('keydown',escape,true);if(closePicker===close)closePicker=null;};
- const escape=e=>{if(e.key==='Escape')close();};closePicker=close;
- input.oninput=()=>changed(p.target,input.value.toUpperCase());input.onchange=()=>{changed(p.target,input.value.toUpperCase());close();};input.oncancel=close;
- input.click();setTimeout(()=>{if(input.isConnected){window.addEventListener('pointerdown',close,{capture:true,once:true});window.addEventListener('keydown',escape,true);}},0);return '{}';
+
+export function chooseColor(json, changed) {
+  closePicker?.();
+  const options = JSON.parse(json);
+  const original = options.value || '#000000';
+  const dialog = document.createElement('dialog');
+  dialog.setAttribute('aria-label', '选择颜色');
+  Object.assign(dialog.style, {
+    color: '#eeeeee', background: '#292929', border: '1px solid #666666',
+    borderRadius: '8px', padding: '24px', maxWidth: 'calc(100vw - 48px)',
+    font: '14px sans-serif'
+  });
+  const label = document.createElement('label');
+  label.textContent = '选择颜色 ';
+  const input = document.createElement('input');
+  input.type = 'color';
+  input.value = /^#[0-9a-f]{6}$/i.test(original) ? original : '#000000';
+  input.dataset.teditColor = options.target;
+  input.setAttribute('aria-label', '颜色');
+  Object.assign(input.style, { width: '80px', height: '40px', verticalAlign: 'middle' });
+  label.append(input);
+  const hint = document.createElement('p');
+  hint.textContent = '预览后点击应用，取消可恢复打开前的颜色。';
+  const actions = document.createElement('div');
+  Object.assign(actions.style, { display: 'flex', gap: '12px', justifyContent: 'flex-end' });
+  const cancel = document.createElement('button');
+  cancel.textContent = '取消';
+  const apply = document.createElement('button');
+  apply.textContent = '应用';
+  for (const button of [cancel, apply]) button.style.padding = '8px 16px';
+  actions.append(cancel, apply);
+  dialog.append(label, hint, actions);
+  document.body.append(dialog);
+
+  let closed = false;
+  function close(commit = false) {
+    if (closed) return;
+    closed = true;
+    changed(options.target, commit ? input.value.toUpperCase() : original);
+    dialog.close();
+    dialog.remove();
+    if (closePicker === close) closePicker = null;
+  }
+  closePicker = close;
+  input.oninput = input.onchange = () => changed(options.target, input.value.toUpperCase());
+  cancel.onclick = () => close();
+  apply.onclick = () => close(true);
+  dialog.oncancel = event => { event.preventDefault(); close(); };
+  dialog.onclose = () => close();
+  dialog.showModal();
+  return '{}';
 }

@@ -24,8 +24,9 @@ public partial class MainView {
  async Task<bool> HandleDesktopInput(string action){
   string? menu=action switch{"file.new"=>"new","file.open"=>"open","file.save" or "file.saveas"=>"export","file.saveasversion"=>"version","file.reload"=>"reload","edit.copy"=>"copy","edit.cut"=>"cut","edit.paste"=>"paste","edit.undo"=>"undo","edit.redo"=>"redo","selection.delete"=>"delete","edit.crop"=>"crop","edit.expand"=>"expand","app.settings"=>"settings","help.wiki"=>"wiki",_=>null};
   if(menu!=null){await DesktopAction(menu);return true;}
-  if(action=="nav.pan"){spacePan=true;return true;}
+  if(action=="nav.pan"){spacePan=true;RefreshInteractionUi();return true;}
   if(action=="nav.reset"){
+   if(drawing){drawing=false;points.Clear();ClearStrokePreview();return true;}
    if(Current.Busy)CoreBridge.Cancel();
    else if(this.FindControl<Border>("DesktopDialog")!.IsVisible)this.FindControl<Border>("DesktopDialog")!.IsVisible=false;
    else{Current.FloatingCancelCommand.Execute(null);Current.CadCancelCommand.Execute(null);if(Current.SelectedTool.Id=="Paste")SelectDesktopTool("Arrow");else await Current.CallDomain("selection","Apply","selection.none");}
@@ -61,12 +62,13 @@ public partial class MainView {
   if(field!=null){var f=Current.ToolFields.First(f=>f.Group=="paint"&&f.Name==field);f.BoolValue=!f.BoolValue;return true;}
   return false;
  }
- void SelectDesktopTool(string id){Current.SelectedTool=Current.Tools.First(t=>t.Id==id);Current.NotifyDesktop();}
+ void SelectDesktopTool(string id){Current.SelectedTool=Current.Tools.First(t=>t.Id==id);ResetPanMode();Current.NotifyDesktop();}
  void DesktopKeyUp(object? sender,KeyEventArgs e){
   foreach(string action in desktopInput.HandleKeyboard(e.Key,e.KeyModifiers,InputScope.Application)){
    if(action=="nav.pan")spacePan=false;
    if(action=="tool.picker"&&pickerPrevious is {} previous){if(Environment.TickCount64-pickerStarted>PickerHoldThresholdMs)SelectDesktopTool(previous);pickerPrevious=null;}
   }
   if(e.Key==Key.Space)spacePan=false;
+  RefreshInteractionUi();
  }
 }

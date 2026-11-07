@@ -43,7 +43,7 @@ public static partial class WorkerCore {
  [JSExport] public static byte[] ScriptDownload(int index)=>Current.ScriptDeliveries[index].Bytes;
  [JSExport] public static string ScriptDownloadNames()=>JsonSerializer.Serialize(Current.ScriptDeliveries.Select(d=>d.Name));
  [JSExport] public static async Task RunScript(string json){using var doc=JsonDocument.Parse(json);var p=doc.RootElement;await Current.RunScriptAsync(p.GetProperty("language").GetString()!,p.GetProperty("code").GetString()!,p.TryGetProperty("timeoutMs",out var t)?t.GetInt32():10000);revision++;}
- [JSExport] public static string Catalog()=>JsonSerializer.Serialize(new{materials=new[]{new{id=-1,name="空白（清除方块）"}}.Concat(WorldConfiguration.TileBricks.Select(t=>new{id=t.Id,name=t.Name})),domainSchema=Current.DomainSchema(),sprites=Current.SpriteCatalog(),toolSchema=Current.ToolSchema(),tools=Session.ToolNames,maskModes=Enum.GetNames<MaskMode>(),saveVersions=WorldConfiguration.SaveConfiguration.GameVersionToSaveVersion.Keys.ToArray()});
+ [JSExport] public static string Catalog()=>JsonSerializer.Serialize(new{materials=new[]{new{id=-1,name="空白（清除方块）",color="#202020"}}.Concat(WorldConfiguration.TileBricks.Select(t=>new{id=t.Id,name=t.Name,color=$"#{t.Color.R:X2}{t.Color.G:X2}{t.Color.B:X2}"})),domainSchema=Current.DomainSchema(),sprites=Current.SpriteCatalog(),toolSchema=Current.ToolSchema(),tools=Session.ToolNames,maskModes=Enum.GetNames<MaskMode>(),saveVersions=WorldConfiguration.SaveConfiguration.GameVersionToSaveVersion.Keys.ToArray()});
  [JSExport] public static string ImportTemplate(byte[] bytes){Current.ImportTemplate(bytes);return Info();}
  [JSExport] public static void ReleaseClipboardForReplacement()=>Current.ReleaseClipboardForReplacement();
  [JSExport] public static byte[] TransformClipboardIsolated(byte[] bytes,string action,bool allow){OperationProgress.Begin(ReportProgress);try{return Session.TransformClipboardIsolated(bytes,action,allow);}finally{OperationProgress.End();}}
@@ -71,7 +71,7 @@ public static partial class WorkerCore {
  [JSExport] public static async Task PrepareRenderExport(string options){exported=await Current.ExportRenderedAsync(options,DrawExport,ReportExport);}
  [JSExport] public static void ApplySpriteConfigurations(string json)=>Current.ApplySpriteConfigurations(json);
  [JSExport] public static string ExplorerHeader(byte[] bytes,bool modded){
-  WorldFiles.EnsureInitialized();if(bytes.Length<4||bytes.Length>256*1024*1024)throw new ArgumentException("世界文件大小无效");
+  Session.EnsureInitialized();if(bytes.Length<4||bytes.Length>256*1024*1024)throw new ArgumentException("世界文件大小无效");
   string path=Path.Combine(Path.GetTempPath(),Guid.NewGuid().ToString("N")+".wld");try{File.WriteAllBytes(path,bytes);var h=World.ReadWorldHeader(path)??throw new InvalidDataException("无法读取原版世界头");return JsonSerializer.Serialize(new{h.Title,h.Version,h.TilesWide,h.TilesHigh,h.IsCorrupt,h.CorruptReason,h.Seed,h.GameModeText,h.TerrariaVersionText,h.IsHardMode,h.EvilBiome,IsTModLoader=modded});}finally{File.Delete(path);}
  }
  [JSExport] public static byte[] ExplorerPreview(byte[] bytes){var preview=new Session{ThrowOnError=true};try{preview.Open(bytes);return preview.RenderMinimap();}finally{preview.CloseSession();}}

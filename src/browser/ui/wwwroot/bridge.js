@@ -16,7 +16,7 @@ let nextGeneration=0;
 // Adapt the existing serial request queue; the domain protocol stays outside it.
 function createSession(restoredRevision=null,sidecar=null,replay=false,newWorld=null,utility=null,replacementRevision=null){
  const generation=++nextGeneration;
- const record={generation,closed:false,ready:false,id:crypto.randomUUID(),savedRevision:0,savedClipboardRevision:0,persisted:false};
+ const record={generation,closed:false,ready:false,id:crypto.randomUUID(),savedRevision:0,downloadedRevision:-1,savedClipboardRevision:0,persisted:false};
  const session=new WorldSession(()=>{
   const worker=new Worker(new URL('../../core/wwwroot/worker.js',import.meta.url),{type:'module'});
   const buffered=[];
@@ -45,8 +45,14 @@ const templateStore=new TemplateStore();let library=[];
 let autoSave=true,saveTimer=null,storageStatus='',recoveryAvailable=false,recoveries=[];
 const preferenceKey='tedit-browser:autosave:'+new URL('.',import.meta.url).pathname;
 const hooks=()=>window.r2;
-function publishProgress(){const dirty=!!active&&active.info.revision>active.savedRevision;hooks()?.ApplyProgress(status+(storageStatus?' · '+storageStatus:'')+(dirty?' · 当前更改尚未保存':''));}
-function publish(){const dirty=!!active&&active.info.revision>active.savedRevision;hooks()?.ApplyInfo(JSON.stringify({...info,...catalog,status:status+(storageStatus?' · '+storageStatus:'')+(dirty?' · 当前更改尚未保存':''),storageStatus,dirty,autoSave,recoveryAvailable,recoveries,library,busy,editable:!!active&&!busy&&!staging}));}
+function publishProgress(){const dirty=!!active&&active.info.revision>active.savedRevision;hooks()?.ApplyProgress(status+(storageStatus?' · '+storageStatus:'')+(dirty?' · 当前更改尚未保存到本机进度':''));}
+function saveState(){
+ if(!active)return '';
+ const local=active.persisted&&active.savedRevision===active.info.revision?'本机进度已保存':'本机进度待保存';
+ const file=active.downloadedRevision!==active.info.revision?'当前版本待下载':active.downloadedRevision===0?'已打开世界文件':'已发起当前版本下载';
+ return local+' · '+file;
+}
+function publish(){const dirty=!!active&&active.info.revision>active.savedRevision;hooks()?.ApplyInfo(JSON.stringify({...info,...catalog,status:status+(storageStatus?' · '+storageStatus:'')+(dirty?' · 当前更改尚未保存到本机进度':''),saveState:saveState(),storageStatus,dirty,autoSave,recoveryAvailable,recoveries,library,busy,editable:!!active&&!busy&&!staging}));}
 function apply(result){queueMicrotask(()=>renderer.refresh());if(result.frame)hooks().ApplyFrame(result.frame);if(result.info)info=result.info;if(result.catalog)catalog=result.catalog;}
 function validateSettings(settings,choices=catalog){
  if(settings===null)return null;
@@ -113,7 +119,7 @@ export async function openFile(bytes,name,sidecarBytes=new Uint8Array(),sidecarN
   }
   await preserveBeforeSwitch();
   if(epoch!==opening||candidate!==staging)throw new DOMException('打开已取消','AbortError');
-  candidate.original=result.generatedSource?new File([result.generatedSource],name):file;candidate.originalSidecar=sidecar;candidate.info=result.info;
+  candidate.original=result.generatedSource?new File([result.generatedSource],name):file;candidate.originalSidecar=sidecar;candidate.info=result.info;candidate.downloadedRevision=newWorld||replay?-1:result.info.revision;
   apply(result);const old=active;active=candidate;staging=null;originalFile=candidate.original;originalSidecar=sidecar;old?.session.close();
   if(retainedSettings){retainedSettings.toolState=result.info.toolState;candidate.settings=retainedSettings;hooks().ApplySettings(JSON.stringify(retainedSettings));}
   storageStatus='';
@@ -152,7 +158,7 @@ async function rollbackOperation(transaction,refresh=true,snapshot=transaction.s
  const candidate=createSession(snapshot.info.revision);
  try{
   const result=await candidate.session.open(new Blob([snapshot.bytes]));
-  for(const key of ['id','persistedToken','original','originalChecksum','originalSidecar','originalSidecarChecksum','settings','savedRevision','savedSettings','persisted'])candidate[key]=owner[key];
+  for(const key of ['id','persistedToken','original','originalChecksum','originalSidecar','originalSidecarChecksum','settings','savedRevision','downloadedRevision','savedSettings','persisted'])candidate[key]=owner[key];
   candidate.savedClipboardRevision=owner.savedClipboardRevision===snapshot.info.clipboardRevision?result.info.clipboardRevision:-1;
   candidate.info=result.info;active=candidate;if(refresh)apply(result);else renderer.rebind(owner,candidate);return candidate;
  }catch(error){candidate.session.close();active=null;throw new Error('操作前状态自动恢复失败，请恢复本机进度或下载原始副本：'+error.message);}
@@ -239,7 +245,7 @@ async function execute(action,payload=null){
    try{
     result=await candidate.session.open(new Blob([output.bytes]));
     if(transaction.cancelled)throw new DOMException('操作已取消','AbortError');
-    for(const key of ['id','persistedToken','original','originalChecksum','originalSidecar','originalSidecarChecksum','settings','savedRevision','savedSettings','persisted'])candidate[key]=owner[key];
+    for(const key of ['id','persistedToken','original','originalChecksum','originalSidecar','originalSidecarChecksum','settings','savedRevision','downloadedRevision','savedSettings','persisted'])candidate[key]=owner[key];
     candidate.savedClipboardRevision=-1;candidate.info=result.info;active=candidate;owner=candidate;transaction.owner=candidate;transaction.utility=null;
    }catch(error){candidate.session.close();throw error;}
   }
@@ -274,7 +280,7 @@ async function execute(action,payload=null){
    downloadWorld(result.bytes,owner.original.name.replace(/\.wld$/i,'')+'-v'+payload.gameVersion+(result.paired?'.zip':'.wld'));status='已按原版规则导出指定版本副本；降级可能移除目标版本不支持的内容，请在游戏内验证副本';
   }else if(action==='export'){
    if(epoch!==exportEpoch){status='下载已取消；序列化已结束，编辑状态保留';return '{}';}
-   downloadWorld(result.bytes,originalFile.name.replace(/\.wld$/i,'')+'-edited'+(result.paired?'.zip':'.wld'));status=result.paired?'已成对导出世界与模组配套；原版保存会重建部分区段，原始副本仍保留':'已导出副本';
+   downloadWorld(result.bytes,originalFile.name.replace(/\.wld$/i,'')+'-edited'+(result.paired?'.zip':'.wld'));owner.downloadedRevision=owner.info.revision;status=result.paired?'已成对导出世界与模组配套；原版保存会重建部分区段，原始副本仍保留':'已导出副本';
   }else{apply(result);owner.info=result.info;if(nextSettings)owner.settings=structuredClone(nextSettings);if(result.info.toolState){
   const latest=validateSettings(JSON.parse(hooks().Settings())),merged=structuredClone(latest);
   for(const [group,values] of Object.entries(result.info.toolState)){

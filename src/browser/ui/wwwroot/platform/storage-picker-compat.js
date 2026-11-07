@@ -2,7 +2,7 @@
 
 // Its fallback resolves on change but leaves cancel and temporary inputs behind.
 
-export function installPickerCompatibility(StorageProvider){
+export function installPickerCompatibility(StorageProvider,StorageItems){
 
  const open=StorageProvider.openFileDialog;
 
@@ -17,6 +17,14 @@ export function installPickerCompatibility(StorageProvider){
   document.addEventListener('cancel',cancel,true);
 
   try{return await open.apply(this,args);}
+
+  catch(error){
+
+   if(error?.name==='AbortError')return new StorageItems([]);
+
+   throw error;
+
+  }
 
   finally{
 

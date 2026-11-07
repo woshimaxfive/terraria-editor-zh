@@ -27,6 +27,7 @@ public sealed class Command(Action execute) : ICommand {
 // UI-independent session used by the browser worker.
 public sealed partial class Session : INotifyPropertyChanged {
  static Session(){var b=ReactiveUI.Builder.RxAppBuilder.CreateReactiveUIBuilder();b.WithCoreServices();b.WithPlatformServices();b.BuildApp();WorldFiles.EnsureInitialized();}
+ public static void EnsureInitialized(){}
  WorldViewModel? vm;
  BrushTool? brush;
  public event PropertyChangedEventHandler? PropertyChanged;
